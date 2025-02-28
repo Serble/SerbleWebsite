@@ -1,14 +1,17 @@
 <script>
 import {ensureLoggedIn} from "@/assets/js/utils.js";
 import LanguageDropdown from "@/components/LanguageDropdown.vue";
+import {ref} from "vue";
 
 export default {
   components: {LanguageDropdown},
   setup() {
     const user = ensureLoggedIn();
+    const errors = ref([]);
+
     return {
       user,
-      errors: []
+      errors
     };
   }
 };
@@ -26,33 +29,24 @@ export default {
           <h4 class="text-right">{{ $t('profile-settings') }}</h4>
         </div>
         <div class="row mt-2">
-          <div class="col-md-6"><label class="labels">{{ $t('username') }}</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" type="text" class="form-control" placeholder="{{ $t('username') }}" value="{{ user.username }}" id="username"></div>
-          @if (_errors.Contains(Error.UsernameInvalid)) {
-          <p style="color: red; font-size: 13px">{{ $t('invalid-username') }}</p>
-          }
-          else {
-          if (_errors.Contains(Error.UsernameTaken)) {
-          <p style="color: red; font-size: 13px">@Localiser["username-taken"]</p>
-          }
-          }
+          <div class="col-md-6"><label class="labels">{{ $t('username') }}</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" type="text" class="form-control" v-bind:placeholder="$t('username')" v-bind:value="user.username" id="username"></div>
+          <p v-if="errors.includes('invalidusername')" style="color: red; font-size: 13px">{{ $t('invalid-username') }}</p>
+          <p v-else-if="errors.includes('usernametaken')" style="color: red; font-size: 13px">{{ $t('username-taken') }}</p>
         </div>
         <div class="row mt-3">
           <div class="col-md-12">
             <label class="labels">
-              @Localiser["email"] @((string.IsNullOrWhiteSpace(_user.Email) ?
-              "" :
-              _verifiedEmail ?
-              $"<span class='text-success'>({Localiser["verified"]})</span>" :
-              $"<span class='text-warning'>({Localiser["not-verified"]})</span>").MarkupString())
-            </label><input style="background-color: rgb(34, 34, 34); color: #ffffff" type="text" class="form-control" placeholder="{{ $t('email') }}" value="@_user.Email" id="email">
+              {{ $t('email') }}
+              <span v-if="!user.email || !user.email.trim()"></span>
+              <span v-else-if="user.verifiedEmail" class='text-success'>({{ $t('verified') }})</span>
+              <span v-else class='text-warning'>({{ $t('not-verified') }})</span>
+            </label><input style="background-color: rgb(34, 34, 34); color: #ffffff" type="text" class="form-control" placeholder="{{ $t('email') }}" v-bind:value="user.email" id="email">
           </div>
-          @if (_errors.Contains(Error.EmailInvalid)) {
-          <p style="color: red; font-size: 13px">@Localiser["invalid-email"]</p>
-          }
+          <p v-if="errors.includes('invalidemail')" style="color: red; font-size: 13px">{{ $t('invalid-email') }}</p>
 
           <div class="row mt-2">
             <div class="col-md-6">
-              <label class="labels">@Localiser["language"]</label>
+              <label class="labels">{{ $t('language') }}</label>
               <LanguageDropdown DefaultValue="@_user.Language" Placeholder="Choose Language" Class="form-control text-white" Style="background-color: rgb(34, 34, 34); color: #ffffff" Id="language"></LanguageDropdown>
             </div>
           </div>
@@ -60,25 +54,21 @@ export default {
           <div style="padding-top: 20px"></div>
           <hr/>
 
-          <h4>@Localiser["change-password"]</h4>
-          <div class="col-md-12"><label class="labels">@Localiser["password"]</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" id="password" type="password" class="form-control" placeholder="***********" value=""></div>
-          <div class="col-md-12"><label class="labels">@Localiser["confirm-password"]</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" id="confirmPassword" type="password" class="form-control" placeholder="***********" value=""></div>
-          @if (_errors.Contains(Error.PasswordDifferent)) {
-          <p style="color: red; font-size: 13px">@Localiser["passwords-dont-match"]</p>
-          }
+          <h4>{{ $t('change-password') }}</h4>
+          <div class="col-md-12"><label class="labels">{{ $t('password') }}</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" id="password" type="password" class="form-control" placeholder="***********" value=""></div>
+          <div class="col-md-12"><label class="labels">{{ $t('confirm-password') }}</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" id="confirmPassword" type="password" class="form-control" placeholder="***********" value=""></div>
+          <p v-if="errors.includes('passworddifferent')" style="color: red; font-size: 13px">{{ $t('passwords-dont-match') }}</p>
           <div style="padding-top: 20px"></div>
 
-          <h4>@Localiser["security"]</h4>
-          @if (_user.TotpEnabled) {
-          <div class="row mt-3">
-            <button @onclick="Disable2Fa" class="btn btn-danger">@Localiser["disable-2fa"]</button>
+          <h4>{{ $t('security') }}</h4>
+
+          <!-- 2FA -->
+          <div v-if="user.totpEnabled" class="row mt-3">
+            <button @onclick="Disable2Fa" class="btn btn-danger">{{ $t('disable-2fa') }}</button>
             <div style="padding-top: 10px"></div>
-            <button @onclick="SetupTotp" class="btn btn-primary">@Localiser["setup-totp-app"]</button>
+            <button @onclick="SetupTotp" class="btn btn-primary">{{ $t('setup-totp-app') }}</button>
           </div>
-          }
-          else {
-          <button @onclick="SetupTotp" class="btn btn-success">@Localiser["setup-2fa"]</button>
-          }
+          <button v-else @onclick="SetupTotp" class="btn btn-success">{{ $t('setup-2fa') }}</button>
 
           <div style="padding-top: 20px"></div>
           <hr/>
@@ -86,11 +76,11 @@ export default {
         </div>
 
         <div class="row mt-3">
-          <div class="col-md-6"><label class="labels">@Localiser["id"]</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="{{ $t('id') }}" value="@_user.Id" readonly></div>
-          <div class="col-md-6"><label class="labels">@Localiser["account-type"]</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" value="@(((AccountAccessLevel) Enum.ToObject(typeof(AccountAccessLevel), _user.PermLevel ?? 1)).ToString())" readonly></div>
-          <div class="col-md-6"><label class="labels">@Localiser["premium-level"]</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" value="@_premiumText" readonly></div>
+          <div class="col-md-6"><label class="labels">{{ $t('id') }}</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" v-bind:placeholder="$t('id')" v-bind:value="user.id" readonly></div>
+          <div class="col-md-6"><label class="labels">{{ $t('account-type') }}</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" value="@(((AccountAccessLevel) Enum.ToObject(typeof(AccountAccessLevel), _user.PermLevel ?? 1)).ToString())" readonly></div>
+          <div class="col-md-6"><label class="labels">{{ $t('premium-level') }}</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" value="@_premiumText" readonly></div>
         </div>
-        <div class="mt-5 text-center"><button class="btn btn-primary profile-button" type="button" @onclick="Save">@Localiser["save-changes"]</button></div>
+        <div class="mt-5 text-center"><button class="btn btn-primary profile-button" type="button" @onclick="Save">{{ $t('save-changes') }}</button></div>
       </div>
     </div>
   </div>
