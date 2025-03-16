@@ -1,5 +1,5 @@
 <script>
-import {loginUser} from "@/assets/js/serble.js";
+import {loginUser, submitTotpCode} from "@/assets/js/serble.js";
 import {inject, computed, ref} from 'vue';
 import router from "@/router/index.js";
 
@@ -15,34 +15,30 @@ export default {
       console.log("User is already logged in, redirecting to home page.");
     }
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const mfaToken = urlParams.get('mfa_token');
+    if (!mfaToken) {
+      console.log("No MFA token provided, redirecting to login page.");
+      router.push("/login");
+    }
+
     const error = ref(0);
     return {
       user,
       isAdmin,
-      error
+      error,
+      mfaToken
     };
   },
   methods: {
     async login() {
       console.log("Logging in...");
-      const username = document.getElementById("floatingUsername").value;
-      const password = document.getElementById("floatingPassword").value;
+      const code = document.getElementById("otp").value;
 
-      // if (username === "" || password === "") {
-      //   this.error = 1;
-      //   return;
-      // }
-
-      const resp = await loginUser(username, password);
+      const resp = await submitTotpCode(this.mfaToken, code);
       if (!resp) {
-        this.error = 2;
-        console.log("Invalid credentials, need account.");
-        return false;
-      }
-
-      if (resp.mfa_required) {
-        console.log("MFA Required, redirecting to MFA page.");
-        window.location = "/mfa?mfa_token=" + resp.mfa_token;
+        this.error = 1;
+        console.log("Invalid code");
         return false;
       }
 
@@ -63,28 +59,17 @@ export default {
 
       <div style="color: red;">
         <div v-if="error === 0"></div>
-        <p v-else-if="error === 1">{{ $t('username-password-required') }}</p>
-        <p v-else-if="error === 2">{{ $t('invalid-creds-need-account') }} <a href="/register" onclick="window.location='register'+window.location.search;">{{ $t('register') }}</a></p>
-        <p v-else-if="error === 3">{{ $t('account-disabled') }}</p>
+        <p v-else-if="error === 1">{{ $t('invalid-code') }}</p>
       </div>
 
       <div class="form-floating">
         <input
             type="text"
             class="form-control"
-            id="floatingUsername"
-            placeholder="{{ $t('username') }}"
+            id="otp"
+            placeholder="{{ $t('otp-code') }}"
         style="background-color: rgb(34, 34, 34); color: #ffffff">
-        <label for="floatingUsername">{{ $t('username') }}</label>
-      </div>
-      <div class="form-floating">
-        <input
-            type="password"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="{{ $t('password') }}"
-        style="background-color: rgb(34, 34, 34); color: #ffffff">
-        <label for="floatingPassword">{{ $t('password') }}</label>
+        <label for="otp">{{ $t('otp-code') }}</label>
       </div>
 
       <div class="checkbox mb-3">
@@ -95,17 +80,7 @@ export default {
         </label>
       </div>
       <button class="w-100 btn btn-lg btn-primary" @click="login" style="padding-bottom: 10px">{{ $t('sign-in') }}</button>
-
-      <!-- Passkey Stuff, WIP -->
-<!--      <button class="w-100 btn btn-lg btn-secondary" style="padding-bottom: 10px; padding-top: 10px" onclick="PasskeyLogin">{{ $t('login-with-passkey') }}</button>-->
-
-      <p>{{ $t('dont-have-account') }} <a href="/register" onclick="window.location='register'+window.location.search;">{{ $t('register-for-free') }}</a></p>
     </form>
-
-    <form onsubmit='console.log("Submitted webauthn field")' hidden>
-      <input type="text" name="username" autocomplete="username webauthn" hidden>
-    </form>
-
   </div>
 </template>
 

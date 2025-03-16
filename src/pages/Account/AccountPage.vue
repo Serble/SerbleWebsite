@@ -9,9 +9,14 @@ export default {
     const user = ensureLoggedIn();
     const errors = ref([]);
 
+    const permStr = user.permLevel === 2 ? "Admin" : "Normal";
+    const premiumStr = "Free";  // Default
+
     return {
       user,
-      errors
+      errors,
+      permStr,
+      premiumStr
     };
   }
 };
@@ -55,8 +60,14 @@ export default {
           <hr/>
 
           <h4>{{ $t('change-password') }}</h4>
-          <div class="col-md-12"><label class="labels">{{ $t('password') }}</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" id="password" type="password" class="form-control" placeholder="***********" value=""></div>
-          <div class="col-md-12"><label class="labels">{{ $t('confirm-password') }}</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" id="confirmPassword" type="password" class="form-control" placeholder="***********" value=""></div>
+          <div class="col-md-12">
+            <label class="labels">{{ $t('password') }}</label>
+            <input style="background-color: rgb(34, 34, 34); color: #ffffff" id="password" type="password" class="form-control" placeholder="***********" value="">
+          </div>
+          <div class="col-md-12">
+            <label class="labels">{{ $t('confirm-password') }}</label>
+            <input style="background-color: rgb(34, 34, 34); color: #ffffff" id="confirmPassword" type="password" class="form-control" placeholder="***********" value="">
+          </div>
           <p v-if="errors.includes('passworddifferent')" style="color: red; font-size: 13px">{{ $t('passwords-dont-match') }}</p>
           <div style="padding-top: 20px"></div>
 
@@ -76,11 +87,22 @@ export default {
         </div>
 
         <div class="row mt-3">
-          <div class="col-md-6"><label class="labels">{{ $t('id') }}</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" v-bind:placeholder="$t('id')" v-bind:value="user.id" readonly></div>
-          <div class="col-md-6"><label class="labels">{{ $t('account-type') }}</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" value="@(((AccountAccessLevel) Enum.ToObject(typeof(AccountAccessLevel), _user.PermLevel ?? 1)).ToString())" readonly></div>
-          <div class="col-md-6"><label class="labels">{{ $t('premium-level') }}</label><input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" value="@_premiumText" readonly></div>
+          <div class="col-md-6">
+            <label class="labels">{{ $t('id') }}</label>
+            <input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" v-bind:placeholder="$t('id')" v-bind:value="user.id" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="labels">{{ $t('account-type') }}</label>
+            <input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" v-bind:value="$t(permStr)" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="labels">{{ $t('premium-level') }}</label>
+            <input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" v-bind:value="$t(premiumStr)" readonly>
+          </div>
         </div>
-        <div class="mt-5 text-center"><button class="btn btn-primary profile-button" type="button" @onclick="Save">{{ $t('save-changes') }}</button></div>
+        <div class="mt-5 text-center">
+          <button class="btn btn-primary profile-button" type="button" @onclick="Save">{{ $t('save-changes') }}</button>
+        </div>
       </div>
     </div>
   </div>

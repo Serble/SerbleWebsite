@@ -42,6 +42,20 @@ export async function loginUser(username, password) {
     }
 }
 
+export async function submitTotpCode(mfaToken, code) {
+    try {
+        const response = await axios.post(`${API_URL}/account/mfa`, {
+            login_token: mfaToken,
+            totp_code: code
+        });
+        setLocalStorage("access_token", response.data.token);
+        return response.data; // Return user data
+    } catch (error) {
+        console.error('Error logging in with totp', error);
+        return null;
+    }
+}
+
 export function logout() {
     setCookie("access_token", "", 0);
     setLocalStorage("access_token", "");

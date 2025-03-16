@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import('@/pages/LoginPage.vue'),
     },
     {
+      path: '/mfa',
+      name: 'MFA',
+      component: () => import('@/pages/MfaLoginPage.vue'),
+    },
+    {
       path: '/account',
       name: 'account',
       component: () => import('@/pages/Account/AccountPage.vue'),
