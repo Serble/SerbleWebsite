@@ -42,6 +42,38 @@ export async function loginUser(username, password) {
     }
 }
 
+export async function registerUser(username, password, recapToken) {
+    try {
+        const response = await axios.post(`${API_URL}/account`, {
+            username,
+            password
+        }, {
+            headers: {
+                SerbleAntiSpam: "turnstile " + recapToken,
+            },
+        });
+
+        if (response.status !== 200) {
+            console.error('Error registering user', response);
+            return {
+                success: false,
+                error: response.status
+            };
+        }
+
+        return {
+            success: true,
+            user: response.data  // The user object
+        };
+    } catch (error) {
+        console.error('Error registering', error);
+        return {
+            success: false,
+            error: error.response ? error.response.status : 'Network Error'
+        };
+    }
+}
+
 export async function submitTotpCode(mfaToken, code) {
     try {
         const response = await axios.post(`${API_URL}/account/mfa`, {
