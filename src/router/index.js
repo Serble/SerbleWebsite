@@ -18,23 +18,28 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('@/pages/LoginPage.vue'),
+      component: () => import('@/pages/Account/LoginPage.vue'),
     },
     {
       path: '/register',
       name: 'register',
-      component: () => import('@/pages/RegisterPage.vue'),
+      component: () => import('@/pages/Account/RegisterPage.vue'),
     },
     {
       path: '/mfa',
       name: 'MFA',
-      component: () => import('@/pages/MfaLoginPage.vue'),
+      component: () => import('@/pages/Account/MfaLoginPage.vue'),
     },
     {
       path: '/account',
       name: 'account',
       component: () => import('@/pages/Account/AccountPage.vue'),
-    }
+    },
+    {
+      path: '/setuptotp',
+      name: 'SetupTOTP',
+      component: () => import('@/pages/Account/SetupTotp.vue'),
+    },
   ],
 })
 

@@ -77,9 +77,9 @@ export default {
           <div v-if="user.totpEnabled" class="row mt-3">
             <button @onclick="Disable2Fa" class="btn btn-danger">{{ $t('disable-2fa') }}</button>
             <div style="padding-top: 10px"></div>
-            <button @onclick="SetupTotp" class="btn btn-primary">{{ $t('setup-totp-app') }}</button>
+            <RouterLink to="/setuptotp" class="btn btn-primary">{{ $t('setup-totp-app') }}</RouterLink>
           </div>
-          <button v-else @onclick="SetupTotp" class="btn btn-success">{{ $t('setup-2fa') }}</button>
+          <RouterLink v-else to="/setuptotp" class="btn btn-success">{{ $t('setup-2fa') }}</RouterLink>
 
           <div style="padding-top: 20px"></div>
           <hr/>

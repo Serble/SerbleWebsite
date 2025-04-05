@@ -1,6 +1,6 @@
 <script>
-import {loginUser, submitTotpCode} from "@/assets/js/serble.js";
-import {inject, computed, ref} from 'vue';
+import { submitTotpCode } from "@/assets/js/serble.js";
+import { inject, computed, ref } from 'vue';
 import router from "@/router/index.js";
 
 export default {
