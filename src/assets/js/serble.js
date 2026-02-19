@@ -225,6 +225,45 @@ export async function deleteOAuthApp(appId) {
     }
 }
 
+export async function getPaymentPortalUrl() {
+    try {
+        const response = await axios.get(`${API_URL}/payments/portal`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, url: response.data?.url ?? response.data };
+    } catch (error) {
+        const status = error?.response?.status;
+        const body = error?.response?.data;
+        let flag = 'unknown';
+        if (status === 400 && body === 'User is not a customer.') flag = 'not-customer';
+        if (status === 404) flag = 'not-found';
+        console.error('Error fetching payment portal url', error);
+        return { success: false, flag, error: status };
+    }
+}
+
+export async function getPublicAppInfo(appId) {
+    try {
+        const response = await axios.get(`${API_URL}/app/${appId}/public`);
+        return { success: true, app: response.data };
+    } catch (error) {
+        console.error('Error fetching public app info', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function deauthorizeApp(appId) {
+    try {
+        await axios.delete(`${API_URL}/account/authorizedApps/${appId}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deauthorizing app', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
 export async function editOAuthApp(appId, edits) {
     try {
         const response = await axios.patch(`${API_URL}/app/${appId}`, edits, {

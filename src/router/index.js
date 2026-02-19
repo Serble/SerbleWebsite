@@ -55,6 +55,16 @@ const router = createRouter({
       name: 'EditOAuthApp',
       component: () => import('@/pages/Account/EditOAuthAppPage.vue'),
     },
+    {
+      path: '/authorizedapps',
+      name: 'AuthorizedApps',
+      component: () => import('@/pages/Account/AuthorizedAppsPage.vue'),
+    },
+    {
+      path: '/account/paymentportal',
+      name: 'PaymentPortal',
+      component: () => import('@/pages/Account/PaymentPortalPage.vue'),
+    },
   ],
 })
 

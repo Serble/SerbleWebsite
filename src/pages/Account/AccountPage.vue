@@ -165,122 +165,327 @@ export default {
 </script>
 
 <template>
-  <div class="row">
-    <div class="col-md-3 border-right">
-      <div class="d-flex flex-column align-items-center text-center p-3 py-5"><img class="rounded-circle mt-5" width="150px" src="https://st3.depositphotos.com/15648834/17930/v/600/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg" alt="Generic profile picture">
-        <span class="font-weight-bold">{{ user.username }}</span><span> </span></div>
-    </div>
-    <div class="col-md-5 border-right">
-      <div class="p-3 py-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="text-right">{{ $t('profile-settings') }}</h4>
-        </div>
+  <div class="account-page">
 
-        <transition name="fade">
-          <div v-if="successMessage" class="alert alert-success d-flex align-items-center" role="alert">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check-circle-fill me-2 flex-shrink-0" viewBox="0 0 16 16">
-              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-            </svg>
-            <span>{{ $t('save-changes-success') || 'Changes saved successfully!' }}</span>
-          </div>
-        </transition>
-
-        <div class="row mt-2">
-          <div class="col-md-6"><label class="labels">{{ $t('username') }}</label><input style="background-color: rgb(34, 34, 34); color: #ffffff" type="text" class="form-control" v-bind:placeholder="$t('username')" v-model="username" id="username"></div>
-          <p v-if="errors.includes('invalidusername')" style="color: red; font-size: 13px">{{ $t('invalid-username') }}</p>
-          <p v-else-if="errors.includes('usernametaken')" style="color: red; font-size: 13px">{{ $t('username-taken') }}</p>
-        </div>
-        <div class="row mt-3">
-          <div class="col-md-12">
-            <label class="labels">
-              {{ $t('email') }}
-              <span v-if="!user.email || !user.email.trim()"></span>
-              <span v-else-if="user.verifiedEmail" class='text-success'>({{ $t('verified') }})</span>
-              <span v-else class='text-warning'>({{ $t('not-verified') }})</span>
-            </label><input style="background-color: rgb(34, 34, 34); color: #ffffff" type="text" class="form-control" placeholder="{{ $t('email') }}" v-model="email" id="email">
-          </div>
-          <p v-if="errors.includes('invalidemail')" style="color: red; font-size: 13px">{{ $t('invalid-email') }}</p>
-
-          <div class="row mt-2">
-            <div class="col-md-6">
-              <label class="labels">{{ $t('language') }}</label>
-              <LanguageDropdown
-                v-model="selectedLanguage"
-                placeholder="Choose Language"
-                class="form-control text-white"
-                style="background-color: rgb(34, 34, 34); color: #ffffff"
-                id="language"
-              ></LanguageDropdown>
-            </div>
-          </div>
-
-          <div style="padding-top: 20px"></div>
-          <hr/>
-
-          <h4>{{ $t('change-password') }}</h4>
-          <div class="col-md-12">
-            <label class="labels">{{ $t('password') }}</label>
-            <input style="background-color: rgb(34, 34, 34); color: #ffffff" id="password" type="password" class="form-control" placeholder="***********" v-model="password">
-          </div>
-          <div class="col-md-12">
-            <label class="labels">{{ $t('confirm-password') }}</label>
-            <input style="background-color: rgb(34, 34, 34); color: #ffffff" id="confirmPassword" type="password" class="form-control" placeholder="***********" v-model="confirmPassword">
-          </div>
-          <p v-if="errors.includes('passworddifferent')" style="color: red; font-size: 13px">{{ $t('passwords-dont-match') }}</p>
-          <div style="padding-top: 20px"></div>
-
-          <h4>{{ $t('security') }}</h4>
-
-          <!-- 2FA -->
-          <div v-if="user.totpEnabled" class="row mt-3">
-            <button @onclick="Disable2Fa" class="btn btn-danger">{{ $t('disable-2fa') }}</button>
-            <div style="padding-top: 10px"></div>
-            <RouterLink to="/setuptotp" class="btn btn-primary">{{ $t('setup-totp-app') }}</RouterLink>
-          </div>
-          <RouterLink v-else to="/setuptotp" class="btn btn-success">{{ $t('setup-2fa') }}</RouterLink>
-
-          <div style="padding-top: 20px"></div>
-          <hr/>
-
-        </div>
-
-        <div class="row mt-3">
-          <div class="col-md-6">
-            <label class="labels">{{ $t('id') }}</label>
-            <input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" v-bind:placeholder="$t('id')" v-bind:value="user.id" readonly>
-          </div>
-          <div class="col-md-6">
-            <label class="labels">{{ $t('account-type') }}</label>
-            <input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" v-bind:value="$t(permStr)" readonly>
-          </div>
-          <div class="col-md-6">
-            <label class="labels">{{ $t('premium-level') }}</label>
-            <input type="text" style="background-color: rgb(34, 34, 34); color: #ffffff" class="form-control" placeholder="Normal" v-bind:value="$t(premiumStr)" readonly>
-          </div>
-        </div>
-        <div class="mt-5 text-center">
-          <button class="btn btn-primary profile-button" type="button" @click="save">{{ $t('save-changes') }}</button>
+    <!-- Profile header -->
+    <div class="profile-header bg-dark border rounded-3 d-flex align-items-center gap-4 mb-4">
+      <img
+        class="avatar rounded-circle flex-shrink-0"
+        src="https://st3.depositphotos.com/15648834/17930/v/600/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg"
+        alt="Profile picture"
+      >
+      <div>
+        <h4 class="mb-1">{{ user.username }}</h4>
+        <div class="d-flex gap-2 flex-wrap">
+          <span class="badge-pill badge-account">{{ $t(permStr) }}</span>
+          <span class="badge-pill badge-premium">{{ $t(premiumStr) }}</span>
+          <span v-if="user.totpEnabled" class="badge-pill badge-2fa">2FA</span>
         </div>
       </div>
     </div>
+
+    <!-- Success toast -->
+    <transition name="fade">
+      <div v-if="successMessage" class="alert alert-success d-flex align-items-center mb-4 py-2" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 flex-shrink-0" viewBox="0 0 16 16">
+          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+        </svg>
+        <span>{{ $t('save-changes-success') }}</span>
+      </div>
+    </transition>
+
+    <!-- Profile settings card -->
+    <div class="form-card bg-dark border rounded-3 mb-4">
+      <div class="card-header-row px-4 py-3 border-bottom border-secondary">
+        <h6 class="mb-0 fw-semibold">{{ $t('profile-settings') }}</h6>
+      </div>
+
+      <!-- Username -->
+      <div class="form-section border-bottom border-secondary">
+        <label class="section-label" for="username">{{ $t('username') }}</label>
+        <input
+          id="username"
+          type="text"
+          class="form-control dark-input"
+          :class="{ 'is-invalid': errors.includes('invalidusername') || errors.includes('usernametaken') }"
+          :placeholder="$t('username')"
+          v-model="username"
+        >
+        <p v-if="errors.includes('invalidusername')" class="field-error">{{ $t('invalid-username') }}</p>
+        <p v-else-if="errors.includes('usernametaken')" class="field-error">{{ $t('username-taken') }}</p>
+      </div>
+
+      <!-- Email -->
+      <div class="form-section border-bottom border-secondary">
+        <label class="section-label" for="email">
+          {{ $t('email') }}
+          <span v-if="user.email && user.email.trim() && user.verifiedEmail" class="verified-badge">✓ {{ $t('verified') }}</span>
+          <span v-else-if="user.email && user.email.trim()" class="unverified-badge">{{ $t('not-verified') }}</span>
+        </label>
+        <input
+          id="email"
+          type="text"
+          class="form-control dark-input"
+          :class="{ 'is-invalid': errors.includes('invalidemail') }"
+          :placeholder="$t('email')"
+          v-model="email"
+        >
+        <p v-if="errors.includes('invalidemail')" class="field-error">{{ $t('invalid-email') }}</p>
+      </div>
+
+      <!-- Language -->
+      <div class="form-section">
+        <label class="section-label" for="language">{{ $t('language') }}</label>
+        <LanguageDropdown
+          id="language"
+          v-model="selectedLanguage"
+          :placeholder="$t('language')"
+          class="form-control dark-input"
+        />
+      </div>
+    </div>
+
+    <!-- Security card -->
+    <div class="form-card bg-dark border rounded-3 mb-4">
+      <div class="card-header-row px-4 py-3 border-bottom border-secondary">
+        <h6 class="mb-0 fw-semibold">{{ $t('security') }}</h6>
+      </div>
+
+      <!-- Password -->
+      <div class="form-section border-bottom border-secondary">
+        <label class="section-label" for="password">{{ $t('change-password') }}</label>
+        <p class="section-hint">Leave blank to keep your current password.</p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="field-label" for="password">{{ $t('password') }}</label>
+            <input
+              id="password"
+              type="password"
+              class="form-control dark-input"
+              :class="{ 'is-invalid': errors.includes('passworddifferent') }"
+              placeholder="••••••••••••"
+              v-model="password"
+            >
+          </div>
+          <div class="col-md-6">
+            <label class="field-label" for="confirmPassword">{{ $t('confirm-password') }}</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              class="form-control dark-input"
+              :class="{ 'is-invalid': errors.includes('passworddifferent') }"
+              placeholder="••••••••••••"
+              v-model="confirmPassword"
+            >
+          </div>
+        </div>
+        <p v-if="errors.includes('passworddifferent')" class="field-error mt-1">{{ $t('passwords-dont-match') }}</p>
+      </div>
+
+      <!-- 2FA -->
+      <div class="form-section">
+        <label class="section-label">{{ $t('2fa') }}</label>
+        <p class="section-hint">Protect your account with a time-based one-time password app.</p>
+        <div v-if="user.totpEnabled" class="d-flex gap-2 flex-wrap">
+          <RouterLink to="/setuptotp" class="btn btn-sm btn-outline-secondary">{{ $t('setup-totp-app') }}</RouterLink>
+          <button class="btn btn-sm btn-outline-danger">{{ $t('disable-2fa') }}</button>
+        </div>
+        <RouterLink v-else to="/setuptotp" class="btn btn-sm btn-success">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
+          </svg>
+          {{ $t('setup-2fa') }}
+        </RouterLink>
+      </div>
+    </div>
+
+    <!-- Account info card (read-only) -->
+    <div class="form-card bg-dark border rounded-3 mb-4">
+      <div class="card-header-row px-4 py-3 border-bottom border-secondary">
+        <h6 class="mb-0 fw-semibold">{{ $t('account-page') }}</h6>
+      </div>
+      <div class="form-section d-flex flex-column gap-3">
+        <div class="info-row">
+          <span class="info-label">{{ $t('id') }}</span>
+          <code class="info-value" style="color: #ccc;">{{ user.id }}</code>
+        </div>
+        <div class="info-row">
+          <span class="info-label">{{ $t('account-type') }}</span>
+          <span class="info-value">{{ $t(permStr) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">{{ $t('premium-level') }}</span>
+          <span class="info-value">{{ $t(premiumStr) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save button -->
+    <div class="d-flex justify-content-end">
+      <button class="btn btn-primary px-4" @click="save">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+          <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
+        </svg>
+        {{ $t('save-changes') }}
+      </button>
+    </div>
+
   </div>
 </template>
 
 <style scoped>
+.account-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Profile header */
+.profile-header {
+  padding: 24px 28px;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border: 2px solid #444;
+}
+
+.badge-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.badge-account {
+  background-color: #1e3a5f;
+  color: #90cdf4;
+}
+
+.badge-premium {
+  background-color: #3b2a0a;
+  color: #f6c458;
+}
+
+.badge-2fa {
+  background-color: #1a3d2b;
+  color: #68d391;
+}
+
+/* Form card */
+.form-card {
+  overflow: hidden;
+}
+
+.card-header-row {
+  background-color: rgba(255,255,255,0.03);
+}
+
+.form-section {
+  padding: 18px 24px;
+}
+
+.section-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.82rem;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+.section-hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.field-error {
+  color: #fc8181;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+.verified-badge {
+  font-size: 0.72rem;
+  color: #68d391;
+  font-weight: 600;
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.unverified-badge {
+  font-size: 0.72rem;
+  color: #f6c458;
+  font-weight: 600;
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Inputs */
+.dark-input {
+  background-color: rgb(28, 28, 28);
+  color: #fff;
+  border-color: #444;
+}
+
+.dark-input::placeholder {
+  color: #666;
+}
+
+.dark-input:focus {
+  background-color: rgb(28, 28, 28);
+  color: #fff;
+  border-color: #6ea8fe;
+  box-shadow: 0 0 0 0.2rem rgba(110, 168, 254, 0.15);
+}
+
+/* Read-only info rows */
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.info-value {
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+/* Success toast animation */
 .fade-enter-active {
-  animation: fadeSlideIn 0.35s ease-out;
+  animation: fadeSlideIn 0.3s ease-out;
 }
 .fade-leave-active {
-  animation: fadeSlideIn 0.25s ease-in reverse;
+  animation: fadeSlideIn 0.2s ease-in reverse;
 }
 @keyframes fadeSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 </style>
