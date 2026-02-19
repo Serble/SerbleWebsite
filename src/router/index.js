@@ -91,6 +91,11 @@ const router = createRouter({
       component: () => import('@/pages/Store/StoreCancelPage.vue'),
     },
     {
+      path: '/swift',
+      name: 'Swift',
+      component: () => import('@/pages/Store/SwiftPage.vue'),
+    },
+    {
       path: '/wordmaster',
       name: 'WordMaster',
       component: () => import('@/pages/Games/WordMasterPage.vue'),

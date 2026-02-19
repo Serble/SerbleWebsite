@@ -1,145 +1,289 @@
 <script>
-import {loginUser} from "@/assets/js/serble.js";
-import {inject, computed, ref} from 'vue';
+import { loginUser } from "@/assets/js/serble.js";
+import { inject, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
 
 export default {
   setup() {
     const userStore = inject('userStore');
-
-    const user = computed(() => userStore.state.user);
-    const isAdmin = user.permLevel > 1;
+    const route = useRoute();
 
     if (userStore.state.user) {
-      router.push("/");
-      console.log("User is already logged in, redirecting to home page.");
+      router.push('/');
     }
 
-    const error = ref(0);
-    return {
-      user,
-      isAdmin,
-      error
-    };
-  },
-  methods: {
-    async login() {
-      console.log("Logging in...");
-      const username = document.getElementById("floatingUsername").value;
-      const password = document.getElementById("floatingPassword").value;
+    const username    = ref('');
+    const password    = ref('');
+    const rememberMe  = ref(false);
+    const error       = ref(0);
+    const working     = ref(false);
 
-      // if (username === "" || password === "") {
-      //   this.error = 1;
-      //   return;
-      // }
+    async function login() {
+      if (working.value) return;
+      error.value = 0;
+      working.value = true;
 
-      const resp = await loginUser(username, password);
+      const resp = await loginUser(username.value, password.value);
+      working.value = false;
+
       if (!resp) {
-        this.error = 2;
-        console.log("Invalid credentials, need account.");
-        return false;
+        error.value = 2;
+        return;
       }
 
       if (resp.mfa_required) {
-        console.log("MFA Required, redirecting to MFA page.");
-        window.location = "/mfa?mfa_token=" + resp.mfa_token;
-        return false;
+        const search = window.location.search;
+        window.location.href = '/mfa?mfa_token=' + resp.mfa_token + (search ? '&' + search.slice(1) : '');
+        return;
       }
 
-      // Success, navigate home, and force reload (to update user info), so don't use router
-      window.location = "/";
-      console.log("Logged in successfully: ", resp);
-      return false;
-    },
-  },
+      const returnUrl = route.query.return_url ?? '/';
+      window.location.href = returnUrl;
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter') login();
+    }
+
+    return { username, password, rememberMe, error, working, login, handleKey };
+  }
 };
 </script>
 
 <template>
-  <div class="text-center form-signin">
-    <form onsubmit="return false" @onsubmit="login">
-      <img class="mb-4" src="/images/icon.png" alt="" width="72" height="72">
-      <h1 class="h3 mb-3 fw-normal">{{ $t('sign-in') }}</h1>
+  <div class="auth-page">
+    <div class="auth-card">
 
-      <div style="color: red;">
-        <div v-if="error === 0"></div>
-        <p v-else-if="error === 1">{{ $t('username-password-required') }}</p>
-        <p v-else-if="error === 2">{{ $t('invalid-creds-need-account') }} <a href="/register" onclick="window.location='register'+window.location.search;">{{ $t('register') }}</a></p>
-        <p v-else-if="error === 3">{{ $t('account-disabled') }}</p>
+      <!-- Header -->
+      <div class="auth-header">
+        <img src="/images/icon.png" width="52" height="52" alt="Serble" class="auth-logo" />
+        <h1 class="auth-title">{{ $t('sign-in') }}</h1>
+        <p class="auth-sub">Welcome back to Serble.</p>
       </div>
 
-      <div class="form-floating">
-        <input
-            type="text"
-            class="form-control"
-            id="floatingUsername"
-            placeholder="{{ $t('username') }}"
-        style="background-color: rgb(34, 34, 34); color: #ffffff">
-        <label for="floatingUsername">{{ $t('username') }}</label>
+      <!-- Error banner -->
+      <div v-if="error === 1" class="auth-error">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+        {{ $t('username-password-required') }}
       </div>
-      <div class="form-floating">
-        <input
-            type="password"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="{{ $t('password') }}"
-        style="background-color: rgb(34, 34, 34); color: #ffffff">
-        <label for="floatingPassword">{{ $t('password') }}</label>
+      <div v-else-if="error === 2" class="auth-error">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+        {{ $t('invalid-creds-need-account') }}
+        <RouterLink to="/register" class="auth-error-link">{{ $t('register') }}</RouterLink>
+      </div>
+      <div v-else-if="error === 3" class="auth-error">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+        {{ $t('account-disabled') }}
       </div>
 
-      <div class="checkbox mb-3">
-        <label>
+      <!-- Fields -->
+      <div class="auth-fields">
+        <div class="auth-field">
+          <label class="auth-label" for="username">{{ $t('username') }}</label>
           <input
-              type="checkbox"
-              value="remember-me"> {{ $t('remember-me') }}
-        </label>
+            id="username"
+            type="text"
+            class="auth-input"
+            :class="{ 'auth-input-error': error === 2 }"
+            :placeholder="$t('username')"
+            v-model="username"
+            autocomplete="username"
+            @keydown="handleKey"
+          />
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="password">{{ $t('password') }}</label>
+          <input
+            id="password"
+            type="password"
+            class="auth-input"
+            :class="{ 'auth-input-error': error === 2 }"
+            placeholder="••••••••••••"
+            v-model="password"
+            autocomplete="current-password"
+            @keydown="handleKey"
+          />
+        </div>
       </div>
-      <button class="w-100 btn btn-lg btn-primary" @click="login" style="padding-bottom: 10px">{{ $t('sign-in') }}</button>
 
-      <!-- Passkey Stuff, WIP -->
-<!--      <button class="w-100 btn btn-lg btn-secondary" style="padding-bottom: 10px; padding-top: 10px" onclick="PasskeyLogin">{{ $t('login-with-passkey') }}</button>-->
+      <!-- Remember me -->
+      <label class="auth-remember">
+        <input type="checkbox" v-model="rememberMe" class="auth-checkbox" />
+        <span>{{ $t('remember-me') }}</span>
+      </label>
 
-      <p>{{ $t('dont-have-account') }} <a href="/register" onclick="window.location='register'+window.location.search;">{{ $t('register-for-free') }}</a></p>
-    </form>
+      <!-- Submit -->
+      <button class="auth-submit" :disabled="working" @click="login">
+        <svg v-if="working" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
+        {{ $t('sign-in') }}
+      </button>
 
-    <form onsubmit='console.log("Submitted webauthn field")' hidden>
-      <input type="text" name="username" autocomplete="username webauthn" hidden>
-    </form>
+      <p class="auth-switch">
+        {{ $t('dont-have-account') }}
+        <RouterLink to="/register" class="auth-switch-link">{{ $t('register-for-free') }}</RouterLink>
+      </p>
 
+    </div>
   </div>
 </template>
 
 <style scoped>
-html,
-body {
-  height: 100%;
+.auth-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
 }
 
-/*max width was 330*/
-.form-signin {
+.auth-card {
   width: 100%;
   max-width: 400px;
-  padding: 15px;
-  margin: auto;
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 16px;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.form-signin .checkbox {
-  font-weight: 400;
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
 }
 
-.form-signin .form-floating:focus-within {
-  z-index: 2;
+.auth-logo { border-radius: 10px; }
+
+.auth-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f4f4f5;
+  margin: 0;
 }
 
-.form-signin input[type="email"] {
-  margin-bottom: -1px;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+.auth-sub {
+  font-size: 0.82rem;
+  color: #71717a;
+  margin: 0;
 }
 
-.form-signin input[type="password"] {
-  margin-bottom: 10px;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+/* Error */
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+  color: #f87171;
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.2);
+  border-radius: 8px;
+  padding: 9px 12px;
 }
+
+.auth-error-link {
+  color: #fca5a5;
+  text-decoration: underline;
+  margin-left: 2px;
+}
+
+/* Fields */
+.auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auth-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #71717a;
+}
+
+.auth-input {
+  background: #111113;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  color: #f4f4f5;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.auth-input::placeholder { color: #52525b; }
+.auth-input:focus { border-color: #6ea8fe; }
+.auth-input-error { border-color: #f87171 !important; }
+
+/* Remember me */
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+/* Submit */
+.auth-submit {
+  width: 100%;
+  padding: 11px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.auth-submit:hover:not(:disabled) { background: #1d4ed8; }
+.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Switch link */
+.auth-switch {
+  font-size: 0.82rem;
+  color: #71717a;
+  text-align: center;
+  margin: 0;
+}
+
+.auth-switch-link {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-switch-link:hover { text-decoration: underline; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.9s linear infinite; }
 </style>

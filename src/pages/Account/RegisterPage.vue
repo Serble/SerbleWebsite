@@ -1,139 +1,270 @@
 <script>
 import { registerUser } from "@/assets/js/serble.js";
-import { inject, computed, ref } from 'vue';
+import { inject, ref } from 'vue';
 import router from "@/router/index.js";
 import VueTurnstile from 'vue-turnstile';
 
 export default {
+  components: { VueTurnstile },
   setup() {
     const userStore = inject('userStore');
 
-    const user = computed(() => userStore.state.user);
-    const isAdmin = user.permLevel > 1;
-
     if (userStore.state.user) {
-      router.push("/");
-      console.log("User is already logged in, redirecting to home page.");
+      router.push('/');
     }
 
-    const error = ref(0);
-    const recapToken = ref("");
-    return {
-      user,
-      isAdmin,
-      error,
-      recapToken
-    };
-  },
-  components: { VueTurnstile },
-  computed: {
-    wantLogin() {
-      return this.$t('want-login-go-here').replace("[", "<\a href='/login'>").replace("]", "<\/a>");
-    },
-    userExists() {
-      return this.$t('user-exists-trying-to-login').replace("[", "<\a href='/login'>").replace("]", "<\/a>");
-    }
-  },
-  methods: {
-    async register() {
-      console.log("Registering with recaptcha token... ", this.recapToken);
-      const username = document.getElementById("floatingUsername").value;
-      const password = document.getElementById("floatingPassword").value;
+    const username   = ref('');
+    const password   = ref('');
+    const error      = ref(0);
+    const working    = ref(false);
+    const recapToken = ref('');
 
-      const resp = await registerUser(username, password, this.recapToken);
+    async function register() {
+      if (working.value || !recapToken.value) return;
+      error.value = 0;
+      working.value = true;
+
+      const resp = await registerUser(username.value, password.value, recapToken.value);
+      working.value = false;
+
       if (!resp.success) {
-        switch (resp.error) {
-          case 409:
-            this.error = 2;
-            return false;
-        }
-        this.error = 1;
-        return false;
+        error.value = resp.error === 409 ? 2 : 1;
+        return;
       }
 
-      // Success, navigate home, and force reload (to update user info), so don't use router
-      window.location = "/login";
-      console.log("Registered successfully: ", resp.user);
-      return false;
+      window.location.href = '/login';
     }
-  },
+
+    function handleKey(e) {
+      if (e.key === 'Enter') register();
+    }
+
+    return { username, password, error, working, recapToken, register, handleKey };
+  }
 };
 </script>
 
 <template>
-  <div class="text-center form-signin">
-    <form onsubmit="return false" @onsubmit="login">
-      <img class="mb-4" src="/images/icon.png" alt="" width="72" height="72">
-      <h1 class="h3 mb-3 fw-normal">{{ $t('register') }}</h1>
+  <div class="auth-page">
+    <div class="auth-card">
 
-      <div style="color: red;">
-        <div v-if="error === 0"></div>
-        <p v-else-if="error === 1">{{ $t('username-password-required') }}</p>
-        <p v-else-if="error === 2" v-html="userExists"></p>
+      <!-- Header -->
+      <div class="auth-header">
+        <img src="/images/icon.png" width="52" height="52" alt="Serble" class="auth-logo" />
+        <h1 class="auth-title">{{ $t('register') }}</h1>
+        <p class="auth-sub">Create your free Serble account.</p>
       </div>
 
-      <div class="form-floating">
-        <input
+      <!-- Error banner -->
+      <div v-if="error === 1" class="auth-error">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+        {{ $t('username-password-required') }}
+      </div>
+      <div v-else-if="error === 2" class="auth-error">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+        {{ $t('user-exists-trying-to-login') }}
+        <RouterLink to="/login" class="auth-error-link">{{ $t('login') }}</RouterLink>
+      </div>
+
+      <!-- Fields -->
+      <div class="auth-fields">
+        <div class="auth-field">
+          <label class="auth-label" for="reg-username">{{ $t('username') }}</label>
+          <input
+            id="reg-username"
             type="text"
-            class="form-control"
-            id="floatingUsername"
-            placeholder="{{ $t('username') }}"
-        style="background-color: rgb(34, 34, 34); color: #ffffff">
-        <label for="floatingUsername">{{ $t('username') }}</label>
-      </div>
-      <div class="form-floating">
-        <input
+            class="auth-input"
+            :class="{ 'auth-input-error': error > 0 }"
+            :placeholder="$t('username')"
+            v-model="username"
+            autocomplete="username"
+            @keydown="handleKey"
+          />
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="reg-password">{{ $t('password') }}</label>
+          <input
+            id="reg-password"
             type="password"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="{{ $t('password') }}"
-        style="background-color: rgb(34, 34, 34); color: #ffffff">
-        <label for="floatingPassword">{{ $t('password') }}</label>
+            class="auth-input"
+            :class="{ 'auth-input-error': error > 0 }"
+            placeholder="••••••••••••"
+            v-model="password"
+            autocomplete="new-password"
+            @keydown="handleKey"
+          />
+        </div>
       </div>
 
-      <vue-turnstile theme="dark" site-key="0x4AAAAAABDes5z9y1_Rb-8A" v-model="recapToken" action="register"/>
-      <div v-if="recapToken">
-        <button id="register-button" class="w-100 btn btn-lg btn-primary" @click="register" style="padding-bottom: 10px">{{ $t('register') }}</button>
+      <!-- Turnstile -->
+      <div class="captcha-wrap">
+        <vue-turnstile
+          theme="dark"
+          site-key="0x4AAAAAABDes5z9y1_Rb-8A"
+          v-model="recapToken"
+          action="register"
+        />
       </div>
-      <div v-else>
-        <button id="register-button" disabled class="w-100 btn btn-lg btn-primary" @click="register" style="padding-bottom: 10px">{{ $t('register') }}</button>
-      </div>
-      <p v-html="wantLogin"></p>
-    </form>
+
+      <!-- Submit -->
+      <button
+        class="auth-submit"
+        :disabled="working || !recapToken"
+        @click="register"
+      >
+        <svg v-if="working" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
+        {{ $t('register') }}
+      </button>
+
+      <p class="auth-switch">
+        {{ $t('want-login-go-here').replace('[', '').replace(']', '') }}
+        <RouterLink to="/login" class="auth-switch-link">{{ $t('sign-in') }}</RouterLink>
+      </p>
+
+    </div>
   </div>
 </template>
 
 <style scoped>
-html,
-body {
-  height: 100%;
+.auth-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
 }
 
-/*max width was 330*/
-.form-signin {
+.auth-card {
   width: 100%;
   max-width: 400px;
-  padding: 15px;
-  margin: auto;
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 16px;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.form-signin .checkbox {
-  font-weight: 400;
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
 }
 
-.form-signin .form-floating:focus-within {
-  z-index: 2;
+.auth-logo { border-radius: 10px; }
+
+.auth-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f4f4f5;
+  margin: 0;
 }
 
-.form-signin input[type="email"] {
-  margin-bottom: -1px;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+.auth-sub {
+  font-size: 0.82rem;
+  color: #71717a;
+  margin: 0;
 }
 
-.form-signin input[type="password"] {
-  margin-bottom: 10px;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+  color: #f87171;
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.2);
+  border-radius: 8px;
+  padding: 9px 12px;
 }
+
+.auth-error-link {
+  color: #fca5a5;
+  text-decoration: underline;
+  margin-left: 2px;
+}
+
+.auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auth-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #71717a;
+}
+
+.auth-input {
+  background: #111113;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  color: #f4f4f5;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.auth-input::placeholder { color: #52525b; }
+.auth-input:focus { border-color: #6ea8fe; }
+.auth-input-error { border-color: #f87171 !important; }
+
+/* Turnstile captcha */
+.captcha-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 11px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.auth-submit:hover:not(:disabled) { background: #1d4ed8; }
+.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.auth-switch {
+  font-size: 0.82rem;
+  color: #71717a;
+  text-align: center;
+  margin: 0;
+}
+
+.auth-switch-link {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-switch-link:hover { text-decoration: underline; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.9s linear infinite; }
 </style>

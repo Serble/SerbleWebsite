@@ -147,6 +147,19 @@ export default {
       }, 4000);
     };
 
+    const disabling2fa = ref(false);
+
+    const disable2fa = async () => {
+      if (disabling2fa.value) return;
+      disabling2fa.value = true;
+      const result = await editUser([{ field: 'TotpEnabled', newValue: 'false' }]);
+      disabling2fa.value = false;
+      if (!result.success) return;
+      if (userStore?.state?.user) {
+        userStore.updateUser({ ...userStore.state.user, totpEnabled: false });
+      }
+    };
+
     return {
       user,
       errors,
@@ -158,7 +171,9 @@ export default {
       email,
       password,
       confirmPassword,
-      save
+      save,
+      disable2fa,
+      disabling2fa,
     };
   }
 };
@@ -288,7 +303,10 @@ export default {
         <p class="section-hint">Protect your account with a time-based one-time password app.</p>
         <div v-if="user.totpEnabled" class="d-flex gap-2 flex-wrap">
           <RouterLink to="/setuptotp" class="btn btn-sm btn-outline-secondary">{{ $t('setup-totp-app') }}</RouterLink>
-          <button class="btn btn-sm btn-outline-danger">{{ $t('disable-2fa') }}</button>
+          <button class="btn btn-sm btn-outline-danger" @click="disable2fa" :disabled="disabling2fa">
+            <span v-if="disabling2fa" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            {{ $t('disable-2fa') }}
+          </button>
         </div>
         <RouterLink v-else to="/setuptotp" class="btn btn-sm btn-success">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">

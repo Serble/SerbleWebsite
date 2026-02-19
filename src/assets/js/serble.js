@@ -86,24 +86,16 @@ export async function registerUser(username, password, recapToken) {
                 SerbleAntiSpam: "turnstile " + recapToken,
             },
         });
-
-        if (response.status !== 200) {
-            console.error('Error registering user', response);
-            return {
-                success: false,
-                error: response.status
-            };
-        }
-
+        // axios throws on non-2xx, so reaching here always means success
         return {
             success: true,
-            user: response.data  // The user object
+            user: response.data
         };
     } catch (error) {
         console.error('Error registering', error);
         return {
             success: false,
-            error: error.response ? error.response.status : 'Network Error'
+            error: error.response ? error.response.status : 'network-error'
         };
     }
 }
