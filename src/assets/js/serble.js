@@ -33,6 +33,36 @@ export async function getUser(token) {
     }
 }
 
+export async function editUser(edits) {
+    if (!Array.isArray(edits) || edits.length === 0) {
+        return { success: false, error: 'no-edits' };
+    }
+
+    try {
+        const response = await axios.patch(`${API_URL}/account`, edits, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, user: response.data };
+    } catch (error) {
+        const status = error?.response?.status;
+        const responseBody = error?.response?.data;
+        let flag = 'unknown';
+
+        if (status === 400) {
+            if (responseBody === 'Username is already taken') {
+                flag = 'name-taken';
+            } else if (responseBody === 'Invalid email') {
+                flag = 'email-invalid';
+            } else if (responseBody === "Field doesn't exist") {
+                flag = 'bad-field';
+            }
+        }
+
+        console.error('Error editing user', error);
+        return { success: false, error: flag, status };
+    }
+}
+
 export async function loginUser(username, password) {
     try {
         const response = await axios.get(`${API_URL}/auth`, {
@@ -139,4 +169,70 @@ export async function checkTotpCode(totpCode) {
 export function logout() {
     setCookie("access_token", "", 0);
     setLocalStorage("access_token", "");
+}
+
+// ── OAuth App helpers ──
+
+export async function getUserApps() {
+    try {
+        const response = await axios.get(`${API_URL}/app`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, apps: response.data };
+    } catch (error) {
+        console.error('Error fetching apps', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function getOAuthApp(appId) {
+    try {
+        const response = await axios.get(`${API_URL}/app/${appId}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, app: response.data };
+    } catch (error) {
+        console.error('Error fetching app', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function createOAuthApp(name, description, redirectUri) {
+    try {
+        const response = await axios.post(`${API_URL}/app`, {
+            name,
+            description,
+            redirectUri
+        }, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, app: response.data };
+    } catch (error) {
+        console.error('Error creating app', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function deleteOAuthApp(appId) {
+    try {
+        await axios.delete(`${API_URL}/app/${appId}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting app', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function editOAuthApp(appId, edits) {
+    try {
+        const response = await axios.patch(`${API_URL}/app/${appId}`, edits, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, app: response.data };
+    } catch (error) {
+        console.error('Error editing app', error);
+        return { success: false, error: error?.response?.status };
+    }
 }

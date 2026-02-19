@@ -16,6 +16,9 @@ const useUserStore = () => {
                 console.log(user);
             }
         },
+        updateUser(user) {
+            state.user = user;
+        },
         logout() {
             state.user = null;
             logout();

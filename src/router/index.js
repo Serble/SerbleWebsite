@@ -40,6 +40,21 @@ const router = createRouter({
       name: 'SetupTOTP',
       component: () => import('@/pages/Account/SetupTotp.vue'),
     },
+    {
+      path: '/oauthapps',
+      name: 'OAuthApps',
+      component: () => import('@/pages/Account/OAuthAppsPage.vue'),
+    },
+    {
+      path: '/oauthapps/new',
+      name: 'NewOAuthApp',
+      component: () => import('@/pages/Account/NewOAuthAppPage.vue'),
+    },
+    {
+      path: '/oauthapps/edit',
+      name: 'EditOAuthApp',
+      component: () => import('@/pages/Account/EditOAuthAppPage.vue'),
+    },
   ],
 })
 

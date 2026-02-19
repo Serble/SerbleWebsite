@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import { createI18n } from 'vue-i18n';
 import { getCookie } from "@/assets/js/utils.js";
+import { getSupportedLocale } from '@/assets/js/languages.js';
 import useUserStore from "@/assets/js/user.js";
 
 import default_lang from './assets/locales/default.json';
@@ -24,9 +25,11 @@ import tes from './assets/locales/tes.json';
 import tok from './assets/locales/tok.json';
 import uwu from './assets/locales/uwu.json';
 
+const savedLocale = getSupportedLocale(getCookie('locale')) || 'en';
+
 const i18n = createI18n({
     legacy: false,
-    locale: getCookie('locale') || 'en', // Set the default locale
+    locale: savedLocale, // Set the default locale
     fallbackLocale: 'default', // Set a fallback locale in case the chosen locale is missing translations
     messages: {
         default: default_lang,
