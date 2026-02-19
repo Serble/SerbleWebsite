@@ -225,8 +225,40 @@ export async function deleteOAuthApp(appId) {
     }
 }
 
-export async function getPaymentPortalUrl() {
+// product: string ID, priceId: optional string
+// Authenticated checkout
+export async function getCheckoutUrl(product, priceId) {
     try {
+        const body = priceId
+            ? [{ id: product, priceid: priceId }]
+            : [product];
+        const response = await axios.post(`${API_URL}/payments/checkout`, body, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        const url = response.data?.url ?? response.data;
+        return { success: true, url };
+    } catch (error) {
+        console.error('Error getting checkout URL', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// Unauthenticated checkout
+export async function getCheckoutUrlAnon(product, priceId) {
+    try {
+        const body = priceId
+            ? [{ id: product, priceid: priceId }]
+            : [product];
+        const response = await axios.post(`${API_URL}/payments/checkoutanon`, body);
+        const url = response.data?.url ?? response.data;
+        return { success: true, url };
+    } catch (error) {
+        console.error('Error getting anon checkout URL', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function getPaymentPortalUrl() {    try {
         const response = await axios.get(`${API_URL}/payments/portal`, {
             headers: { SerbleAuth: `User ${getAuthToken()}` }
         });
@@ -242,8 +274,24 @@ export async function getPaymentPortalUrl() {
     }
 }
 
-export async function getPublicAppInfo(appId) {
+// POST /account/authorizedApps — returns the auth code string
+export async function authorizeApp(appId, scopeString) {
     try {
+        const response = await axios.post(
+            `${API_URL}/account/authorizedApps`,
+            { appId, scopes: scopeString },
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true, authCode: response.data };
+    } catch (error) {
+        const status = error?.response?.status;
+        const flag = status === 400 ? 'bad-app' : 'unknown';
+        console.error('Error authorizing app', error);
+        return { success: false, flag, error: status };
+    }
+}
+
+export async function getPublicAppInfo(appId) {    try {
         const response = await axios.get(`${API_URL}/app/${appId}/public`);
         return { success: true, app: response.data };
     } catch (error) {
@@ -264,8 +312,74 @@ export async function deauthorizeApp(appId) {
     }
 }
 
-export async function editOAuthApp(appId, edits) {
+// ── Vault / Notes ──
+
+export async function getNotes() {
     try {
+        const response = await axios.get(`${API_URL}/vault/notes`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, notes: response.data };
+    } catch (error) {
+        console.error('Error fetching notes', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function getNoteContent(noteId) {
+    try {
+        const response = await axios.get(`${API_URL}/vault/notes/${noteId}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, content: response.data };
+    } catch (error) {
+        console.error('Error fetching note content', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function updateNoteContent(noteId, content) {
+    try {
+        await axios.put(`${API_URL}/vault/notes/${noteId}`, JSON.stringify(content), {
+            headers: {
+                SerbleAuth: `User ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating note', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function createNote() {
+    try {
+        const response = await axios.post(`${API_URL}/vault/notes`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        // API returns { note_id: "..." }
+        const noteId = response.data?.note_id ?? response.data?.noteId ?? response.data?.NoteId ?? response.data;
+        return { success: true, noteId };
+    } catch (error) {
+        console.error('Error creating note', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function deleteNote(noteId) {
+    try {
+        await axios.delete(`${API_URL}/vault/notes/${noteId}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting note', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function editOAuthApp(appId, edits) {    try {
         const response = await axios.patch(`${API_URL}/app/${appId}`, edits, {
             headers: { SerbleAuth: `User ${getAuthToken()}` }
         });

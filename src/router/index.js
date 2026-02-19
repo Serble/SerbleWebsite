@@ -65,6 +65,70 @@ const router = createRouter({
       name: 'PaymentPortal',
       component: () => import('@/pages/Account/PaymentPortalPage.vue'),
     },
+    {
+      path: '/store',
+      name: 'Store',
+      component: () => import('@/pages/Store/StorePage.vue'),
+    },
+    {
+      path: '/store/purchase',
+      name: 'Purchase',
+      component: () => import('@/pages/Store/PurchasePage.vue'),
+    },
+    {
+      path: '/store/purchaseanon',
+      name: 'PurchaseAnon',
+      component: () => import('@/pages/Store/PurchaseAnonPage.vue'),
+    },
+    {
+      path: '/store/success',
+      name: 'StoreSuccess',
+      component: () => import('@/pages/Store/StoreSuccessPage.vue'),
+    },
+    {
+      path: '/store/cancel',
+      name: 'StoreCancel',
+      component: () => import('@/pages/Store/StoreCancelPage.vue'),
+    },
+    {
+      path: '/wordmaster',
+      name: 'WordMaster',
+      component: () => import('@/pages/Games/WordMasterPage.vue'),
+    },
+    {
+      path: '/discord',
+      name: 'Discord',
+      component: () => import('@/pages/DiscordRedirectPage.vue'),
+    },
+    {
+      path: '/contact',
+      name: 'Contact',
+      component: () => import('@/pages/ContactPage.vue'),
+    },
+    {
+      path: '/notes',
+      name: 'Notes',
+      component: () => import('@/pages/Vault/NotesPage.vue'),
+    },
+    {
+      path: '/vault/notes',
+      redirect: '/notes',
+    },
+    {
+      path: '/emailconfirm/success',
+      name: 'EmailConfirmSuccess',
+      component: () => import('@/pages/EmailConfirmation/EmailSuccessPage.vue'),
+    },
+    {
+      path: '/emailconfirm/error',
+      name: 'EmailConfirmError',
+      component: () => import('@/pages/EmailConfirmation/EmailErrorPage.vue'),
+    },
+    {
+      path: '/oauth/authorize',
+      name: 'OAuthAuthorize',
+      component: () => import('@/pages/Account/OAuthPage.vue'),
+    },
   ],
 })
 
