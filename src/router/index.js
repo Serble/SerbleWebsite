@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '@/pages/HomePage.vue'
 import NotFound from "@/pages/NotFound.vue";
+import { authReadyPromise, userStore } from '@/assets/js/user.js';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,36 +35,43 @@ const router = createRouter({
       path: '/account',
       name: 'account',
       component: () => import('@/pages/Account/AccountPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/setuptotp',
       name: 'SetupTOTP',
       component: () => import('@/pages/Account/SetupTotp.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/oauthapps',
       name: 'OAuthApps',
       component: () => import('@/pages/Account/OAuthAppsPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/oauthapps/new',
       name: 'NewOAuthApp',
       component: () => import('@/pages/Account/NewOAuthAppPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/oauthapps/edit',
       name: 'EditOAuthApp',
       component: () => import('@/pages/Account/EditOAuthAppPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/authorizedapps',
       name: 'AuthorizedApps',
       component: () => import('@/pages/Account/AuthorizedAppsPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/account/paymentportal',
       name: 'PaymentPortal',
       component: () => import('@/pages/Account/PaymentPortalPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/store',
@@ -74,6 +82,7 @@ const router = createRouter({
       path: '/store/purchase',
       name: 'Purchase',
       component: () => import('@/pages/Store/PurchasePage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/store/purchaseanon',
@@ -114,6 +123,7 @@ const router = createRouter({
       path: '/notes',
       name: 'Notes',
       component: () => import('@/pages/Vault/NotesPage.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/vault/notes',
@@ -133,8 +143,18 @@ const router = createRouter({
       path: '/oauth/authorize',
       name: 'OAuthAuthorize',
       component: () => import('@/pages/Account/OAuthPage.vue'),
+      meta: { requiresAuth: true },
     },
   ],
 })
+
+router.beforeEach(async (to) => {
+  if (to.meta.requiresAuth) {
+    await authReadyPromise;
+    if (!userStore.state.user) {
+      return { name: 'login', query: { redirect: to.fullPath } };
+    }
+  }
+});
 
 export default router
