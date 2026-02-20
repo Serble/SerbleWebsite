@@ -381,3 +381,196 @@ export async function editOAuthApp(appId, edits) {    try {
         return { success: false, error: error?.response?.status };
     }
 }
+
+// Passkey helpers
+
+function b64urlToBuffer(b64url) {
+    if (b64url == null) throw new Error(`b64urlToBuffer received ${b64url}`);
+    // Fido2NetLib may return byte[] as a plain base64/base64url string OR as an array of numbers
+    if (Array.isArray(b64url) || b64url instanceof Uint8Array) {
+        return new Uint8Array(b64url).buffer;
+    }
+    if (b64url instanceof ArrayBuffer) return b64url;
+    // String: accept both standard base64 and base64url
+    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+}
+
+function bufferToB64url(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (const b of bytes) binary += String.fromCharCode(b);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+export async function getPasskeys() {
+    try {
+        const response = await axios.get(`${API_URL}/auth/passkey/list`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, passkeys: response.data };
+    } catch (error) {
+        console.error('Error fetching passkeys', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function deletePasskey(name) {
+    try {
+        await axios.delete(`${API_URL}/auth/passkey/delete/${encodeURIComponent(name)}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting passkey', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function registerPasskey() {
+    if (!window.isSecureContext || !navigator.credentials?.create) {
+        return { success: false, error: 'webauthn-unavailable' };
+    }
+    try {
+        const params = new URLSearchParams({
+            attType: 'none',
+            authType: 'cross-platform'
+        });
+        const optionsRes = await axios.post(`${API_URL}/auth/passkey/credentialoptions`, params.toString(), {
+            headers: {
+                SerbleAuth: `User ${getAuthToken()}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
+        const responseData = optionsRes.data;
+        // Server returns { challengeId, options: { ...webauthn options... } }
+        const challengeId = responseData.challengeId;
+        const options = responseData.options ?? responseData;
+
+        const challenge       = options.challenge;
+        const rp              = options.rp;
+        const user            = options.user ?? {};
+        const userId          = user.id;
+        const userName        = user.name ?? '';
+        const userDisplay     = user.displayName ?? '';
+        const pubKeyParams    = options.pubKeyCredParams ?? [];
+        const excludeCreds    = options.excludeCredentials ?? [];
+        const authSelection   = options.authenticatorSelection;
+        const attestation     = options.attestation ?? 'none';
+        const timeout         = options.timeout ?? 60000;
+
+        if (!challenge) throw new Error('Missing challenge. Keys: ' + Object.keys(options).join(', '));
+        if (!userId)    throw new Error('Missing user.id. User keys: ' + Object.keys(user).join(', '));
+
+        const publicKeyOptions = {
+            challenge: b64urlToBuffer(challenge),
+            rp,
+            user: {
+                id: b64urlToBuffer(userId),
+                name: userName,
+                displayName: userDisplay
+            },
+            pubKeyCredParams: pubKeyParams,
+            timeout,
+            excludeCredentials: excludeCreds.map(c => ({
+                id: b64urlToBuffer(c.id ?? c.Id),
+                type: c.type ?? c.Type,
+                transports: c.transports ?? c.Transports
+            })),
+            authenticatorSelection: authSelection,
+            attestation
+        };
+
+        const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
+
+        const body = {
+            id: credential.id,
+            rawId: bufferToB64url(credential.rawId),
+            type: credential.type,
+            response: {
+                attestationObject: bufferToB64url(credential.response.attestationObject),
+                clientDataJSON: bufferToB64url(credential.response.clientDataJSON),
+                transports: credential.response.getTransports ? credential.response.getTransports() : []
+            },
+            clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {}
+        };
+
+        const verifyRes = await axios.post(`${API_URL}/auth/passkey/credential?challengeId=${challengeId}`, body);
+
+        return { success: true, credentialId: verifyRes.data.credentialId };
+    } catch (error) {
+        if (error.name === 'NotAllowedError') return { success: false, error: 'cancelled' };
+        console.error('Error registering passkey', error);
+        return { success: false, error: error?.response?.data ?? error.message };
+    }
+}
+
+export async function loginWithPasskey(username = '') {
+    if (!window.isSecureContext || !navigator.credentials?.get) {
+        return { success: false, error: 'webauthn-unavailable' };
+    }
+    try {
+        let optionsRes;
+        if (username.trim()) {
+            const params = new URLSearchParams({ username: username.trim() });
+            optionsRes = await axios.post(`${API_URL}/auth/passkey/assertionOptions`, params.toString(), {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+        } else {
+            optionsRes = await axios.get(`${API_URL}/auth/passkey/assertionOptions`);
+        }
+        const assertionResponseData = optionsRes.data;
+        // Unwrap if server returns { challengeId, options: {...} }
+        const assertionChallengeId = assertionResponseData.challengeId;
+        const options = assertionResponseData.options ?? assertionResponseData;
+
+        const challenge        = options.challenge;
+        const rpId             = options.rpId;
+        const allowCreds       = options.allowCredentials ?? [];
+        const userVerification = options.userVerification ?? 'preferred';
+        const timeout          = options.timeout ?? 60000;
+
+        if (!challenge) throw new Error('Missing challenge. Keys: ' + Object.keys(options).join(', '));
+
+        const publicKeyOptions = {
+            challenge: b64urlToBuffer(challenge),
+            rpId,
+            allowCredentials: allowCreds.map(c => ({
+                id: b64urlToBuffer(c.id ?? c.Id),
+                type: c.type ?? c.Type,
+                transports: c.transports ?? c.Transports
+            })),
+            userVerification,
+            timeout
+        };
+
+        const credential = await navigator.credentials.get({ publicKey: publicKeyOptions });
+
+        const body = {
+            id: credential.id,
+            rawId: bufferToB64url(credential.rawId),
+            type: credential.type,
+            response: {
+                authenticatorData: bufferToB64url(credential.response.authenticatorData),
+                clientDataJSON: bufferToB64url(credential.response.clientDataJSON),
+                signature: bufferToB64url(credential.response.signature),
+                userHandle: credential.response.userHandle
+                    ? bufferToB64url(credential.response.userHandle)
+                    : null
+            }
+        };
+
+        const verifyRes = await axios.post(`${API_URL}/auth/passkey/assertion?challengeId=${assertionChallengeId}`, body);
+
+        setLocalStorage('access_token', verifyRes.data.token);
+        return { success: true };
+    } catch (error) {
+        if (error.name === 'NotAllowedError') return { success: false, error: 'cancelled' };
+        console.error('Error logging in with passkey', error);
+        return { success: false, error: error?.response?.data ?? error.message };
+    }
+}

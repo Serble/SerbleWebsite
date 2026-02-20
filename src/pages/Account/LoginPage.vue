@@ -1,5 +1,5 @@
 <script>
-import { loginUser } from "@/assets/js/serble.js";
+import { loginUser, loginWithPasskey } from "@/assets/js/serble.js";
 import { inject, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
@@ -13,11 +13,13 @@ export default {
       router.push('/');
     }
 
-    const username    = ref('');
-    const password    = ref('');
-    const rememberMe  = ref(false);
-    const error       = ref(0);
-    const working     = ref(false);
+    const username      = ref('');
+    const password      = ref('');
+    const rememberMe    = ref(false);
+    const error         = ref(0);
+    const working       = ref(false);
+    const passkeyError  = ref('');
+    const passkeyWorking = ref(false);
 
     async function login() {
       if (working.value) return;
@@ -42,11 +44,34 @@ export default {
       window.location.href = returnUrl;
     }
 
+    async function passkeyLogin() {
+      if (passkeyWorking.value) return;
+      passkeyError.value = '';
+      passkeyWorking.value = true;
+
+      const result = await loginWithPasskey(username.value);
+      passkeyWorking.value = false;
+
+      if (!result.success) {
+        if (result.error === 'cancelled') {
+          passkeyError.value = 'Passkey sign-in was cancelled.';
+        } else if (result.error === 'webauthn-unavailable') {
+          passkeyError.value = 'Passkeys are not available. This page must be served over HTTPS.';
+        } else {
+          passkeyError.value = 'Passkey sign-in failed. Please try again.';
+        }
+        return;
+      }
+
+      const returnUrl = route.query.return_url ?? '/';
+      window.location.href = returnUrl;
+    }
+
     function handleKey(e) {
       if (e.key === 'Enter') login();
     }
 
-    return { username, password, rememberMe, error, working, login, handleKey };
+    return { username, password, rememberMe, error, working, login, handleKey, passkeyLogin, passkeyWorking, passkeyError };
   }
 };
 </script>
@@ -118,6 +143,24 @@ export default {
       <button class="auth-submit" :disabled="working" @click="login">
         <svg v-if="working" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
         {{ $t('sign-in') }}
+      </button>
+
+      <!-- Passkey divider -->
+      <div class="auth-divider">
+        <span class="auth-divider-text">or</span>
+      </div>
+
+      <!-- Passkey error -->
+      <div v-if="passkeyError" class="auth-error">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+        {{ passkeyError }}
+      </div>
+
+      <!-- Passkey login button -->
+      <button class="auth-submit auth-passkey-btn" :disabled="passkeyWorking" @click="passkeyLogin">
+        <svg v-if="passkeyWorking" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/></svg>
+        {{ $t('login-with-passkey') }}
       </button>
 
       <p class="auth-switch">
@@ -267,6 +310,33 @@ export default {
 
 .auth-submit:hover:not(:disabled) { background: #1d4ed8; }
 .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.auth-passkey-btn {
+  background: #27272a;
+  color: #d4d4d8;
+  border: 1px solid #3f3f46;
+}
+.auth-passkey-btn:hover:not(:disabled) { background: #3f3f46; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #27272a;
+}
+.auth-divider-text {
+  font-size: 0.75rem;
+  color: #52525b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 
 /* Switch link */
 .auth-switch {

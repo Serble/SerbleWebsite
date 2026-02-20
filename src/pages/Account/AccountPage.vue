@@ -1,10 +1,10 @@
 <script>
 import { ensureLoggedIn, setCookie } from "@/assets/js/utils.js";
 import LanguageDropdown from "@/components/LanguageDropdown.vue";
-import { inject, ref, watch } from "vue";
+import { inject, ref, watch, onMounted } from "vue";
 import { useI18n } from 'vue-i18n';
 import { getSupportedLocale, toServerLocale } from '@/assets/js/languages.js';
-import { editUser } from '@/assets/js/serble.js';
+import { editUser, getPasskeys, deletePasskey, registerPasskey } from '@/assets/js/serble.js';
 
 export default {
   components: {LanguageDropdown},
@@ -160,6 +160,51 @@ export default {
       }
     };
 
+    // ── Passkeys ──
+    const passkeys = ref([]);
+    const passkeysLoading = ref(false);
+    const passkeyError = ref('');
+    const registeringPasskey = ref(false);
+    const deletingPasskey = ref('');
+
+    const loadPasskeys = async () => {
+      passkeysLoading.value = true;
+      const result = await getPasskeys();
+      passkeysLoading.value = false;
+      if (result.success) passkeys.value = result.passkeys;
+    };
+
+    const addPasskey = async () => {
+      if (registeringPasskey.value) return;
+      passkeyError.value = '';
+      registeringPasskey.value = true;
+      const result = await registerPasskey();
+      registeringPasskey.value = false;
+      if (!result.success) {
+        if (result.error === 'cancelled') {
+          passkeyError.value = 'Registration was cancelled.';
+        } else if (result.error === 'webauthn-unavailable') {
+          passkeyError.value = 'Passkeys are not available. This page must be served over HTTPS.';
+        } else {
+          passkeyError.value = 'Failed to register passkey. Please try again.';
+        }
+        return;
+      }
+      await loadPasskeys();
+    };
+
+    const removePasskey = async (name) => {
+      if (deletingPasskey.value) return;
+      deletingPasskey.value = name;
+      const result = await deletePasskey(name);
+      deletingPasskey.value = '';
+      if (result.success) {
+        passkeys.value = passkeys.value.filter(p => p.name !== name);
+      }
+    };
+
+    onMounted(loadPasskeys);
+
     return {
       user,
       errors,
@@ -174,6 +219,13 @@ export default {
       save,
       disable2fa,
       disabling2fa,
+      passkeys,
+      passkeysLoading,
+      passkeyError,
+      registeringPasskey,
+      deletingPasskey,
+      addPasskey,
+      removePasskey,
     };
   }
 };
@@ -298,7 +350,7 @@ export default {
       </div>
 
       <!-- 2FA -->
-      <div class="form-section">
+      <div class="form-section border-bottom border-secondary">
         <label class="section-label">{{ $t('2fa') }}</label>
         <p class="section-hint">Protect your account with a time-based one-time password app.</p>
         <div v-if="user.totpEnabled" class="d-flex gap-2 flex-wrap">
@@ -314,6 +366,47 @@ export default {
           </svg>
           {{ $t('setup-2fa') }}
         </RouterLink>
+      </div>
+
+      <!-- Passkeys -->
+      <div class="form-section">
+        <label class="section-label">{{ $t('passkeys') }}</label>
+        <p class="section-hint">Sign in without a password using a passkey stored on your device.</p>
+
+        <div v-if="passkeyError" class="passkey-error mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+          {{ passkeyError }}
+        </div>
+
+        <div v-if="passkeysLoading" class="passkey-empty">
+          <span class="spinner-border spinner-border-sm me-2" role="status"></span> Loading...
+        </div>
+        <div v-else-if="passkeys.length === 0" class="passkey-empty">{{ $t('no-passkeys') }}</div>
+        <ul v-else class="passkey-list">
+          <li v-for="pk in passkeys" :key="pk.name" class="passkey-item">
+            <div class="passkey-info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" class="passkey-icon"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/></svg>
+              <span class="passkey-name" :title="pk.name">{{ pk.name }}</span>
+              <span v-if="pk.isBackedUp" class="passkey-badge passkey-badge-synced">Synced</span>
+              <span v-else-if="pk.isBackupEligible" class="passkey-badge passkey-badge-eligible">Sync eligible</span>
+            </div>
+            <button
+              class="btn btn-sm btn-outline-danger passkey-delete-btn"
+              :disabled="deletingPasskey === pk.name"
+              @click="removePasskey(pk.name)"
+            >
+              <span v-if="deletingPasskey === pk.name" class="spinner-border spinner-border-sm" role="status"></span>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+              {{ $t('remove') }}
+            </button>
+          </li>
+        </ul>
+
+        <button class="btn btn-sm btn-outline-primary mt-3" @click="addPasskey" :disabled="registeringPasskey">
+          <span v-if="registeringPasskey" class="spinner-border spinner-border-sm me-1" role="status"></span>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/></svg>
+          {{ $t('add-passkey') }}
+        </button>
       </div>
     </div>
 
@@ -505,5 +598,92 @@ export default {
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Passkeys */
+.passkey-empty {
+  font-size: 0.82rem;
+  color: #555;
+  padding: 8px 0;
+}
+
+.passkey-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #fc8181;
+  background: rgba(252,129,129,0.08);
+  border: 1px solid rgba(252,129,129,0.2);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+
+.passkey-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.passkey-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.passkey-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.passkey-icon {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
+.passkey-name {
+  font-size: 0.85rem;
+  color: #d4d4d8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.passkey-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.passkey-badge-synced {
+  background: #1a3d2b;
+  color: #68d391;
+}
+
+.passkey-badge-eligible {
+  background: #1e3a5f;
+  color: #90cdf4;
+}
+
+.passkey-delete-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
 }
 </style>
