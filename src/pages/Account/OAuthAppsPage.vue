@@ -112,7 +112,7 @@ export default {
             <!-- App ID -->
             <div class="info-row">
               <span class="info-label">{{ $t('id') }}</span>
-              <code class="info-value text-muted">{{ app.Id }}</code>
+              <code class="info-value">{{ app.Id }}</code>
             </div>
 
             <!-- Client secret -->
@@ -192,6 +192,7 @@ export default {
 .info-value {
   font-size: 0.82rem;
   word-break: break-all;
+  color: #d4d4d8;
 }
 
 .copy-btn {
