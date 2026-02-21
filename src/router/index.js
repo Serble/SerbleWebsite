@@ -1,0 +1,160 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import HomePage from '@/pages/HomePage.vue'
+import NotFound from "@/pages/NotFound.vue";
+import { authReadyPromise, userStore } from '@/assets/js/user.js';
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: NotFound
+    },
+    {
+      path: '/',
+      name: 'home',
+      component: HomePage,
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/pages/Account/LoginPage.vue'),
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/pages/Account/RegisterPage.vue'),
+    },
+    {
+      path: '/mfa',
+      name: 'MFA',
+      component: () => import('@/pages/Account/MfaLoginPage.vue'),
+    },
+    {
+      path: '/account',
+      name: 'account',
+      component: () => import('@/pages/Account/AccountPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/setuptotp',
+      name: 'SetupTOTP',
+      component: () => import('@/pages/Account/SetupTotp.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/oauthapps',
+      name: 'OAuthApps',
+      component: () => import('@/pages/Account/OAuthAppsPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/oauthapps/new',
+      name: 'NewOAuthApp',
+      component: () => import('@/pages/Account/NewOAuthAppPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/oauthapps/edit',
+      name: 'EditOAuthApp',
+      component: () => import('@/pages/Account/EditOAuthAppPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/authorizedapps',
+      name: 'AuthorizedApps',
+      component: () => import('@/pages/Account/AuthorizedAppsPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/account/paymentportal',
+      name: 'PaymentPortal',
+      component: () => import('@/pages/Account/PaymentPortalPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/store',
+      name: 'Store',
+      component: () => import('@/pages/Store/StorePage.vue'),
+    },
+    {
+      path: '/store/purchase',
+      name: 'Purchase',
+      component: () => import('@/pages/Store/PurchasePage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/store/purchaseanon',
+      name: 'PurchaseAnon',
+      component: () => import('@/pages/Store/PurchaseAnonPage.vue'),
+    },
+    {
+      path: '/store/success',
+      name: 'StoreSuccess',
+      component: () => import('@/pages/Store/StoreSuccessPage.vue'),
+    },
+    {
+      path: '/store/cancel',
+      name: 'StoreCancel',
+      component: () => import('@/pages/Store/StoreCancelPage.vue'),
+    },
+    {
+      path: '/swift',
+      name: 'Swift',
+      component: () => import('@/pages/Store/SwiftPage.vue'),
+    },
+    {
+      path: '/wordmaster',
+      name: 'WordMaster',
+      component: () => import('@/pages/Games/WordMasterPage.vue'),
+    },
+    {
+      path: '/discord',
+      name: 'Discord',
+      component: () => import('@/pages/DiscordRedirectPage.vue'),
+    },
+    {
+      path: '/contact',
+      name: 'Contact',
+      component: () => import('@/pages/ContactPage.vue'),
+    },
+    {
+      path: '/notes',
+      name: 'Notes',
+      component: () => import('@/pages/Vault/NotesPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/vault/notes',
+      redirect: '/notes',
+    },
+    {
+      path: '/emailconfirm/success',
+      name: 'EmailConfirmSuccess',
+      component: () => import('@/pages/EmailConfirmation/EmailSuccessPage.vue'),
+    },
+    {
+      path: '/emailconfirm/error',
+      name: 'EmailConfirmError',
+      component: () => import('@/pages/EmailConfirmation/EmailErrorPage.vue'),
+    },
+    {
+      path: '/oauth/authorize',
+      name: 'OAuthAuthorize',
+      component: () => import('@/pages/Account/OAuthPage.vue'),
+      meta: { requiresAuth: true },
+    },
+  ],
+})
+
+router.beforeEach(async (to) => {
+  if (to.meta.requiresAuth) {
+    await authReadyPromise;
+    if (!userStore.state.user) {
+      return { name: 'login', query: { redirect: to.fullPath } };
+    }
+  }
+});
+
+export default router
