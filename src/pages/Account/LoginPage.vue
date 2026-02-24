@@ -1,6 +1,6 @@
 <script>
 import { loginUser, loginWithPasskey } from "@/assets/js/serble.js";
-import { inject, ref } from 'vue';
+import { inject, ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
 
@@ -71,7 +71,13 @@ export default {
       if (e.key === 'Enter') login();
     }
 
-    return { username, password, rememberMe, error, working, login, handleKey, passkeyLogin, passkeyWorking, passkeyError };
+    const registerLink = computed(() =>
+      route.query.return_url
+        ? { path: '/register', query: { return_url: route.query.return_url } }
+        : '/register'
+    );
+
+    return { username, password, rememberMe, error, working, login, handleKey, passkeyLogin, passkeyWorking, passkeyError, registerLink };
   }
 };
 </script>
@@ -95,7 +101,7 @@ export default {
       <div v-else-if="error === 2" class="auth-error">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
         {{ $t('invalid-creds-need-account') }}
-        <RouterLink to="/register" class="auth-error-link">{{ $t('register') }}</RouterLink>
+        <RouterLink :to="registerLink" class="auth-error-link">{{ $t('register') }}</RouterLink>
       </div>
       <div v-else-if="error === 3" class="auth-error">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
@@ -165,7 +171,7 @@ export default {
 
       <p class="auth-switch">
         {{ $t('dont-have-account') }}
-        <RouterLink to="/register" class="auth-switch-link">{{ $t('register-for-free') }}</RouterLink>
+        <RouterLink :to="registerLink" class="auth-switch-link">{{ $t('register-for-free') }}</RouterLink>
       </p>
 
     </div>

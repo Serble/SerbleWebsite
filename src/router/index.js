@@ -152,7 +152,7 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth) {
     await authReadyPromise;
     if (!userStore.state.user) {
-      return { name: 'login', query: { redirect: to.fullPath } };
+      return { name: 'login', query: { return_url: to.fullPath } };
     }
   }
 });

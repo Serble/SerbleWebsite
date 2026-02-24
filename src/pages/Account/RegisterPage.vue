@@ -1,6 +1,7 @@
 <script>
 import { registerUser } from "@/assets/js/serble.js";
-import { inject, ref } from 'vue';
+import { inject, ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
 import VueTurnstile from 'vue-turnstile';
 
@@ -8,6 +9,7 @@ export default {
   components: { VueTurnstile },
   setup() {
     const userStore = inject('userStore');
+    const route = useRoute();
 
     if (userStore.state.user) {
       router.push('/');
@@ -18,6 +20,12 @@ export default {
     const error      = ref(0);
     const working    = ref(false);
     const recapToken = ref('');
+
+    const returnUrl = route.query.return_url ?? null;
+
+    const loginLink = computed(() =>
+      returnUrl ? { path: '/login', query: { return_url: returnUrl } } : '/login'
+    );
 
     async function register() {
       if (working.value || !recapToken.value) return;
@@ -32,14 +40,14 @@ export default {
         return;
       }
 
-      window.location.href = '/login';
+      window.location.href = returnUrl ? `/login?return_url=${encodeURIComponent(returnUrl)}` : '/login';
     }
 
     function handleKey(e) {
       if (e.key === 'Enter') register();
     }
 
-    return { username, password, error, working, recapToken, register, handleKey };
+    return { username, password, error, working, recapToken, register, handleKey, loginLink };
   }
 };
 </script>
@@ -63,7 +71,7 @@ export default {
       <div v-else-if="error === 2" class="auth-error">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
         {{ $t('user-exists-trying-to-login') }}
-        <RouterLink to="/login" class="auth-error-link">{{ $t('login') }}</RouterLink>
+        <RouterLink :to="loginLink" class="auth-error-link">{{ $t('login') }}</RouterLink>
       </div>
 
       <!-- Fields -->
@@ -119,7 +127,7 @@ export default {
 
       <p class="auth-switch">
         {{ $t('want-login-go-here').replace('[', '').replace(']', '') }}
-        <RouterLink to="/login" class="auth-switch-link">{{ $t('sign-in') }}</RouterLink>
+        <RouterLink :to="loginLink" class="auth-switch-link">{{ $t('sign-in') }}</RouterLink>
       </p>
 
     </div>
