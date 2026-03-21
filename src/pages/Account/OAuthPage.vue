@@ -29,7 +29,6 @@ export default {
       'missing-params':         'One or more required query parameters are missing.',
       'app-not-found':          'No application with the given client_id was found.',
       'redirect-uri-mismatch':  'The redirect_uri does not match any of the URIs registered for this application.',
-      'invalid-state':          'The state parameter contains invalid characters (only letters and digits are allowed).',
       'bad-app':                'The application ID was rejected by the server.',
       'unknown':                'An unexpected error occurred.',
     };
@@ -93,12 +92,6 @@ export default {
           `Provided: "${q.redirect_uri}"\nAllowed: ${validUris.join(', ')}`,
           q
         );
-        return;
-      }
-
-      // Validate state (letters + digits only)
-      if (/[^a-zA-Z0-9]/.test(q.state)) {
-        setError('invalid-state', `State value: "${q.state}"`, q);
         return;
       }
 
