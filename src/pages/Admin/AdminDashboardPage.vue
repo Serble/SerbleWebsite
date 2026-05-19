@@ -21,6 +21,11 @@ import {
   adminDeleteApp,
   adminGetAppsByUser,
   adminCycleAppSecret,
+  adminListProducts,
+  adminGetProduct,
+  adminCreateProduct,
+  adminUpdateProduct,
+  adminDeleteProduct,
 } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
 
@@ -331,6 +336,141 @@ export default {
       selectApp(appId);
     }
 
+    // ── Product management ──
+    function emptyProduct() {
+      return {
+        id: '',
+        name: '',
+        description: '',
+        priceIds: [],
+        priceLookupIds: [], // local: array of {key, value} pairs
+        purchasable: true,
+        successRedirect: '',
+        successTokenSecret: '',
+        webhook: '',
+        webhookSecret: '',
+        allowAnonymous: false,
+      };
+    }
+
+    function toProductForm(p) {
+      const lookupMap = p?.priceLookupIds ?? {};
+      return {
+        id: p?.id ?? '',
+        name: p?.name ?? '',
+        description: p?.description ?? '',
+        priceIds: Array.isArray(p?.priceIds) ? [...p.priceIds] : [],
+        priceLookupIds: Object.entries(lookupMap).map(([key, value]) => ({ key, value })),
+        purchasable: !!p?.purchasable,
+        successRedirect: p?.successRedirect ?? '',
+        successTokenSecret: p?.successTokenSecret ?? '',
+        webhook: p?.webhook ?? '',
+        webhookSecret: p?.webhookSecret ?? '',
+        allowAnonymous: !!p?.allowAnonymous,
+      };
+    }
+
+    function fromProductForm(f) {
+      const lookup = {};
+      for (const { key, value } of f.priceLookupIds) {
+        const k = (key ?? '').trim();
+        if (k) lookup[k] = value ?? '';
+      }
+      return {
+        id: f.id,
+        name: f.name,
+        description: f.description,
+        priceIds: f.priceIds.map(p => (p ?? '').trim()).filter(Boolean),
+        priceLookupIds: lookup,
+        purchasable: !!f.purchasable,
+        successRedirect: f.successRedirect,
+        successTokenSecret: f.successTokenSecret,
+        webhook: f.webhook,
+        webhookSecret: f.webhookSecret,
+        allowAnonymous: !!f.allowAnonymous,
+      };
+    }
+
+    const products = ref(null);
+    const productsLoading = ref(false);
+    const productsError = ref(null);
+    const productForm = ref(emptyProduct());
+    const editingProduct = ref(null); // original id when editing, null when creating
+    const productPanelOpen = ref(false);
+
+    async function loadProducts() {
+      productsLoading.value = true;
+      productsError.value = null;
+      const r = await adminListProducts();
+      productsLoading.value = false;
+      if (r.success) products.value = r.products || [];
+      else { products.value = []; productsError.value = r.error ?? 'unknown'; }
+    }
+
+    function openNewProduct() {
+      productForm.value = emptyProduct();
+      editingProduct.value = null;
+      productPanelOpen.value = true;
+    }
+
+    async function editProduct(id) {
+      const r = await adminGetProduct(id);
+      if (r.success) {
+        productForm.value = toProductForm(r.product);
+        editingProduct.value = id;
+        productPanelOpen.value = true;
+      } else {
+        flash('Failed to load product: ' + (r.error ?? 'unknown'), 'danger');
+      }
+    }
+
+    function closeProductPanel() {
+      productPanelOpen.value = false;
+      editingProduct.value = null;
+      productForm.value = emptyProduct();
+    }
+
+    function addPriceId() {
+      productForm.value.priceIds.push('');
+    }
+    function removePriceId(i) {
+      productForm.value.priceIds.splice(i, 1);
+    }
+    function addPriceLookup() {
+      productForm.value.priceLookupIds.push({ key: '', value: '' });
+    }
+    function removePriceLookup(i) {
+      productForm.value.priceLookupIds.splice(i, 1);
+    }
+
+    async function saveProduct() {
+      const body = fromProductForm(productForm.value);
+      if (!body.id?.trim()) {
+        flash('Product ID is required', 'danger');
+        return;
+      }
+      if (!body.name?.trim()) {
+        flash('Product name is required', 'danger');
+        return;
+      }
+      const r = editingProduct.value
+        ? await withBusy(() => adminUpdateProduct(editingProduct.value, body), 'Product saved')
+        : await withBusy(() => adminCreateProduct(body), 'Product created');
+      if (r?.success) {
+        closeProductPanel();
+        loadProducts();
+      }
+    }
+
+    async function deleteProduct(id, name) {
+      if (!confirm(`Permanently delete product "${name}" (${id})?`)) return;
+      const r = await withBusy(() => adminDeleteProduct(id), 'Product deleted');
+      if (r?.success) {
+        if (editingProduct.value === id) closeProductPanel();
+        loadProducts();
+      }
+    }
+
     onMounted(async () => {
       if (!currentUser.value) {
         router.push({ name: 'login', query: { return_url: '/admin' } });
@@ -339,6 +479,7 @@ export default {
       if (!isAdmin.value) return;
       loadStats();
       loadAppStats();
+      loadProducts();
     });
 
     function permLabel(level) {
@@ -361,6 +502,10 @@ export default {
       loadAppStats, runAppSearch, selectApp, closeApp,
       actSaveApp, actDeleteApp, actCycleSecret, copySecret,
       loadUserApps, viewAppFromUser,
+      products, productsLoading, productsError, productForm, editingProduct, productPanelOpen,
+      loadProducts, openNewProduct, editProduct, closeProductPanel,
+      addPriceId, removePriceId, addPriceLookup, removePriceLookup,
+      saveProduct, deleteProduct,
     };
   }
 };
@@ -388,6 +533,9 @@ export default {
         </li>
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'apps' }" @click="activeTab = 'apps'">OAuth Apps</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" :class="{ active: activeTab === 'products' }" @click="activeTab = 'products'">Products</button>
         </li>
       </ul>
 
@@ -680,6 +828,144 @@ export default {
           </div>
         </div>
       </div>
+
+      <!-- PRODUCTS TAB -->
+      <div v-show="activeTab === 'products'">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="text-muted-light" style="font-size:0.9rem;">
+            {{ products ? `${products.length} products` : 'Loading…' }}
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" :disabled="productsLoading" @click="loadProducts">Refresh</button>
+            <button class="btn btn-sm btn-success" @click="openNewProduct">+ New product</button>
+          </div>
+        </div>
+
+        <div v-if="productsError" class="alert alert-danger py-2">Failed to load products: {{ productsError }}</div>
+
+        <div v-if="productsLoading" class="text-muted text-center py-4">Loading…</div>
+        <div v-else-if="products && products.length === 0 && !productPanelOpen" class="text-muted text-center py-4" style="font-size:0.9rem;">
+          No products yet. Click "New product" to create one.
+        </div>
+
+        <div v-if="products && products.length" class="row g-3 mb-4">
+          <div v-for="p in products" :key="p.id" class="col-md-6">
+            <div class="product-card">
+              <div class="d-flex align-items-start justify-content-between gap-2">
+                <div class="flex-grow-1">
+                  <h5 class="mb-1">{{ p.name }}</h5>
+                  <code style="font-size:0.78rem;">{{ p.id }}</code>
+                  <p v-if="p.description" class="mt-2 mb-0 text-muted-light" style="font-size:0.85rem;">{{ p.description }}</p>
+                </div>
+              </div>
+              <div class="mt-3 d-flex flex-wrap gap-2">
+                <span class="badge" :class="p.purchasable ? 'bg-success' : 'bg-secondary'">
+                  {{ p.purchasable ? 'Purchasable' : 'Hidden' }}
+                </span>
+                <span v-if="p.allowAnonymous" class="badge bg-info text-dark">Anonymous OK</span>
+                <span class="badge bg-secondary">{{ (p.priceIds?.length ?? 0) }} price(s)</span>
+              </div>
+              <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" @click="editProduct(p.id)">Edit</button>
+                <button class="btn btn-sm btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteProduct(p.id, p.name)">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product editor -->
+        <div v-if="productPanelOpen" class="user-panel">
+          <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+            <div>
+              <h4 class="mb-0">{{ editingProduct ? 'Edit product' : 'New product' }}</h4>
+              <div v-if="editingProduct" class="text-muted" style="font-size:0.85rem;"><code>{{ editingProduct }}</code></div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @click="closeProductPanel">Close</button>
+          </div>
+
+          <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
+
+          <form class="row g-3" @submit.prevent="saveProduct">
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">ID *</label>
+              <input v-model="productForm.id" type="text" class="form-control dark-input" :disabled="!!editingProduct" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Name *</label>
+              <input v-model="productForm.name" type="text" class="form-control dark-input" />
+            </div>
+            <div class="col-12">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Description</label>
+              <textarea v-model="productForm.description" rows="2" class="form-control dark-input"></textarea>
+            </div>
+
+            <div class="col-md-6 d-flex align-items-center gap-2">
+              <input id="prod-purchasable" v-model="productForm.purchasable" type="checkbox" class="form-check-input m-0" />
+              <label for="prod-purchasable" class="form-label m-0">Purchasable</label>
+            </div>
+            <div class="col-md-6 d-flex align-items-center gap-2">
+              <input id="prod-anon" v-model="productForm.allowAnonymous" type="checkbox" class="form-check-input m-0" />
+              <label for="prod-anon" class="form-label m-0">Allow anonymous purchase</label>
+            </div>
+
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label m-0" style="font-size:0.8rem;">Stripe price IDs</label>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addPriceId">+ Add</button>
+              </div>
+              <div v-if="productForm.priceIds.length === 0" class="text-muted-light" style="font-size:0.85rem;">No prices.</div>
+              <div v-for="(_, i) in productForm.priceIds" :key="'pid-' + i" class="d-flex gap-2 mb-2">
+                <input v-model="productForm.priceIds[i]" type="text" class="form-control dark-input" placeholder="price_..." />
+                <button type="button" class="btn btn-sm btn-outline-danger" @click="removePriceId(i)">Remove</button>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label m-0" style="font-size:0.8rem;">Price lookup IDs (key → Stripe price ID)</label>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addPriceLookup">+ Add</button>
+              </div>
+              <div v-if="productForm.priceLookupIds.length === 0" class="text-muted-light" style="font-size:0.85rem;">No lookups.</div>
+              <div v-for="(entry, i) in productForm.priceLookupIds" :key="'lk-' + i" class="row g-2 mb-2">
+                <div class="col-md-5">
+                  <input v-model="entry.key" type="text" class="form-control dark-input" placeholder="lookup key" />
+                </div>
+                <div class="col-md-6">
+                  <input v-model="entry.value" type="text" class="form-control dark-input" placeholder="price_..." />
+                </div>
+                <div class="col-md-1 d-flex">
+                  <button type="button" class="btn btn-sm btn-outline-danger w-100" @click="removePriceLookup(i)">×</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Success redirect URL</label>
+              <input v-model="productForm.successRedirect" type="text" class="form-control dark-input" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Success token secret</label>
+              <input v-model="productForm.successTokenSecret" type="text" class="form-control dark-input" autocomplete="off" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Webhook URL</label>
+              <input v-model="productForm.webhook" type="text" class="form-control dark-input" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Webhook secret</label>
+              <input v-model="productForm.webhookSecret" type="text" class="form-control dark-input" autocomplete="off" />
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" :disabled="actionBusy">
+                {{ editingProduct ? 'Save changes' : 'Create product' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" :disabled="actionBusy" @click="closeProductPanel">Cancel</button>
+              <button v-if="editingProduct" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteProduct(editingProduct, productForm.name)">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -832,5 +1118,30 @@ code { color: #d4d4d8; }
   color: #d4d4d8;
   word-break: break-all;
   max-width: 100%;
+}
+
+/* Product cards */
+.product-card {
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 10px;
+  padding: 16px 18px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.product-card:hover {
+  border-color: #3f3f46;
+}
+.admin-page :deep(.form-check-input) {
+  background-color: rgb(28, 28, 28);
+  border-color: #444;
+}
+.admin-page :deep(.form-check-input:checked) {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+.admin-page textarea.dark-input {
+  resize: vertical;
 }
 </style>

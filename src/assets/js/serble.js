@@ -808,3 +808,65 @@ export async function adminCycleAppSecret(id) {
         return { success: false, error: error?.response?.status };
     }
 }
+
+// ── Admin Product helpers ──
+
+export async function adminListProducts() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/products`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, products: response.data };
+    } catch (error) {
+        console.error('Error fetching products', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetProduct(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/products/${id}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, product: response.data };
+    } catch (error) {
+        console.error('Error fetching product', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminCreateProduct(product) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/products`, product, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, product: response.data };
+    } catch (error) {
+        console.error('Error creating product', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminUpdateProduct(id, product) {
+    try {
+        const response = await axios.put(`${API_URL}/admin/products/${id}`, product, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, product: response.data };
+    } catch (error) {
+        console.error('Error updating product', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDeleteProduct(id) {
+    try {
+        await axios.delete(`${API_URL}/admin/products/${id}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting product', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
