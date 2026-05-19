@@ -2,7 +2,7 @@
 import { ref, computed, onUnmounted } from 'vue';
 import axios from 'axios';
 
-const API_URL = 'https://api.serble.net/api/v1';
+const API_URL = import.meta.env.VITE_API_URL;
 const MAX_STRIKES = 3;
 const TIMER_START = 30;
 

@@ -2,7 +2,7 @@ import { getLocalStorage, setLocalStorage, setCookie } from "./utils.js";
 import axios from "axios";
 
 // Check for login
-const API_URL = "https://api.serble.net/api/v1";
+const API_URL = import.meta.env.VITE_API_URL;
 
 
 export async function checkLogin() {
@@ -572,5 +572,239 @@ export async function loginWithPasskey(username = '') {
         if (error.name === 'NotAllowedError') return { success: false, error: 'cancelled' };
         console.error('Error logging in with passkey', error);
         return { success: false, error: error?.response?.data ?? error.message };
+    }
+}
+// ── Admin helpers ──
+
+export async function adminGetUserStats() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/users/stats`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, stats: response.data };
+    } catch (error) {
+        console.error('Error fetching user stats', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSearchUsers(query, limit = 25) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/users/search`, {
+            params: { query, limit },
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, users: response.data };
+    } catch (error) {
+        console.error('Error searching users', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetUser(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/users/${id}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, user: response.data };
+    } catch (error) {
+        console.error('Error fetching admin user', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDeleteUser(id) {
+    try {
+        await axios.delete(`${API_URL}/admin/users/${id}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting user', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminLoginAsUser(id) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/users/${id}/login-as`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error logging in as user', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDisableUser(id) {
+    try {
+        await axios.post(`${API_URL}/admin/users/${id}/disable`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error disabling user', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminEnableUser(id) {
+    try {
+        await axios.post(`${API_URL}/admin/users/${id}/enable`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error enabling user', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminChangePassword(id, newPassword) {
+    try {
+        await axios.post(`${API_URL}/admin/users/${id}/password`, { password: newPassword }, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error changing password', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDisable2fa(id) {
+    try {
+        await axios.post(`${API_URL}/admin/users/${id}/disable-2fa`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error disabling 2FA', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetPasskeys(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/users/${id}/passkeys`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, passkeys: response.data };
+    } catch (error) {
+        console.error('Error fetching user passkeys', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDeletePasskey(id, name) {
+    try {
+        await axios.delete(`${API_URL}/admin/users/${id}/passkeys/${encodeURIComponent(name)}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting passkey', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSetAdmin(id, isAdmin) {
+    try {
+        await axios.post(`${API_URL}/admin/users/${id}/admin`, { admin: isAdmin }, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error setting admin', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// ── Admin App helpers ──
+
+export async function adminGetAppStats() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/stats`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, stats: response.data };
+    } catch (error) {
+        console.error('Error fetching app stats', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSearchApps(query, limit = 25) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/search`, {
+            params: { query, limit },
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, apps: response.data };
+    } catch (error) {
+        console.error('Error searching apps', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetApp(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/${id}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, app: response.data };
+    } catch (error) {
+        console.error('Error fetching app', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// edits: { name?, description?, redirectUri?, ownerId? }
+export async function adminEditApp(id, edits) {
+    try {
+        const response = await axios.patch(`${API_URL}/admin/apps/${id}`, edits, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, app: response.data };
+    } catch (error) {
+        console.error('Error editing app', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDeleteApp(id) {
+    try {
+        await axios.delete(`${API_URL}/admin/apps/${id}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting app', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetAppsByUser(userId) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/by-user/${userId}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, apps: response.data };
+    } catch (error) {
+        console.error('Error fetching user apps', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminCycleAppSecret(id) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/apps/${id}/cycle-secret`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error cycling secret', error);
+        return { success: false, error: error?.response?.status };
     }
 }
