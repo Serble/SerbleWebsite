@@ -3,6 +3,15 @@ import axios from "axios";
 
 // Check for login
 const API_URL = import.meta.env.VITE_API_URL;
+const TURNSTILE_DISABLED = String(import.meta.env.VITE_DISABLE_TURNSTILE).toLowerCase() === 'true';
+
+export function isTurnstileDisabled() {
+    return TURNSTILE_DISABLED;
+}
+
+function antiSpamHeader(recapToken) {
+    return TURNSTILE_DISABLED ? "bypass testing" : `turnstile ${recapToken}`;
+}
 
 
 export async function checkLogin() {
@@ -83,7 +92,7 @@ export async function registerUser(username, password, recapToken) {
             password
         }, {
             headers: {
-                SerbleAntiSpam: "turnstile " + recapToken,
+                SerbleAntiSpam: antiSpamHeader(recapToken),
             },
         });
         // axios throws on non-2xx, so reaching here always means success

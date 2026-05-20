@@ -350,6 +350,7 @@ export default {
         webhook: '',
         webhookSecret: '',
         allowAnonymous: false,
+        isSubscription: false,
       };
     }
 
@@ -367,6 +368,7 @@ export default {
         webhook: p?.webhook ?? '',
         webhookSecret: p?.webhookSecret ?? '',
         allowAnonymous: !!p?.allowAnonymous,
+        isSubscription: !!p?.isSubscription,
       };
     }
 
@@ -388,6 +390,7 @@ export default {
         webhook: f.webhook,
         webhookSecret: f.webhookSecret,
         allowAnonymous: !!f.allowAnonymous,
+        isSubscription: !!f.isSubscription,
       };
     }
 
@@ -863,6 +866,7 @@ export default {
                   {{ p.purchasable ? 'Purchasable' : 'Hidden' }}
                 </span>
                 <span v-if="p.allowAnonymous" class="badge bg-info text-dark">Anonymous OK</span>
+                <span v-if="p.isSubscription" class="badge bg-primary">Subscription</span>
                 <span class="badge bg-secondary">{{ (p.priceIds?.length ?? 0) }} price(s)</span>
               </div>
               <div class="mt-3 d-flex gap-2">
@@ -906,6 +910,10 @@ export default {
             <div class="col-md-6 d-flex align-items-center gap-2">
               <input id="prod-anon" v-model="productForm.allowAnonymous" type="checkbox" class="form-check-input m-0" />
               <label for="prod-anon" class="form-label m-0">Allow anonymous purchase</label>
+            </div>
+            <div class="col-md-6 d-flex align-items-center gap-2">
+              <input id="prod-subscription" v-model="productForm.isSubscription" type="checkbox" class="form-check-input m-0" />
+              <label for="prod-subscription" class="form-label m-0">Subscription</label>
             </div>
 
             <div class="col-12">

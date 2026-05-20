@@ -1,5 +1,5 @@
 <script>
-import { registerUser } from "@/assets/js/serble.js";
+import { registerUser, isTurnstileDisabled } from "@/assets/js/serble.js";
 import { inject, ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
@@ -19,7 +19,8 @@ export default {
     const password   = ref('');
     const error      = ref(0);
     const working    = ref(false);
-    const recapToken = ref('');
+    const turnstileDisabled = isTurnstileDisabled();
+    const recapToken = ref(turnstileDisabled ? 'bypass' : '');
 
     const returnUrl = route.query.return_url ?? null;
 
@@ -47,7 +48,7 @@ export default {
       if (e.key === 'Enter') register();
     }
 
-    return { username, password, error, working, recapToken, register, handleKey, loginLink };
+    return { username, password, error, working, recapToken, turnstileDisabled, register, handleKey, loginLink };
   }
 };
 </script>
@@ -106,7 +107,7 @@ export default {
       </div>
 
       <!-- Turnstile -->
-      <div class="captcha-wrap">
+      <div v-if="!turnstileDisabled" class="captcha-wrap">
         <vue-turnstile
           theme="dark"
           site-key="0x4AAAAAABDes5z9y1_Rb-8A"
