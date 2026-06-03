@@ -440,6 +440,22 @@ export async function deletePasskey(name) {
     }
 }
 
+export async function renamePasskey(name, newName) {
+    try {
+        const params = new URLSearchParams({ newName });
+        await axios.patch(`${API_URL}/auth/passkey/rename/${encodeURIComponent(name)}`, params.toString(), {
+            headers: {
+                SerbleAuth: `User ${getAuthToken()}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error renaming passkey', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
 export async function registerPasskey() {
     if (!window.isSecureContext || !navigator.credentials?.create) {
         return { success: false, error: 'webauthn-unavailable' };

@@ -4,7 +4,7 @@ import LanguageDropdown from "@/components/LanguageDropdown.vue";
 import { inject, ref, watch, onMounted } from "vue";
 import { useI18n } from 'vue-i18n';
 import { getSupportedLocale, toServerLocale } from '@/assets/js/languages.js';
-import { editUser, getPasskeys, deletePasskey, registerPasskey } from '@/assets/js/serble.js';
+import { editUser, getPasskeys, deletePasskey, registerPasskey, renamePasskey } from '@/assets/js/serble.js';
 
 export default {
   components: {LanguageDropdown},
@@ -166,6 +166,9 @@ export default {
     const passkeyError = ref('');
     const registeringPasskey = ref(false);
     const deletingPasskey = ref('');
+    const renamingPasskey = ref('');
+    const renameValue = ref('');
+    const savingRename = ref(false);
 
     const loadPasskeys = async () => {
       passkeysLoading.value = true;
@@ -203,6 +206,37 @@ export default {
       }
     };
 
+    const startRename = (name) => {
+      if (savingRename.value) return;
+      passkeyError.value = '';
+      renamingPasskey.value = name;
+      renameValue.value = name;
+    };
+
+    const cancelRename = () => {
+      renamingPasskey.value = '';
+      renameValue.value = '';
+    };
+
+    const submitRename = async (oldName) => {
+      if (savingRename.value) return;
+      const newName = renameValue.value.trim();
+      if (!newName || newName === oldName) {
+        cancelRename();
+        return;
+      }
+      savingRename.value = true;
+      const result = await renamePasskey(oldName, newName);
+      savingRename.value = false;
+      if (result.success) {
+        const pk = passkeys.value.find(p => p.name === oldName);
+        if (pk) pk.name = newName;
+        cancelRename();
+      } else {
+        passkeyError.value = 'Failed to rename passkey. Please try again.';
+      }
+    };
+
     onMounted(loadPasskeys);
 
     return {
@@ -224,8 +258,14 @@ export default {
       passkeyError,
       registeringPasskey,
       deletingPasskey,
+      renamingPasskey,
+      renameValue,
+      savingRename,
       addPasskey,
       removePasskey,
+      startRename,
+      cancelRename,
+      submitRename,
     };
   }
 };
@@ -386,19 +426,59 @@ export default {
           <li v-for="pk in passkeys" :key="pk.name" class="passkey-item">
             <div class="passkey-info">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" class="passkey-icon"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/></svg>
-              <span class="passkey-name" :title="pk.name">{{ pk.name }}</span>
-              <span v-if="pk.isBackedUp" class="passkey-badge passkey-badge-synced">Synced</span>
-              <span v-else-if="pk.isBackupEligible" class="passkey-badge passkey-badge-eligible">Sync eligible</span>
+              <template v-if="renamingPasskey === pk.name">
+                <input
+                  v-model="renameValue"
+                  class="passkey-rename-input"
+                  :disabled="savingRename"
+                  @keyup.enter="submitRename(pk.name)"
+                  @keyup.esc="cancelRename"
+                />
+              </template>
+              <template v-else>
+                <span class="passkey-name" :title="pk.name">{{ pk.name }}</span>
+                <span v-if="pk.isBackedUp" class="passkey-badge passkey-badge-synced">Synced</span>
+                <span v-else-if="pk.isBackupEligible" class="passkey-badge passkey-badge-eligible">Sync eligible</span>
+              </template>
             </div>
-            <button
-              class="btn btn-sm btn-outline-danger passkey-delete-btn"
-              :disabled="deletingPasskey === pk.name"
-              @click="removePasskey(pk.name)"
-            >
-              <span v-if="deletingPasskey === pk.name" class="spinner-border spinner-border-sm" role="status"></span>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
-              {{ $t('remove') }}
-            </button>
+            <div class="passkey-actions">
+              <template v-if="renamingPasskey === pk.name">
+                <button
+                  class="btn btn-sm btn-outline-primary passkey-action-btn"
+                  :disabled="savingRename"
+                  @click="submitRename(pk.name)"
+                >
+                  <span v-if="savingRename" class="spinner-border spinner-border-sm" role="status"></span>
+                  {{ $t('save') }}
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary passkey-action-btn"
+                  :disabled="savingRename"
+                  @click="cancelRename"
+                >
+                  {{ $t('cancel') }}
+                </button>
+              </template>
+              <template v-else>
+                <button
+                  class="btn btn-sm btn-outline-secondary passkey-action-btn"
+                  :disabled="deletingPasskey === pk.name"
+                  @click="startRename(pk.name)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/></svg>
+                  {{ $t('rename') }}
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger passkey-delete-btn"
+                  :disabled="deletingPasskey === pk.name"
+                  @click="removePasskey(pk.name)"
+                >
+                  <span v-if="deletingPasskey === pk.name" class="spinner-border spinner-border-sm" role="status"></span>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                  {{ $t('remove') }}
+                </button>
+              </template>
+            </div>
           </li>
         </ul>
 
@@ -685,5 +765,36 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 0.78rem;
+}
+
+.passkey-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.passkey-action-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+}
+
+.passkey-rename-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #f4f4f5;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.passkey-rename-input:focus {
+  outline: none;
+  border-color: #6366f1;
 }
 </style>
