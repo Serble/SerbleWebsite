@@ -26,6 +26,21 @@ import {
   adminCreateProduct,
   adminUpdateProduct,
   adminDeleteProduct,
+  adminListGroups,
+  adminGetGroup,
+  adminCreateGroup,
+  adminUpdateGroup,
+  adminDeleteGroup,
+  adminListGroupMembers,
+  adminAddGroupMember,
+  adminRemoveGroupMember,
+  adminGetGroupsByUser,
+  adminGetAppClient,
+  adminUpdateAppClient,
+  adminGetAppAccess,
+  adminSetAppAccessPolicy,
+  adminSetAppAccessGroups,
+  adminSetAppClaimMappings,
 } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
 
@@ -252,6 +267,7 @@ export default {
           redirectUri: r.app.redirectUri ?? '',
           ownerId: r.app.ownerId ?? '',
         };
+        loadAppOidc(id);
       } else {
         selectedAppError.value = r.error ?? 'unknown';
       }
@@ -260,6 +276,11 @@ export default {
     function closeApp() {
       selectedApp.value = null;
       showSecret.value = false;
+      appOidcClient.value = null;
+      appOidcClientForm.value = { additionalRedirectUris: [], isPublicClient: false, requirePkce: true };
+      appAccess.value = null;
+      appAccessForm.value = emptyAccessForm();
+      claimMappingsForm.value = [];
     }
 
     async function refreshSelectedApp() {
@@ -474,6 +495,322 @@ export default {
       }
     }
 
+    // ── OIDC: per-app client config + access policy ──
+    const appOidcClient = ref(null);
+    const appOidcClientForm = ref({ additionalRedirectUris: [], isPublicClient: false, requirePkce: true });
+    const appOidcLoading = ref(false);
+    const appOidcError = ref(null);
+
+    function emptyAccessForm() {
+      return {
+        accessPolicy: 0,
+        requiredPermLevel: null,
+        allowedGroupIds: [],
+        deniedGroupIds: [],
+      };
+    }
+
+    const appAccess = ref(null);
+    const appAccessForm = ref(emptyAccessForm());
+    const appAccessLoading = ref(false);
+    const appAccessError = ref(null);
+
+    // Local form representation of the groupId→claim string map.
+    // Stored as an array of {groupId, value} so v-for keys are stable.
+    const claimMappingsForm = ref([]);
+
+    const accessPolicyOptions = [
+      { value: 0, label: 'Allow all logged-in users' },
+      { value: 1, label: 'Require verified email' },
+      { value: 2, label: 'Require membership in an allowed group' },
+      { value: 3, label: 'Require minimum permission level' },
+      { value: 4, label: 'Disabled (no SSO)' },
+    ];
+
+    async function loadAppOidc(appId) {
+      appOidcLoading.value = true;
+      appOidcError.value = null;
+      appAccessLoading.value = true;
+      appAccessError.value = null;
+
+      const [clientRes, accessRes] = await Promise.all([
+        adminGetAppClient(appId),
+        adminGetAppAccess(appId),
+      ]);
+
+      appOidcLoading.value = false;
+      appAccessLoading.value = false;
+
+      if (clientRes.success) {
+        appOidcClient.value = clientRes.client;
+        appOidcClientForm.value = {
+          additionalRedirectUris: Array.isArray(clientRes.client?.additionalRedirectUris)
+            ? [...clientRes.client.additionalRedirectUris]
+            : [],
+          isPublicClient: !!clientRes.client?.isPublicClient,
+          requirePkce: clientRes.client?.requirePkce !== false,
+        };
+      } else {
+        appOidcError.value = clientRes.error ?? 'unknown';
+      }
+
+      if (accessRes.success) {
+        appAccess.value = accessRes.access;
+        appAccessForm.value = {
+          accessPolicy: Number(accessRes.access?.accessPolicy ?? 0),
+          requiredPermLevel: accessRes.access?.requiredPermLevel ?? null,
+          allowedGroupIds: Array.isArray(accessRes.access?.allowedGroupIds) ? [...accessRes.access.allowedGroupIds] : [],
+          deniedGroupIds: Array.isArray(accessRes.access?.deniedGroupIds) ? [...accessRes.access.deniedGroupIds] : [],
+        };
+        const m = accessRes.access?.groupClaimMappings ?? {};
+        claimMappingsForm.value = Object.entries(m).map(([groupId, value]) => ({ groupId, value }));
+      } else {
+        appAccessError.value = accessRes.error ?? 'unknown';
+      }
+    }
+
+    function addAdditionalRedirect() {
+      appOidcClientForm.value.additionalRedirectUris.push('');
+    }
+    function removeAdditionalRedirect(i) {
+      appOidcClientForm.value.additionalRedirectUris.splice(i, 1);
+    }
+
+    async function actSaveAppOidcClient() {
+      if (!selectedApp.value) return;
+      const cleaned = appOidcClientForm.value.additionalRedirectUris
+        .map(u => (u ?? '').trim())
+        .filter(Boolean);
+      const body = {
+        additionalRedirectUris: cleaned,
+        isPublicClient: !!appOidcClientForm.value.isPublicClient,
+        requirePkce: !!appOidcClientForm.value.requirePkce,
+      };
+      const r = await withBusy(() => adminUpdateAppClient(selectedApp.value.id, body), 'OIDC client config saved');
+      if (r?.success && r.client) {
+        appOidcClient.value = r.client;
+        appOidcClientForm.value = {
+          additionalRedirectUris: Array.isArray(r.client?.additionalRedirectUris) ? [...r.client.additionalRedirectUris] : [],
+          isPublicClient: !!r.client?.isPublicClient,
+          requirePkce: r.client?.requirePkce !== false,
+        };
+      }
+    }
+
+    function toggleAllowedGroup(id) {
+      const arr = appAccessForm.value.allowedGroupIds;
+      const i = arr.indexOf(id);
+      if (i === -1) arr.push(id); else arr.splice(i, 1);
+      // If it was in denied, remove from there to keep things tidy
+      const dArr = appAccessForm.value.deniedGroupIds;
+      const di = dArr.indexOf(id);
+      if (di !== -1 && i === -1) dArr.splice(di, 1);
+    }
+
+    function toggleDeniedGroup(id) {
+      const arr = appAccessForm.value.deniedGroupIds;
+      const i = arr.indexOf(id);
+      if (i === -1) arr.push(id); else arr.splice(i, 1);
+      const aArr = appAccessForm.value.allowedGroupIds;
+      const ai = aArr.indexOf(id);
+      if (ai !== -1 && i === -1) aArr.splice(ai, 1);
+    }
+
+    async function actSaveAccessPolicy() {
+      if (!selectedApp.value) return;
+      const policy = Number(appAccessForm.value.accessPolicy);
+      const permLevel = policy === 3 && appAccessForm.value.requiredPermLevel != null && appAccessForm.value.requiredPermLevel !== ''
+        ? Number(appAccessForm.value.requiredPermLevel)
+        : null;
+      await withBusy(() => adminSetAppAccessPolicy(selectedApp.value.id, policy, permLevel), 'Access policy saved');
+      await refreshAppAccess();
+    }
+
+    async function actSaveAccessGroups() {
+      if (!selectedApp.value) return;
+      await withBusy(() => adminSetAppAccessGroups(
+        selectedApp.value.id,
+        [...appAccessForm.value.allowedGroupIds],
+        [...appAccessForm.value.deniedGroupIds],
+      ), 'Group access saved');
+      await refreshAppAccess();
+    }
+
+    function addClaimMapping() {
+      claimMappingsForm.value.push({ groupId: '', value: '' });
+    }
+    function removeClaimMapping(i) {
+      claimMappingsForm.value.splice(i, 1);
+    }
+
+    async function actSaveClaimMappings() {
+      if (!selectedApp.value) return;
+      const mappings = {};
+      for (const row of claimMappingsForm.value) {
+        const k = (row.groupId ?? '').trim();
+        const v = (row.value ?? '').trim();
+        if (k && v) mappings[k] = v;
+      }
+      await withBusy(() => adminSetAppClaimMappings(selectedApp.value.id, mappings), 'Claim mappings saved');
+      await refreshAppAccess();
+    }
+
+    async function refreshAppAccess() {
+      if (!selectedApp.value) return;
+      const r = await adminGetAppAccess(selectedApp.value.id);
+      if (r.success) {
+        appAccess.value = r.access;
+        appAccessForm.value = {
+          accessPolicy: Number(r.access?.accessPolicy ?? 0),
+          requiredPermLevel: r.access?.requiredPermLevel ?? null,
+          allowedGroupIds: Array.isArray(r.access?.allowedGroupIds) ? [...r.access.allowedGroupIds] : [],
+          deniedGroupIds: Array.isArray(r.access?.deniedGroupIds) ? [...r.access.deniedGroupIds] : [],
+        };
+        const m = r.access?.groupClaimMappings ?? {};
+        claimMappingsForm.value = Object.entries(m).map(([groupId, value]) => ({ groupId, value }));
+      }
+    }
+
+    function policyLabel(value) {
+      return accessPolicyOptions.find(o => o.value === Number(value))?.label ?? `Unknown (${value})`;
+    }
+
+    function groupNameById(id) {
+      const g = (groups.value ?? []).find(x => x.id === id);
+      return g ? g.name : id;
+    }
+
+    // ── Groups management ──
+    const groups = ref([]);
+    const groupsLoading = ref(false);
+    const groupsError = ref(null);
+
+    const groupForm = ref({ name: '', description: '' });
+    const editingGroupId = ref(null);
+    const groupPanelOpen = ref(false);
+
+    const groupMembers = ref([]);
+    const groupMembersLoading = ref(false);
+    const newMemberId = ref('');
+    const memberDetails = ref({}); // userId -> {username, email}
+
+    async function loadGroups() {
+      groupsLoading.value = true;
+      groupsError.value = null;
+      const r = await adminListGroups();
+      groupsLoading.value = false;
+      if (r.success) groups.value = Array.isArray(r.groups) ? r.groups : [];
+      else { groups.value = []; groupsError.value = r.error ?? 'unknown'; }
+    }
+
+    function openNewGroup() {
+      groupForm.value = { name: '', description: '' };
+      editingGroupId.value = null;
+      groupMembers.value = [];
+      memberDetails.value = {};
+      groupPanelOpen.value = true;
+    }
+
+    async function openEditGroup(id) {
+      const r = await adminGetGroup(id);
+      if (!r.success) {
+        flash('Failed to load group: ' + (r.error ?? 'unknown'), 'danger');
+        return;
+      }
+      groupForm.value = {
+        name: r.group?.name ?? '',
+        description: r.group?.description ?? '',
+      };
+      editingGroupId.value = id;
+      groupPanelOpen.value = true;
+      loadGroupMembers(id);
+    }
+
+    function closeGroupPanel() {
+      groupPanelOpen.value = false;
+      editingGroupId.value = null;
+      groupForm.value = { name: '', description: '' };
+      groupMembers.value = [];
+      memberDetails.value = {};
+      newMemberId.value = '';
+    }
+
+    async function saveGroup() {
+      if (!groupForm.value.name?.trim()) {
+        flash('Group name is required', 'danger');
+        return;
+      }
+      const body = {
+        name: groupForm.value.name.trim(),
+        description: groupForm.value.description ?? '',
+      };
+      const r = editingGroupId.value
+        ? await withBusy(() => adminUpdateGroup(editingGroupId.value, body), 'Group saved')
+        : await withBusy(() => adminCreateGroup(body.name, body.description), 'Group created');
+      if (r?.success) {
+        if (!editingGroupId.value && r.group?.id) {
+          editingGroupId.value = r.group.id;
+          loadGroupMembers(r.group.id);
+        }
+        loadGroups();
+      }
+    }
+
+    async function deleteGroup(id, name) {
+      if (!confirm(`Permanently delete group "${name}" (${id})?`)) return;
+      const r = await withBusy(() => adminDeleteGroup(id), 'Group deleted');
+      if (r?.success) {
+        if (editingGroupId.value === id) closeGroupPanel();
+        loadGroups();
+      }
+    }
+
+    async function loadGroupMembers(id) {
+      groupMembersLoading.value = true;
+      const r = await adminListGroupMembers(id);
+      groupMembersLoading.value = false;
+      if (r.success) {
+        const members = Array.isArray(r.members) ? r.members : [];
+        groupMembers.value = members;
+        // Resolve usernames lazily and best-effort.
+        for (const userId of members) {
+          if (!memberDetails.value[userId]) {
+            adminGetUser(userId).then(ur => {
+              if (ur.success) {
+                memberDetails.value[userId] = {
+                  username: ur.user?.username ?? '',
+                  email: ur.user?.email ?? '',
+                };
+              }
+            });
+          }
+        }
+      } else {
+        groupMembers.value = [];
+      }
+    }
+
+    async function addGroupMember() {
+      if (!editingGroupId.value) return;
+      const uid = (newMemberId.value ?? '').trim();
+      if (!uid) {
+        flash('Enter a user ID', 'danger');
+        return;
+      }
+      const r = await withBusy(() => adminAddGroupMember(editingGroupId.value, uid), 'Member added');
+      if (r?.success) {
+        newMemberId.value = '';
+        loadGroupMembers(editingGroupId.value);
+      }
+    }
+
+    async function removeGroupMember(userId) {
+      if (!editingGroupId.value) return;
+      if (!confirm(`Remove user ${userId} from this group?`)) return;
+      const r = await withBusy(() => adminRemoveGroupMember(editingGroupId.value, userId), 'Member removed');
+      if (r?.success) loadGroupMembers(editingGroupId.value);
+    }
+
     onMounted(async () => {
       if (!currentUser.value) {
         router.push({ name: 'login', query: { return_url: '/admin' } });
@@ -483,6 +820,7 @@ export default {
       loadStats();
       loadAppStats();
       loadProducts();
+      loadGroups();
     });
 
     function permLabel(level) {
@@ -509,6 +847,20 @@ export default {
       loadProducts, openNewProduct, editProduct, closeProductPanel,
       addPriceId, removePriceId, addPriceLookup, removePriceLookup,
       saveProduct, deleteProduct,
+      // OIDC client config + access policy
+      appOidcClient, appOidcClientForm, appOidcLoading, appOidcError,
+      addAdditionalRedirect, removeAdditionalRedirect, actSaveAppOidcClient,
+      appAccess, appAccessForm, appAccessLoading, appAccessError,
+      claimMappingsForm, accessPolicyOptions,
+      toggleAllowedGroup, toggleDeniedGroup,
+      actSaveAccessPolicy, actSaveAccessGroups, actSaveClaimMappings,
+      addClaimMapping, removeClaimMapping, policyLabel, groupNameById,
+      // Groups
+      groups, groupsLoading, groupsError,
+      groupForm, editingGroupId, groupPanelOpen,
+      groupMembers, groupMembersLoading, newMemberId, memberDetails,
+      loadGroups, openNewGroup, openEditGroup, closeGroupPanel,
+      saveGroup, deleteGroup, addGroupMember, removeGroupMember,
     };
   }
 };
@@ -539,6 +891,9 @@ export default {
         </li>
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'products' }" @click="activeTab = 'products'">Products</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" :class="{ active: activeTab === 'groups' }" @click="activeTab = 'groups'">Groups</button>
         </li>
       </ul>
 
@@ -829,6 +1184,143 @@ export default {
           <div class="d-flex">
             <button class="btn btn-sm btn-danger" :disabled="actionBusy" @click="actDeleteApp">Delete app</button>
           </div>
+
+          <!-- ── OIDC Client Config ── -->
+          <hr class="my-4 oidc-sep" />
+          <h6 class="section-heading">OIDC Client Configuration</h6>
+          <div v-if="appOidcLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+          <div v-else-if="appOidcError" class="alert alert-danger py-2">Failed to load OIDC config: {{ appOidcError }}</div>
+          <form v-else class="row g-3 mb-4" @submit.prevent="actSaveAppOidcClient">
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label m-0" style="font-size:0.8rem;">Additional Redirect URIs (OIDC callbacks, exact match)</label>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addAdditionalRedirect">+ Add</button>
+              </div>
+              <div v-if="appOidcClientForm.additionalRedirectUris.length === 0" class="text-muted-light" style="font-size:0.85rem;">
+                No additional redirect URIs.
+              </div>
+              <div v-for="(_, i) in appOidcClientForm.additionalRedirectUris" :key="'ari-'+i" class="d-flex gap-2 mb-2">
+                <input v-model="appOidcClientForm.additionalRedirectUris[i]" type="text" class="form-control dark-input" placeholder="https://app.example.com/callback" />
+                <button type="button" class="btn btn-sm btn-outline-danger" @click="removeAdditionalRedirect(i)">Remove</button>
+              </div>
+            </div>
+
+            <div class="col-md-6 d-flex align-items-center gap-2">
+              <input id="oidc-public" v-model="appOidcClientForm.isPublicClient" type="checkbox" class="form-check-input m-0" />
+              <label for="oidc-public" class="form-label m-0">Public client (no client secret, PKCE-only)</label>
+            </div>
+            <div class="col-md-6 d-flex align-items-center gap-2">
+              <input id="oidc-pkce" v-model="appOidcClientForm.requirePkce" type="checkbox" class="form-check-input m-0" />
+              <label for="oidc-pkce" class="form-label m-0">Require PKCE</label>
+            </div>
+
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary" :disabled="actionBusy">Save OIDC config</button>
+            </div>
+          </form>
+
+          <!-- ── Access Policy ── -->
+          <hr class="my-4 oidc-sep" />
+          <h6 class="section-heading">Access Policy (login gate)</h6>
+          <div v-if="appAccessLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+          <div v-else-if="appAccessError" class="alert alert-danger py-2">Failed to load access policy: {{ appAccessError }}</div>
+          <template v-else>
+            <form class="row g-3 mb-4" @submit.prevent="actSaveAccessPolicy">
+              <div class="col-md-8">
+                <label class="form-label mb-1" style="font-size:0.8rem;">Who may sign in to this app?</label>
+                <select v-model.number="appAccessForm.accessPolicy" class="form-control dark-input">
+                  <option v-for="opt in accessPolicyOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-4" v-if="Number(appAccessForm.accessPolicy) === 3">
+                <label class="form-label mb-1" style="font-size:0.8rem;">Required permission level</label>
+                <input v-model.number="appAccessForm.requiredPermLevel" type="number" min="0" class="form-control dark-input" placeholder="e.g. 2 for admin" />
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary" :disabled="actionBusy">Save access policy</button>
+              </div>
+            </form>
+
+            <!-- Allowed/Denied groups -->
+            <div class="mb-4">
+              <label class="form-label mb-2" style="font-size:0.8rem;">
+                Group access
+                <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
+                  — denied always overrides allowed. Allowed list only used when policy is "Require membership in an allowed group".
+                </span>
+              </label>
+              <div v-if="!groups || groups.length === 0" class="text-muted-light" style="font-size:0.85rem;">
+                No groups defined. Create some in the Groups tab.
+              </div>
+              <table v-else class="table align-middle mb-2">
+                <thead>
+                  <tr>
+                    <th>Group</th>
+                    <th class="text-center">Allowed</th>
+                    <th class="text-center">Denied</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="g in groups" :key="g.id">
+                    <td>
+                      <div>{{ g.name }}</div>
+                      <code style="font-size:0.75rem;">{{ g.id }}</code>
+                    </td>
+                    <td class="text-center">
+                      <input
+                        type="checkbox"
+                        class="form-check-input m-0"
+                        :checked="appAccessForm.allowedGroupIds.includes(g.id)"
+                        @change="toggleAllowedGroup(g.id)"
+                      />
+                    </td>
+                    <td class="text-center">
+                      <input
+                        type="checkbox"
+                        class="form-check-input m-0"
+                        :checked="appAccessForm.deniedGroupIds.includes(g.id)"
+                        @change="toggleDeniedGroup(g.id)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <button class="btn btn-primary" :disabled="actionBusy" @click="actSaveAccessGroups">Save group access</button>
+            </div>
+
+            <!-- Claim mappings -->
+            <div class="mb-2">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label m-0" style="font-size:0.8rem;">
+                  Group claim mappings
+                  <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
+                    — what value the app sees in the <code>groups</code> claim for users in each Serble group.
+                  </span>
+                </label>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addClaimMapping">+ Add</button>
+              </div>
+              <div v-if="claimMappingsForm.length === 0" class="text-muted-light mb-2" style="font-size:0.85rem;">
+                No mappings. Apps will see no <code>groups</code> claim values for this user.
+              </div>
+              <div v-for="(row, i) in claimMappingsForm" :key="'cm-'+i" class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <select v-model="row.groupId" class="form-control dark-input">
+                    <option value="" disabled>Choose a group…</option>
+                    <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }} ({{ g.id }})</option>
+                  </select>
+                </div>
+                <div class="col-md-5">
+                  <input v-model="row.value" type="text" class="form-control dark-input" placeholder="claim value, e.g. admins" />
+                </div>
+                <div class="col-md-1 d-flex">
+                  <button type="button" class="btn btn-sm btn-outline-danger w-100" @click="removeClaimMapping(i)">×</button>
+                </div>
+              </div>
+              <button class="btn btn-primary mt-2" :disabled="actionBusy" @click="actSaveClaimMappings">Save claim mappings</button>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -972,6 +1464,101 @@ export default {
               <button v-if="editingProduct" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteProduct(editingProduct, productForm.name)">Delete</button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <!-- GROUPS TAB -->
+      <div v-show="activeTab === 'groups'">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="text-muted-light" style="font-size:0.9rem;">
+            {{ groups ? `${groups.length} groups` : 'Loading…' }}
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" :disabled="groupsLoading" @click="loadGroups">Refresh</button>
+            <button class="btn btn-sm btn-success" @click="openNewGroup">+ New group</button>
+          </div>
+        </div>
+
+        <div v-if="groupsError" class="alert alert-danger py-2">Failed to load groups: {{ groupsError }}</div>
+
+        <div v-if="groupsLoading" class="text-muted text-center py-4">Loading…</div>
+        <div v-else-if="groups && groups.length === 0 && !groupPanelOpen" class="text-muted text-center py-4" style="font-size:0.9rem;">
+          No groups yet. Click "New group" to create one.
+        </div>
+
+        <div v-if="groups && groups.length" class="row g-3 mb-4">
+          <div v-for="g in groups" :key="g.id" class="col-md-6">
+            <div class="product-card">
+              <div class="d-flex align-items-start justify-content-between gap-2">
+                <div class="flex-grow-1">
+                  <h5 class="mb-1">{{ g.name }}</h5>
+                  <code style="font-size:0.78rem;">{{ g.id }}</code>
+                  <p v-if="g.description" class="mt-2 mb-0 text-muted-light" style="font-size:0.85rem;">{{ g.description }}</p>
+                </div>
+              </div>
+              <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" @click="openEditGroup(g.id)">Manage</button>
+                <button class="btn btn-sm btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteGroup(g.id, g.name)">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group editor -->
+        <div v-if="groupPanelOpen" class="user-panel">
+          <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+            <div>
+              <h4 class="mb-0">{{ editingGroupId ? 'Edit group' : 'New group' }}</h4>
+              <div v-if="editingGroupId" class="text-muted" style="font-size:0.85rem;"><code>{{ editingGroupId }}</code></div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @click="closeGroupPanel">Close</button>
+          </div>
+
+          <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
+
+          <form class="row g-3 mb-4" @submit.prevent="saveGroup">
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Name *</label>
+              <input v-model="groupForm.name" type="text" class="form-control dark-input" />
+            </div>
+            <div class="col-12">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Description</label>
+              <textarea v-model="groupForm.description" rows="2" class="form-control dark-input"></textarea>
+            </div>
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" :disabled="actionBusy">
+                {{ editingGroupId ? 'Save changes' : 'Create group' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" :disabled="actionBusy" @click="closeGroupPanel">Cancel</button>
+              <button v-if="editingGroupId" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteGroup(editingGroupId, groupForm.name)">Delete</button>
+            </div>
+          </form>
+
+          <template v-if="editingGroupId">
+            <h6 class="section-heading">Members</h6>
+            <form class="row g-2 mb-3" @submit.prevent="addGroupMember">
+              <div class="col-md-9">
+                <input v-model="newMemberId" type="text" class="form-control dark-input" placeholder="Add user by ID" autocomplete="off" />
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100" :disabled="actionBusy">Add member</button>
+              </div>
+            </form>
+            <div v-if="groupMembersLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+            <div v-else-if="groupMembers.length === 0" class="text-muted" style="font-size:0.9rem;">No members.</div>
+            <ul v-else class="list-group list-group-flush mb-3">
+              <li v-for="uid in groupMembers" :key="uid" class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <div>
+                  <div v-if="memberDetails[uid]?.username">
+                    {{ memberDetails[uid].username }}
+                    <span v-if="memberDetails[uid].email" class="text-muted-light" style="font-size:0.8rem;">— {{ memberDetails[uid].email }}</span>
+                  </div>
+                  <code style="font-size:0.75rem;">{{ uid }}</code>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" :disabled="actionBusy" @click="removeGroupMember(uid)">Remove</button>
+              </li>
+            </ul>
+          </template>
         </div>
       </div>
     </template>
@@ -1151,5 +1738,9 @@ code { color: #d4d4d8; }
 }
 .admin-page textarea.dark-input {
   resize: vertical;
+}
+.oidc-sep {
+  border: 0;
+  border-top: 1px solid #27272a;
 }
 </style>

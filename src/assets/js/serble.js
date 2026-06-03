@@ -313,6 +313,64 @@ export async function deauthorizeApp(appId) {
     }
 }
 
+// ── OIDC consent flow ──
+
+export async function getOidcAuthorizeSession(sessionId) {
+    try {
+        const response = await axios.get(
+            `${API_URL}/oauth/authorize/session/${encodeURIComponent(sessionId)}`,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true, session: response.data };
+    } catch (error) {
+        const status = error?.response?.status;
+        let flag = 'unknown';
+        if (status === 404) flag = 'expired';
+        else if (status === 401) flag = 'unauthenticated';
+        else if (status === 403) flag = 'forbidden';
+        console.error('Error fetching OIDC consent session', error);
+        return { success: false, flag, error: status };
+    }
+}
+
+export async function approveOidcAuthorizeSession(sessionId) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/oauth/authorize/session/${encodeURIComponent(sessionId)}/approve`,
+            null,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true, redirect: response.data?.redirect };
+    } catch (error) {
+        const status = error?.response?.status;
+        let flag = 'unknown';
+        if (status === 404) flag = 'expired';
+        else if (status === 401) flag = 'unauthenticated';
+        else if (status === 403) flag = 'forbidden';
+        console.error('Error approving OIDC consent', error);
+        return { success: false, flag, error: status };
+    }
+}
+
+export async function denyOidcAuthorizeSession(sessionId) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/oauth/authorize/session/${encodeURIComponent(sessionId)}/deny`,
+            null,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true, redirect: response.data?.redirect };
+    } catch (error) {
+        const status = error?.response?.status;
+        let flag = 'unknown';
+        if (status === 404) flag = 'expired';
+        else if (status === 401) flag = 'unauthenticated';
+        else if (status === 403) flag = 'forbidden';
+        console.error('Error denying OIDC consent', error);
+        return { success: false, flag, error: status };
+    }
+}
+
 // ── Vault / Notes ──
 
 export async function getNotes() {
@@ -892,6 +950,202 @@ export async function adminDeleteProduct(id) {
         return { success: true };
     } catch (error) {
         console.error('Error deleting product', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// ── Admin Groups (OIDC) ──
+
+export async function adminListGroups() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/groups`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, groups: response.data };
+    } catch (error) {
+        console.error('Error listing groups', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetGroup(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/groups/${encodeURIComponent(id)}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, group: response.data };
+    } catch (error) {
+        console.error('Error fetching group', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminCreateGroup(name, description) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/groups`, { name, description }, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, group: response.data };
+    } catch (error) {
+        console.error('Error creating group', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminUpdateGroup(id, edits) {
+    try {
+        const response = await axios.patch(`${API_URL}/admin/groups/${encodeURIComponent(id)}`, edits, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, group: response.data };
+    } catch (error) {
+        console.error('Error updating group', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDeleteGroup(id) {
+    try {
+        await axios.delete(`${API_URL}/admin/groups/${encodeURIComponent(id)}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting group', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminListGroupMembers(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/groups/${encodeURIComponent(id)}/members`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, members: response.data };
+    } catch (error) {
+        console.error('Error listing group members', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminAddGroupMember(groupId, userId) {
+    try {
+        await axios.put(
+            `${API_URL}/admin/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
+            null,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true };
+    } catch (error) {
+        console.error('Error adding group member', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminRemoveGroupMember(groupId, userId) {
+    try {
+        await axios.delete(
+            `${API_URL}/admin/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true };
+    } catch (error) {
+        console.error('Error removing group member', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetGroupsByUser(userId) {
+    try {
+        const response = await axios.get(
+            `${API_URL}/admin/groups/by-user/${encodeURIComponent(userId)}`,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true, groups: response.data };
+    } catch (error) {
+        console.error('Error fetching groups for user', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// ── Admin App OIDC config & access policy ──
+
+export async function adminGetAppClient(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/${encodeURIComponent(id)}/client`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, client: response.data };
+    } catch (error) {
+        console.error('Error fetching app OIDC client config', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminUpdateAppClient(id, edits) {
+    try {
+        const response = await axios.put(
+            `${API_URL}/admin/apps/${encodeURIComponent(id)}/client`,
+            edits,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true, client: response.data };
+    } catch (error) {
+        console.error('Error updating app OIDC client config', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetAppAccess(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/${encodeURIComponent(id)}/access`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, access: response.data };
+    } catch (error) {
+        console.error('Error fetching app access policy', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSetAppAccessPolicy(id, accessPolicy, requiredPermLevel) {
+    try {
+        await axios.put(
+            `${API_URL}/admin/apps/${encodeURIComponent(id)}/access/policy`,
+            { accessPolicy, requiredPermLevel },
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true };
+    } catch (error) {
+        console.error('Error setting access policy', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSetAppAccessGroups(id, allowedGroupIds, deniedGroupIds) {
+    try {
+        await axios.put(
+            `${API_URL}/admin/apps/${encodeURIComponent(id)}/access/groups`,
+            { allowedGroupIds, deniedGroupIds },
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true };
+    } catch (error) {
+        console.error('Error setting access groups', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSetAppClaimMappings(id, mappings) {
+    try {
+        await axios.put(
+            `${API_URL}/admin/apps/${encodeURIComponent(id)}/access/claim-mappings`,
+            { mappings },
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true };
+    } catch (error) {
+        console.error('Error setting claim mappings', error);
         return { success: false, error: error?.response?.status };
     }
 }

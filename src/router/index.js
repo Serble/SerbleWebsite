@@ -148,7 +148,7 @@ const router = createRouter({
     {
       path: '/oauth/authorize',
       name: 'OAuthAuthorize',
-      component: () => import('@/pages/Account/OAuthPage.vue'),
+      component: () => import('@/pages/Account/OAuthAuthorizeDispatcher.vue'),
       meta: { requiresAuth: true },
     },
   ],
