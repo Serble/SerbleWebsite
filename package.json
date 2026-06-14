@@ -17,7 +17,7 @@
     "vue-turnstile": "^1.0.11"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
-    "vite": "^6.4.2"
+    "@vitejs/plugin-vue": "^6.0.7",
+    "vite": "^8.0.16"
   }
 }
