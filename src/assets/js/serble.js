@@ -301,6 +301,18 @@ export async function getPublicAppInfo(appId) {    try {
     }
 }
 
+export async function getCatalogServices() {
+    try {
+        const token = getAuthToken();
+        const headers = token ? { SerbleAuth: `User ${token}` } : {};
+        const response = await axios.get(`${API_URL}/catalog/services`, { headers });
+        return { success: true, services: response.data };
+    } catch (error) {
+        console.error('Error fetching catalog services', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
 export async function deauthorizeApp(appId) {
     try {
         await axios.delete(`${API_URL}/account/authorizedApps/${appId}`, {
@@ -950,6 +962,68 @@ export async function adminDeleteProduct(id) {
         return { success: true };
     } catch (error) {
         console.error('Error deleting product', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// ── Admin Service Catalog helpers ──
+
+export async function adminListServices() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/service-catalog`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, services: response.data };
+    } catch (error) {
+        console.error('Error fetching services', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetService(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/service-catalog/${encodeURIComponent(id)}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, service: response.data };
+    } catch (error) {
+        console.error('Error fetching service', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminCreateService(service) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/service-catalog`, service, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, service: response.data };
+    } catch (error) {
+        console.error('Error creating service', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminUpdateService(id, service) {
+    try {
+        const response = await axios.put(`${API_URL}/admin/service-catalog/${encodeURIComponent(id)}`, service, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, service: response.data };
+    } catch (error) {
+        console.error('Error updating service', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminDeleteService(id) {
+    try {
+        await axios.delete(`${API_URL}/admin/service-catalog/${encodeURIComponent(id)}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting service', error);
         return { success: false, error: error?.response?.status };
     }
 }

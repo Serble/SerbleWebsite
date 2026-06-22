@@ -26,6 +26,11 @@ import {
   adminCreateProduct,
   adminUpdateProduct,
   adminDeleteProduct,
+  adminListServices,
+  adminGetService,
+  adminCreateService,
+  adminUpdateService,
+  adminDeleteService,
   adminListGroups,
   adminGetGroup,
   adminCreateGroup,
@@ -680,6 +685,150 @@ export default {
       return g ? g.name : id;
     }
 
+    // ── Service catalog management ──
+    function emptyService() {
+      return {
+        id: '',
+        name: '',
+        description: '',
+        url: '',
+        iconUrl: '',
+        visibilityMode: 'Public',
+        allowedGroupIds: [],
+      };
+    }
+
+    function toServiceForm(service) {
+      return {
+        id: service?.id ?? '',
+        name: service?.name ?? '',
+        description: service?.description ?? '',
+        url: service?.url ?? '',
+        iconUrl: service?.iconUrl ?? '',
+        visibilityMode: service?.visibilityMode ?? 'Public',
+        allowedGroupIds: Array.isArray(service?.allowedGroupIds) ? [...service.allowedGroupIds] : [],
+      };
+    }
+
+    function isAbsoluteUrl(value) {
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }
+
+    const services = ref([]);
+    const servicesLoading = ref(false);
+    const servicesError = ref(null);
+    const serviceForm = ref(emptyService());
+    const editingService = ref(null);
+    const servicePanelOpen = ref(false);
+
+    async function loadServicesAdmin() {
+      servicesLoading.value = true;
+      servicesError.value = null;
+      const r = await adminListServices();
+      servicesLoading.value = false;
+      if (r.success) services.value = Array.isArray(r.services) ? r.services : [];
+      else {
+        services.value = [];
+        servicesError.value = r.error ?? 'unknown';
+      }
+    }
+
+    function openNewService() {
+      serviceForm.value = emptyService();
+      editingService.value = null;
+      servicePanelOpen.value = true;
+    }
+
+    async function editService(id) {
+      const r = await adminGetService(id);
+      if (r.success) {
+        serviceForm.value = toServiceForm(r.service);
+        editingService.value = id;
+        servicePanelOpen.value = true;
+      } else {
+        flash('Failed to load service: ' + (r.error ?? 'unknown'), 'danger');
+      }
+    }
+
+    function closeServicePanel() {
+      servicePanelOpen.value = false;
+      editingService.value = null;
+      serviceForm.value = emptyService();
+    }
+
+    function toggleServiceAllowedGroup(id) {
+      const arr = serviceForm.value.allowedGroupIds;
+      const i = arr.indexOf(id);
+      if (i === -1) arr.push(id);
+      else arr.splice(i, 1);
+    }
+
+    async function saveService() {
+      const visibilityMode = serviceForm.value.visibilityMode === 'RestrictedToGroups' ? 1 : 0;
+      const body = {
+        id: serviceForm.value.id.trim(),
+        name: serviceForm.value.name.trim(),
+        description: serviceForm.value.description.trim(),
+        url: serviceForm.value.url.trim(),
+        iconUrl: serviceForm.value.iconUrl.trim() || null,
+        visibilityMode,
+        allowedGroupIds: [...serviceForm.value.allowedGroupIds],
+      };
+
+      if (!body.id) {
+        flash('Service ID is required', 'danger');
+        return;
+      }
+      if (!body.name) {
+        flash('Service name is required', 'danger');
+        return;
+      }
+      if (!body.url || !isAbsoluteUrl(body.url)) {
+        flash('Service URL must be an absolute URL', 'danger');
+        return;
+      }
+      if (body.iconUrl && !isAbsoluteUrl(body.iconUrl)) {
+        flash('Icon URL must be an absolute URL', 'danger');
+        return;
+      }
+      if (serviceForm.value.visibilityMode === 'RestrictedToGroups' && body.allowedGroupIds.length === 0) {
+        flash('Restricted services need at least one allowed group', 'danger');
+        return;
+      }
+      if (serviceForm.value.visibilityMode !== 'RestrictedToGroups') {
+        body.allowedGroupIds = [];
+      }
+
+      const r = editingService.value
+        ? await withBusy(() => adminUpdateService(editingService.value, body), 'Service saved')
+        : await withBusy(() => adminCreateService(body), 'Service created');
+      if (r?.success) {
+        closeServicePanel();
+        loadServicesAdmin();
+      }
+    }
+
+    async function deleteService(id, name) {
+      if (!confirm(`Permanently delete service "${name}" (${id})?`)) return;
+      const r = await withBusy(() => adminDeleteService(id), 'Service deleted');
+      if (r?.success) {
+        if (editingService.value === id) closeServicePanel();
+        loadServicesAdmin();
+      }
+    }
+
+    function serviceVisibilityLabel(service) {
+      const mode = service?.visibilityMode ?? serviceForm.value.visibilityMode;
+      const groupsCount = service?.allowedGroupIds?.length ?? serviceForm.value.allowedGroupIds.length;
+      if (mode === 'RestrictedToGroups') return `Restricted (${groupsCount} group${groupsCount === 1 ? '' : 's'})`;
+      return 'Public';
+    }
+
     // ── Groups management ──
     const groups = ref([]);
     const groupsLoading = ref(false);
@@ -820,6 +969,7 @@ export default {
       loadStats();
       loadAppStats();
       loadProducts();
+      loadServicesAdmin();
       loadGroups();
     });
 
@@ -847,6 +997,9 @@ export default {
       loadProducts, openNewProduct, editProduct, closeProductPanel,
       addPriceId, removePriceId, addPriceLookup, removePriceLookup,
       saveProduct, deleteProduct,
+      services, servicesLoading, servicesError, serviceForm, editingService, servicePanelOpen,
+      loadServicesAdmin, openNewService, editService, closeServicePanel,
+      toggleServiceAllowedGroup, saveService, deleteService, serviceVisibilityLabel,
       // OIDC client config + access policy
       appOidcClient, appOidcClientForm, appOidcLoading, appOidcError,
       addAdditionalRedirect, removeAdditionalRedirect, actSaveAppOidcClient,
@@ -894,6 +1047,9 @@ export default {
         </li>
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'groups' }" @click="activeTab = 'groups'">Groups</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">Services</button>
         </li>
       </ul>
 
@@ -1462,6 +1618,129 @@ export default {
               </button>
               <button type="button" class="btn btn-outline-secondary" :disabled="actionBusy" @click="closeProductPanel">Cancel</button>
               <button v-if="editingProduct" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteProduct(editingProduct, productForm.name)">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- SERVICES TAB -->
+      <div v-show="activeTab === 'services'">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="text-muted-light" style="font-size:0.9rem;">
+            {{ services ? `${services.length} services` : 'Loading…' }}
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" :disabled="servicesLoading" @click="loadServicesAdmin">Refresh</button>
+            <button class="btn btn-sm btn-success" @click="openNewService">+ New service</button>
+          </div>
+        </div>
+
+        <div v-if="servicesError" class="alert alert-danger py-2">Failed to load services: {{ servicesError }}</div>
+
+        <div v-if="servicesLoading" class="text-muted text-center py-4">Loading…</div>
+        <div v-else-if="services && services.length === 0 && !servicePanelOpen" class="text-muted text-center py-4" style="font-size:0.9rem;">
+          No services yet. Click "New service" to create one.
+        </div>
+
+        <div v-if="services && services.length" class="row g-3 mb-4">
+          <div v-for="service in services" :key="service.id" class="col-md-6">
+            <div class="product-card">
+              <div class="d-flex align-items-start justify-content-between gap-2">
+                <div class="flex-grow-1">
+                  <h5 class="mb-1">{{ service.name }}</h5>
+                  <code style="font-size:0.78rem;">{{ service.id }}</code>
+                  <p v-if="service.description" class="mt-2 mb-0 text-muted-light" style="font-size:0.85rem;">{{ service.description }}</p>
+                </div>
+              </div>
+              <div class="mt-3 d-flex flex-wrap gap-2">
+                <span class="badge" :class="service.visibilityMode === 'RestrictedToGroups' ? 'bg-warning text-dark' : 'bg-success'">
+                  {{ serviceVisibilityLabel(service) }}
+                </span>
+                <span class="badge bg-secondary text-wrap">{{ service.url }}</span>
+              </div>
+              <div class="mt-3 d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" @click="editService(service.id)">Edit</button>
+                <button class="btn btn-sm btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteService(service.id, service.name)">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="servicePanelOpen" class="user-panel">
+          <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+            <div>
+              <h4 class="mb-0">{{ editingService ? 'Edit service' : 'New service' }}</h4>
+              <div v-if="editingService" class="text-muted" style="font-size:0.85rem;"><code>{{ editingService }}</code></div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @click="closeServicePanel">Close</button>
+          </div>
+
+          <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
+
+          <form class="row g-3 mb-4" @submit.prevent="saveService">
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">ID *</label>
+              <input v-model="serviceForm.id" type="text" class="form-control dark-input" :disabled="!!editingService" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Name *</label>
+              <input v-model="serviceForm.name" type="text" class="form-control dark-input" />
+            </div>
+            <div class="col-12">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Description</label>
+              <textarea v-model="serviceForm.description" rows="2" class="form-control dark-input"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Service URL *</label>
+              <input v-model="serviceForm.url" type="text" class="form-control dark-input" placeholder="https://service.example.com" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Icon URL</label>
+              <input v-model="serviceForm.iconUrl" type="text" class="form-control dark-input" placeholder="https://service.example.com/icon.png" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Visibility</label>
+              <select v-model="serviceForm.visibilityMode" class="form-control dark-input">
+                <option value="Public">Public</option>
+                <option value="RestrictedToGroups">Restricted to groups</option>
+              </select>
+            </div>
+            <div v-if="serviceForm.visibilityMode === 'RestrictedToGroups'" class="col-12">
+              <label class="form-label mb-2" style="font-size:0.8rem;">Allowed groups</label>
+              <div v-if="!groups || groups.length === 0" class="text-muted-light" style="font-size:0.85rem;">
+                No groups defined. Create some in the Groups tab.
+              </div>
+              <table v-else class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Group</th>
+                    <th class="text-center">Allowed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="g in groups" :key="g.id">
+                    <td>
+                      <div>{{ g.name }}</div>
+                      <code style="font-size:0.75rem;">{{ g.id }}</code>
+                    </td>
+                    <td class="text-center">
+                      <input
+                        type="checkbox"
+                        class="form-check-input m-0"
+                        :checked="serviceForm.allowedGroupIds.includes(g.id)"
+                        @change="toggleServiceAllowedGroup(g.id)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-12 d-flex gap-2">
+              <button type="submit" class="btn btn-primary" :disabled="actionBusy">
+                {{ editingService ? 'Save changes' : 'Create service' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" :disabled="actionBusy" @click="closeServicePanel">Cancel</button>
+              <button v-if="editingService" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteService(editingService, serviceForm.name)">Delete</button>
             </div>
           </form>
         </div>
