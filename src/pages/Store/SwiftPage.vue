@@ -176,7 +176,7 @@ export default {
   font-size: 2.6rem;
   font-weight: 900;
   letter-spacing: -0.03em;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
   background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
   -webkit-background-clip: text;
@@ -186,7 +186,7 @@ export default {
 
 .swift-sub {
   max-width: 640px;
-  color: #71717a;
+  color: var(--text-dim);
   font-size: 0.92rem;
   line-height: 1.75;
   margin: 0;
@@ -203,8 +203,8 @@ export default {
 
 .plan-card {
   position: relative;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 28px 24px;
   display: flex;
@@ -253,25 +253,25 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #71717a;
+  color: var(--text-dim);
 }
 
 .plan-price {
   font-size: 2.2rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   line-height: 1;
 }
 
 .plan-period {
   font-size: 0.88rem;
   font-weight: 400;
-  color: #52525b;
+  color: var(--text-faint);
 }
 
 .plan-equiv {
   font-size: 0.75rem;
-  color: #52525b;
+  color: var(--text-faint);
   margin-top: 2px;
 }
 
@@ -287,19 +287,19 @@ export default {
 
 .plan-features li {
   font-size: 0.87rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .check {
-  color: #4ade80;
+  color: var(--success);
   font-weight: 700;
   flex-shrink: 0;
 }
 
-.check.muted { color: #3f3f46; }
+.check.muted { color: var(--border-strong); }
 
 .plan-btn {
   display: block;
@@ -327,13 +327,13 @@ export default {
 
 .plan-btn-outline {
   background: transparent;
-  color: #a1a1aa;
-  border: 1px solid #3f3f46;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
 }
 
 .plan-btn-outline:hover {
-  border-color: #71717a;
-  color: #f4f4f5;
+  border-color: var(--text-dim);
+  color: var(--text);
 }
 
 /* ── Compare table ── */
@@ -342,13 +342,13 @@ export default {
 .compare-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
   margin-bottom: 24px;
 }
 
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid #27272a;
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -359,7 +359,7 @@ export default {
 }
 
 .compare-table thead tr {
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border);
 }
 
 .compare-table th {
@@ -368,8 +368,8 @@ export default {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #71717a;
-  background: #111113;
+  color: var(--text-dim);
+  background: var(--surface-sunken);
 }
 
 .th-featured {
@@ -383,7 +383,7 @@ export default {
 }
 
 .compare-table tbody tr {
-  border-bottom: 1px solid #1f1f23;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .compare-table tbody tr:last-child { border-bottom: none; }
@@ -394,9 +394,9 @@ export default {
 
 .compare-table td {
   padding: 13px 20px;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-align: center;
-  background: #18181b;
+  background: var(--surface);
 }
 
 .td-featured {
@@ -406,14 +406,14 @@ export default {
 
 .feature-name {
   text-align: left !important;
-  color: #d4d4d8 !important;
+  color: var(--text-secondary) !important;
   font-weight: 500;
 }
 
-.muted-cell { color: #3f3f46 !important; }
+.muted-cell { color: var(--border-strong) !important; }
 
 .tick {
-  color: #4ade80;
+  color: var(--success);
   font-weight: 700;
 }
 </style>

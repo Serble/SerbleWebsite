@@ -154,7 +154,7 @@ export default {
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
-  color: #4ade80;
+  color: var(--success);
   animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
 
@@ -166,22 +166,22 @@ export default {
 .success-title {
   font-size: 2.2rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   margin-bottom: 8px;
   letter-spacing: -0.02em;
 }
 
 .success-sub {
-  color: #71717a;
+  color: var(--text-dim);
   font-size: 0.95rem;
   margin-bottom: 32px;
 }
 
 .minions-wrap {
-  border: 1px solid #27272a;
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: #18181b;
+  background: var(--surface);
   margin-bottom: 32px;
   display: inline-block;
   max-width: 100%;
@@ -223,12 +223,12 @@ export default {
 
 .success-btn-outline {
   background: transparent;
-  border: 1px solid #3f3f46;
-  color: #a1a1aa;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
 }
 
 .success-btn-outline:hover {
-  border-color: #71717a;
-  color: #f4f4f5;
+  border-color: var(--text-dim);
+  color: var(--text);
 }
 </style>

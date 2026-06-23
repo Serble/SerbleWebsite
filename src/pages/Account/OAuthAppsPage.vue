@@ -50,14 +50,13 @@ export default {
 <template>
   <div class="apps-page">
     <!-- Page header -->
-    <div class="apps-header d-flex align-items-center justify-content-between mb-4">
-      <div>
-        <h3 class="mb-0">{{ $t('your-oauth-apps') }}</h3>
-        <p class="text-muted mb-0" style="font-size:0.9rem;">Manage your OAuth applications</p>
+    <div class="apps-header">
+      <div class="apps-header-text">
+        <h3 class="apps-title">{{ $t('your-oauth-apps') }}</h3>
+        <p class="apps-subtitle">Manage the OAuth applications you've created.</p>
       </div>
-      <button class="btn btn-success d-flex align-items-center gap-2" @click="onNew">
+      <button class="new-btn" @click="onNew">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
           <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
         </svg>
         {{ $t('new-app') }}
@@ -65,87 +64,90 @@ export default {
     </div>
 
     <!-- Loading -->
-    <div v-if="apps === null" class="text-center text-muted py-5">
+    <div v-if="apps === null" class="state-block">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16" class="spin text-primary">
+        <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+      </svg>
       <p>{{ $t('loading') }}</p>
     </div>
 
     <!-- Empty state -->
-    <div v-else-if="apps.length === 0" class="empty-state text-center text-muted py-5">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="mb-3 opacity-50" viewBox="0 0 16 16">
+    <div v-else-if="apps.length === 0" class="state-block empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" fill="currentColor" viewBox="0 0 16 16">
         <path d="M6 .5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1H9v1.07A7.001 7.001 0 0 1 8 16 7 7 0 0 1 9 2.07V1h-.5A.5.5 0 0 1 6 .5zm2 1.9A6 6 0 1 0 8 14 6 6 0 0 0 8 2.4z"/>
       </svg>
-      <p class="mb-0">{{ $t('no-apps') }}</p>
-      <p style="font-size:0.85rem;">Create your first application to get started.</p>
+      <p class="empty-title">{{ $t('no-apps') }}</p>
+      <p class="empty-sub">Create your first application to get started.</p>
     </div>
 
     <!-- App cards -->
-    <div v-else class="row g-4">
-      <div v-for="app in apps" :key="app.Id" class="col-md-6">
-        <div class="app-card h-100 bg-dark border rounded-3 d-flex flex-column">
+    <div v-else class="cards-grid">
+      <div v-for="app in apps" :key="app.Id" class="app-card">
 
-          <!-- Card header -->
-          <div class="card-top px-4 pt-4 pb-3 border-bottom border-secondary">
-            <div class="d-flex align-items-start justify-content-between gap-2">
-              <h5 class="mb-0 app-name">{{ app.Name }}</h5>
-              <div class="d-flex gap-2 flex-shrink-0">
-                <button class="btn btn-sm btn-outline-secondary" @click="onEdit(app.Id)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
-                  </svg>
-                  {{ $t('edit') }}
-                </button>
-                <button class="btn btn-sm btn-outline-danger" @click="onDelete(app.Id)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                  </svg>
-                  {{ $t('delete') }}
-                </button>
-              </div>
-            </div>
-            <p v-if="app.Description" class="text-muted mt-1 mb-0" style="font-size:0.85rem;">{{ app.Description }}</p>
+        <!-- Card header -->
+        <div class="card-header">
+          <div class="app-icon">{{ (app.Name || '?').charAt(0).toUpperCase() }}</div>
+          <div class="app-heading">
+            <h4 class="app-name">{{ app.Name }}</h4>
+            <p v-if="app.Description" class="app-desc">{{ app.Description }}</p>
+          </div>
+          <div class="card-actions">
+            <button class="icon-btn" :title="$t('edit')" @click="onEdit(app.Id)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
+              </svg>
+            </button>
+            <button class="icon-btn icon-btn-danger" :title="$t('delete')" @click="onDelete(app.Id)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card body -->
+        <div class="card-body">
+
+          <!-- App ID -->
+          <div class="info-row">
+            <span class="info-label">{{ $t('id') }}</span>
+            <code class="info-value">{{ app.Id }}</code>
           </div>
 
-          <!-- Card body -->
-          <div class="px-4 py-3 flex-grow-1 d-flex flex-column gap-3">
+          <!-- Client secret -->
+          <div class="info-row">
+            <span class="info-label">{{ $t('client-secret') }}</span>
+            <button
+              class="copy-btn"
+              :class="{ copied: copiedId === app.Id }"
+              @click="copySecret(app.ClientSecret, app.Id)"
+            >
+              <svg v-if="copiedId !== app.Id" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
+                <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0"/>
+              </svg>
+              {{ copiedId === app.Id ? $t('copied') : $t('click-to-copy') }}
+            </button>
+          </div>
 
-            <!-- App ID -->
-            <div class="info-row">
-              <span class="info-label">{{ $t('id') }}</span>
-              <code class="info-value">{{ app.Id }}</code>
-            </div>
-
-            <!-- Client secret -->
-            <div class="info-row">
-              <span class="info-label">{{ $t('client-secret') }}</span>
-              <button
-                class="btn btn-sm copy-btn"
-                :class="copiedId === app.Id ? 'btn-success' : 'btn-outline-secondary'"
-                @click="copySecret(app.ClientSecret, app.Id)"
-              >
-                <svg v-if="copiedId !== app.Id" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-                  <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
-                  <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-                  <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0"/>
-                </svg>
-                {{ copiedId === app.Id ? $t('copied') : $t('click-to-copy') }}
-              </button>
-            </div>
-
-            <!-- Redirect URIs -->
-            <div>
-              <span class="info-label d-block mb-1">{{ $t('redirect-uris') }}</span>
+          <!-- Redirect URIs -->
+          <div class="info-block">
+            <span class="info-label">{{ $t('redirect-uris') }}</span>
+            <div class="uri-list">
               <div
                 v-for="uri in (app.RedirectUri || '').split(';').map(u => u.trim()).filter(Boolean)"
                 :key="uri"
-                class="redirect-uri-item"
+                class="uri-item"
               >{{ uri }}</div>
-              <span v-if="!(app.RedirectUri || '').trim()" class="text-muted" style="font-size:0.85rem;">—</span>
+              <span v-if="!(app.RedirectUri || '').trim()" class="no-uris">—</span>
             </div>
-
           </div>
+
         </div>
       </div>
     </div>
@@ -156,20 +158,185 @@ export default {
 .apps-page {
   max-width: 960px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 40px 24px 60px;
+}
+
+/* ── Header ── */
+.apps-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.apps-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.apps-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.new-btn:hover { background: var(--accent-hover); }
+
+/* ── Shared state blocks ── */
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 20px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.9s linear infinite; }
+
+.empty-state svg { color: var(--border-strong); margin-bottom: 4px; }
+
+.empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.empty-sub {
+  font-size: 0.85rem;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+/* ── Cards grid ── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
 }
 
 .app-card {
-  transition: border-color 0.15s;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s;
 }
 
 .app-card:hover {
-  border-color: #555 !important;
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+/* ── Card header ── */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-heading {
+  min-width: 0;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .app-name {
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  word-break: break-word;
+}
+
+.app-desc {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--text-muted);
+  background: var(--border);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--border-strong);
+  color: var(--text);
+}
+
+.icon-btn-danger:hover {
+  background: var(--danger-strong);
+  border-color: var(--danger-strong);
+  color: #fff;
+}
+
+/* ── Card body ── */
+.card-body {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex-grow: 1;
 }
 
 .info-row {
@@ -179,36 +346,80 @@ export default {
   flex-wrap: wrap;
 }
 
+.info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .info-label {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #888;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
   flex-shrink: 0;
-  min-width: 90px;
+  min-width: 96px;
 }
 
 .info-value {
   font-size: 0.82rem;
   word-break: break-all;
-  color: #d4d4d8;
+  color: var(--text-secondary);
 }
 
 .copy-btn {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.78rem;
-  padding: 2px 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--border);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.redirect-uri-item {
-  font-size: 0.82rem;
-  color: #aaa;
+.copy-btn:hover {
+  background: var(--border-strong);
+  color: var(--text);
+}
+
+.copy-btn.copied {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+
+.uri-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.uri-item {
+  font-size: 0.8rem;
+  color: var(--text-muted);
   word-break: break-all;
-  padding: 3px 0;
-  border-bottom: 1px solid #2a2a2a;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.redirect-uri-item:last-child {
-  border-bottom: none;
+.uri-item:last-child { border-bottom: none; }
+
+.no-uris {
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  padding: 8px 12px;
+}
+
+@media (max-width: 480px) {
+  .cards-grid { grid-template-columns: 1fr; }
+  .apps-header { flex-direction: column; align-items: stretch; }
 }
 </style>

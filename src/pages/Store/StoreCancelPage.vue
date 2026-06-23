@@ -51,7 +51,7 @@ export default {};
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
-  color: #f87171;
+  color: var(--danger);
   animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
 
@@ -63,13 +63,13 @@ export default {};
 .cancel-title {
   font-size: 2rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   letter-spacing: -0.02em;
   margin-bottom: 16px;
 }
 
 .cancel-desc {
-  color: #71717a;
+  color: var(--text-dim);
   font-size: 0.95rem;
   line-height: 1.7;
   margin-bottom: 32px;
@@ -97,23 +97,23 @@ export default {};
 }
 
 .cancel-btn-primary {
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
 }
 
 .cancel-btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
   color: #fff;
 }
 
 .cancel-btn-outline {
   background: transparent;
-  border: 1px solid #3f3f46;
-  color: #a1a1aa;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
 }
 
 .cancel-btn-outline:hover {
-  border-color: #71717a;
-  color: #f4f4f5;
+  border-color: var(--text-dim);
+  color: var(--text);
 }
 </style>

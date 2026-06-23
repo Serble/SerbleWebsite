@@ -22,7 +22,7 @@ export default {};
       <div class="contact-cards">
 
         <a href="mailto:admin@serble.net" class="contact-card">
-          <div class="card-icon-wrap" style="background: rgba(59,130,246,0.12); color: #60a5fa;">
+          <div class="card-icon-wrap" style="background: rgba(59,130,246,0.12); color: var(--accent-light);">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
               <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586zm3.436-.586L16 11.801V4.697z"/>
             </svg>
@@ -96,7 +96,7 @@ export default {};
 .contact-icon {
   display: flex;
   justify-content: center;
-  color: #60a5fa;
+  color: var(--accent-light);
   margin-bottom: 14px;
 }
 
@@ -104,13 +104,13 @@ export default {};
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #f4f4f5;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .contact-sub {
   font-size: 0.9rem;
-  color: #71717a;
+  color: var(--text-dim);
   margin: 0;
 }
 
@@ -125,8 +125,8 @@ export default {};
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 18px 20px;
   text-decoration: none;
@@ -135,7 +135,7 @@ export default {};
 }
 
 .contact-card:hover {
-  border-color: #3f3f46;
+  border-color: var(--border-strong);
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.35);
   color: inherit;
@@ -164,26 +164,26 @@ export default {};
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #71717a;
+  color: var(--text-dim);
 }
 
 .card-value {
   font-size: 0.92rem;
   font-weight: 600;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .card-arrow {
-  color: #3f3f46;
+  color: var(--border-strong);
   flex-shrink: 0;
   transition: color 0.15s, transform 0.15s;
 }
 
 .contact-card:hover .card-arrow {
-  color: #71717a;
+  color: var(--text-dim);
   transform: translateX(2px);
 }
 </style>

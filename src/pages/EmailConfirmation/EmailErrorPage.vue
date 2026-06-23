@@ -36,8 +36,8 @@ export default {};
 }
 
 .result-card {
-  background: #18181b;
-  border: 1px solid #3f1515;
+  background: var(--surface);
+  border: 1px solid var(--danger-border);
   border-radius: 16px;
   padding: 48px 40px;
   text-align: center;
@@ -53,7 +53,7 @@ export default {};
   animation: popIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
 
-.result-icon-error { color: #f87171; }
+.result-icon-error { color: var(--danger); }
 
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.5); }
@@ -63,14 +63,14 @@ export default {};
 .result-title {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
   letter-spacing: -0.02em;
 }
 
 .result-desc {
   font-size: 0.95rem;
-  color: #71717a;
+  color: var(--text-dim);
   margin: 0;
   line-height: 1.6;
 }
@@ -88,12 +88,12 @@ export default {};
 }
 
 .result-btn-primary {
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
 }
 
 .result-btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
   color: #fff;
 }
 </style>

@@ -137,14 +137,14 @@ export default {
   font-size: 2.4rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #f4f4f5;
+  color: var(--text);
   margin-bottom: 12px;
 }
 
 .store-sub {
   max-width: 580px;
   margin: 0 auto;
-  color: #71717a;
+  color: var(--text-dim);
   font-size: 0.95rem;
   line-height: 1.7;
 }
@@ -160,8 +160,8 @@ export default {
 
 .plan-card {
   position: relative;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 28px 24px;
   display: flex;
@@ -170,8 +170,8 @@ export default {
 }
 
 .plan-card-featured {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 1px #2563eb, 0 8px 32px rgba(37,99,235,0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 8px 32px rgba(37,99,235,0.2);
 }
 
 .plan-card-muted {
@@ -183,7 +183,7 @@ export default {
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -205,20 +205,20 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #71717a;
+  color: var(--text-dim);
 }
 
 .plan-price {
   font-size: 2.2rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   line-height: 1;
 }
 
 .plan-period {
   font-size: 0.9rem;
   font-weight: 400;
-  color: #52525b;
+  color: var(--text-faint);
 }
 
 .plan-features {
@@ -233,20 +233,20 @@ export default {
 
 .plan-features li {
   font-size: 0.87rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .check {
-  color: #4ade80;
+  color: var(--success);
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .check.muted {
-  color: #3f3f46;
+  color: var(--border-strong);
 }
 
 /* Plan buttons */
@@ -265,29 +265,29 @@ export default {
 }
 
 .plan-btn-primary {
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
 }
 
 .plan-btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
   color: #fff;
 }
 
 .plan-btn-outline {
   background: transparent;
-  color: #a1a1aa;
-  border: 1px solid #3f3f46;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
 }
 
 .plan-btn-outline:hover {
-  border-color: #71717a;
-  color: #f4f4f5;
+  border-color: var(--text-dim);
+  color: var(--text);
 }
 
 .plan-btn-disabled {
-  background: #27272a;
-  color: #52525b;
+  background: var(--border);
+  color: var(--text-faint);
   cursor: not-allowed;
 }
 
@@ -299,13 +299,13 @@ export default {
 .compare-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
   margin-bottom: 24px;
 }
 
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid #27272a;
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -316,7 +316,7 @@ export default {
 }
 
 .compare-table thead tr {
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border);
 }
 
 .compare-table th {
@@ -325,8 +325,8 @@ export default {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #71717a;
-  background: #111113;
+  color: var(--text-dim);
+  background: var(--surface-sunken);
 }
 
 .th-featured {
@@ -340,7 +340,7 @@ export default {
 }
 
 .compare-table tbody tr {
-  border-bottom: 1px solid #1f1f23;
+  border-bottom: 1px solid var(--border-subtle);
   transition: background 0.1s;
 }
 
@@ -354,9 +354,9 @@ export default {
 
 .compare-table td {
   padding: 13px 20px;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-align: center;
-  background: #18181b;
+  background: var(--surface);
 }
 
 .td-featured {
@@ -366,16 +366,16 @@ export default {
 
 .feature-name {
   text-align: left !important;
-  color: #d4d4d8 !important;
+  color: var(--text-secondary) !important;
   font-weight: 500;
 }
 
 .muted-cell {
-  color: #3f3f46 !important;
+  color: var(--border-strong) !important;
 }
 
 .tick {
-  color: #4ade80;
+  color: var(--success);
   font-weight: 700;
 }
 </style>

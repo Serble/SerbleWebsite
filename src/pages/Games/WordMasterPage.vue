@@ -104,9 +104,9 @@ export default {
     const lastWord = computed(() => words.value.length ? words.value[words.value.length - 1] : null);
     const timerPercent = computed(() => (secondsLeft.value / TIMER_START) * 100);
     const timerColour = computed(() => {
-      if (secondsLeft.value > 15) return '#4ade80';
-      if (secondsLeft.value > 7) return '#facc15';
-      return '#f87171';
+      if (secondsLeft.value > 15) return 'var(--success)';
+      if (secondsLeft.value > 7) return 'var(--warning)';
+      return 'var(--danger)';
     });
     const strikesArray = computed(() => Array.from({ length: MAX_STRIKES }, (_, i) => i < strikes.value));
 
@@ -180,7 +180,7 @@ export default {
           <!-- Timer / game over -->
           <div class="stat-chip" :class="{ 'stat-chip-danger': finished }">
             <span class="stat-label">{{ finished ? $t('game-over') : $t('time-left') }}</span>
-            <span class="stat-value" :style="{ color: finished ? '#f87171' : timerColour }">
+            <span class="stat-value" :style="{ color: finished ? 'var(--danger)' : timerColour }">
               {{ finished ? '—' : secondsLeft + 's' }}
             </span>
           </div>
@@ -285,14 +285,14 @@ export default {
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
 /* Status (loading/error) */
 .wm-status-card {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 48px 32px;
   text-align: center;
@@ -302,8 +302,8 @@ export default {
 /* Board */
 .wm-board {
   width: 100%;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -320,8 +320,8 @@ export default {
 }
 
 .stat-chip {
-  background: #111113;
-  border: 1px solid #27272a;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 8px 16px;
   display: flex;
@@ -332,8 +332,8 @@ export default {
 }
 
 .stat-chip-danger {
-  border-color: #3f1515;
-  background: #1a0a0a;
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
 }
 
 .stat-label {
@@ -341,13 +341,13 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #52525b;
+  color: var(--text-faint);
 }
 
 .stat-value {
   font-size: 1.3rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   line-height: 1;
 }
 
@@ -362,22 +362,22 @@ export default {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid #3f3f46;
+  border: 2px solid var(--border-strong);
   background: transparent;
   transition: background 0.2s, border-color 0.2s;
 }
 
 .strike-dot-hit {
-  background: #f87171;
-  border-color: #f87171;
-  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 0 6px var(--danger-glow);
 }
 
 /* Timer bar */
 .timer-track {
   width: 100%;
   height: 5px;
-  background: #27272a;
+  background: var(--border);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -397,7 +397,7 @@ export default {
 
 .word-placeholder {
   font-size: 0.9rem;
-  color: #3f3f46;
+  color: var(--border-strong);
   font-style: italic;
 }
 
@@ -414,15 +414,15 @@ export default {
 }
 
 .word-correct {
-  background: rgba(74, 222, 128, 0.1);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.25);
+  background: var(--success-bg-soft);
+  color: var(--success);
+  border: 1px solid var(--success-border-soft);
 }
 
 .word-wrong {
-  background: rgba(248, 113, 113, 0.1);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.25);
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border-soft);
 }
 
 .word-icon {
@@ -439,7 +439,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border-top: 1px solid #1f1f23;
+  border-top: 1px solid var(--border-subtle);
   padding-top: 12px;
 }
 
@@ -450,7 +450,7 @@ export default {
   font-size: 0.82rem;
   padding: 4px 8px;
   border-radius: 6px;
-  color: #71717a;
+  color: var(--text-dim);
 }
 
 .history-icon {
@@ -460,23 +460,23 @@ export default {
   flex-shrink: 0;
 }
 
-.history-correct .history-icon { color: #4ade80; }
-.history-wrong .history-icon   { color: #f87171; }
+.history-correct .history-icon { color: var(--success); }
+.history-wrong .history-icon   { color: var(--danger); }
 
 /* Input row */
 .wm-input-row {
   display: flex;
   gap: 8px;
-  border-top: 1px solid #1f1f23;
+  border-top: 1px solid var(--border-subtle);
   padding-top: 16px;
 }
 
 .wm-input {
   flex: 1;
-  background: #111113;
-  border: 1px solid #3f3f46;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: #f4f4f5;
+  color: var(--text);
   font-size: 1rem;
   font-weight: 600;
   padding: 10px 14px;
@@ -487,13 +487,13 @@ export default {
 }
 
 .wm-input::placeholder {
-  color: #52525b;
+  color: var(--text-faint);
   font-weight: 400;
   letter-spacing: 0;
 }
 
 .wm-input:focus {
-  border-color: #6ea8fe;
+  border-color: var(--accent);
 }
 
 .wm-input:read-only {
@@ -513,21 +513,21 @@ export default {
 }
 
 .wm-btn-primary {
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
 }
 
 .wm-btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 
 .wm-btn-reset {
-  background: #dc2626;
+  background: var(--danger-strong);
   color: #fff;
 }
 
 .wm-btn-reset:hover {
-  background: #b91c1c;
+  background: var(--danger-stronger);
 }
 
 /* Record */
@@ -537,12 +537,12 @@ export default {
 
 .record-badge {
   font-size: 0.82rem;
-  color: #52525b;
+  color: var(--text-faint);
   font-weight: 500;
 }
 
 .record-new {
-  color: #facc15;
+  color: var(--warning);
   font-weight: 700;
   font-size: 0.9rem;
 }

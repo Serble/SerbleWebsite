@@ -130,8 +130,8 @@ export default {
 .mfa-card {
   width: 100%;
   max-width: 380px;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 36px 32px;
   display: flex;
@@ -154,13 +154,13 @@ export default {
 .mfa-title {
   font-size: 1.4rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
 .mfa-sub {
   font-size: 0.82rem;
-  color: #71717a;
+  color: var(--text-dim);
   margin: 0;
   line-height: 1.5;
 }
@@ -170,8 +170,8 @@ export default {
   align-items: center;
   gap: 7px;
   font-size: 0.83rem;
-  color: #f87171;
-  background: rgba(248,113,113,0.08);
+  color: var(--danger);
+  background: var(--danger-bg-soft);
   border: 1px solid rgba(248,113,113,0.2);
   border-radius: 7px;
   padding: 8px 12px;
@@ -188,14 +188,14 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #71717a;
+  color: var(--text-dim);
 }
 
 .mfa-input {
-  background: #111113;
-  border: 1px solid #3f3f46;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: #f4f4f5;
+  color: var(--text);
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: 0.35em;
@@ -207,21 +207,21 @@ export default {
 }
 
 .mfa-input::placeholder {
-  color: #3f3f46;
+  color: var(--border-strong);
   font-size: 0.9rem;
   letter-spacing: 0;
   font-weight: 400;
 }
 
 .mfa-input:focus { border-color: #6ea8fe; }
-.mfa-input-error { border-color: #f87171 !important; }
+.mfa-input-error { border-color: var(--danger) !important; }
 
 .mfa-remember {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
 }
@@ -229,7 +229,7 @@ export default {
 .mfa-checkbox {
   width: 15px;
   height: 15px;
-  accent-color: #2563eb;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -237,7 +237,7 @@ export default {
   width: 100%;
   padding: 11px;
   border-radius: 8px;
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
@@ -249,18 +249,18 @@ export default {
   transition: background 0.15s, opacity 0.15s;
 }
 
-.mfa-submit:hover:not(:disabled) { background: #1d4ed8; }
+.mfa-submit:hover:not(:disabled) { background: var(--accent-hover); }
 .mfa-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .mfa-back {
   font-size: 0.82rem;
-  color: #52525b;
+  color: var(--text-faint);
   text-decoration: none;
   text-align: center;
   transition: color 0.15s;
 }
 
-.mfa-back:hover { color: #a1a1aa; }
+.mfa-back:hover { color: var(--text-muted); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 0.9s linear infinite; }

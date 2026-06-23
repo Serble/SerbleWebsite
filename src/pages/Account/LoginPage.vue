@@ -190,8 +190,8 @@ export default {
 .auth-card {
   width: 100%;
   max-width: 400px;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 36px 32px;
   display: flex;
@@ -212,13 +212,13 @@ export default {
 .auth-title {
   font-size: 1.4rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
 .auth-sub {
   font-size: 0.82rem;
-  color: #71717a;
+  color: var(--text-dim);
   margin: 0;
 }
 
@@ -229,8 +229,8 @@ export default {
   gap: 7px;
   flex-wrap: wrap;
   font-size: 0.83rem;
-  color: #f87171;
-  background: rgba(248,113,113,0.08);
+  color: var(--danger);
+  background: var(--danger-bg-soft);
   border: 1px solid rgba(248,113,113,0.2);
   border-radius: 8px;
   padding: 9px 12px;
@@ -260,14 +260,14 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #71717a;
+  color: var(--text-dim);
 }
 
 .auth-input {
-  background: #111113;
-  border: 1px solid #3f3f46;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: #f4f4f5;
+  color: var(--text);
   font-size: 0.95rem;
   padding: 10px 14px;
   outline: none;
@@ -275,9 +275,9 @@ export default {
   transition: border-color 0.15s;
 }
 
-.auth-input::placeholder { color: #52525b; }
+.auth-input::placeholder { color: var(--text-faint); }
 .auth-input:focus { border-color: #6ea8fe; }
-.auth-input-error { border-color: #f87171 !important; }
+.auth-input-error { border-color: var(--danger) !important; }
 
 /* Remember me */
 .auth-remember {
@@ -285,7 +285,7 @@ export default {
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
 }
@@ -293,7 +293,7 @@ export default {
 .auth-checkbox {
   width: 15px;
   height: 15px;
-  accent-color: #2563eb;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -302,7 +302,7 @@ export default {
   width: 100%;
   padding: 11px;
   border-radius: 8px;
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
@@ -314,15 +314,15 @@ export default {
   transition: background 0.15s, opacity 0.15s;
 }
 
-.auth-submit:hover:not(:disabled) { background: #1d4ed8; }
+.auth-submit:hover:not(:disabled) { background: var(--accent-hover); }
 .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .auth-passkey-btn {
-  background: #27272a;
-  color: #d4d4d8;
-  border: 1px solid #3f3f46;
+  background: var(--border);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
 }
-.auth-passkey-btn:hover:not(:disabled) { background: #3f3f46; }
+.auth-passkey-btn:hover:not(:disabled) { background: var(--border-strong); }
 
 .auth-divider {
   display: flex;
@@ -335,11 +335,11 @@ export default {
   content: '';
   flex: 1;
   height: 1px;
-  background: #27272a;
+  background: var(--border);
 }
 .auth-divider-text {
   font-size: 0.75rem;
-  color: #52525b;
+  color: var(--text-faint);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -347,13 +347,13 @@ export default {
 /* Switch link */
 .auth-switch {
   font-size: 0.82rem;
-  color: #71717a;
+  color: var(--text-dim);
   text-align: center;
   margin: 0;
 }
 
 .auth-switch-link {
-  color: #60a5fa;
+  color: var(--accent-light);
   text-decoration: none;
   font-weight: 500;
 }

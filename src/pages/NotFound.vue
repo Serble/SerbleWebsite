@@ -85,19 +85,19 @@ export default {
 .notfound-title {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
   margin-bottom: 12px;
 }
 
 .notfound-desc {
   font-size: 0.95rem;
-  color: #71717a;
+  color: var(--text-dim);
   line-height: 1.7;
   margin-bottom: 28px;
 }
 
 .notfound-desc :deep(a) {
-  color: #60a5fa;
+  color: var(--accent-light);
   text-decoration: none;
 }
 
@@ -118,7 +118,7 @@ export default {
   align-items: center;
   padding: 8px 20px;
   border-radius: 8px;
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
   font-size: 0.88rem;
   font-weight: 600;
@@ -127,7 +127,7 @@ export default {
 }
 
 .btn-home:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
   color: #fff;
 }
 
@@ -137,8 +137,8 @@ export default {
   padding: 8px 20px;
   border-radius: 8px;
   background: transparent;
-  border: 1px solid #3f3f46;
-  color: #a1a1aa;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
@@ -146,16 +146,16 @@ export default {
 }
 
 .btn-back:hover {
-  border-color: #71717a;
-  color: #f4f4f5;
+  border-color: var(--text-dim);
+  color: var(--text);
 }
 
 /* Cat image card */
 .cat-card {
-  border: 1px solid #27272a;
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: #18181b;
+  background: var(--surface);
 }
 
 .cat-img {
@@ -167,17 +167,17 @@ export default {
 
 .cat-caption {
   font-size: 0.75rem;
-  color: #52525b;
+  color: var(--text-faint);
   padding: 8px 0 10px;
   margin: 0;
 }
 
 .cat-caption a {
-  color: #3f3f46;
+  color: var(--border-strong);
   text-decoration: none;
 }
 
 .cat-caption a:hover {
-  color: #71717a;
+  color: var(--text-dim);
 }
 </style>

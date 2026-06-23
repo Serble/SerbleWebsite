@@ -40,8 +40,8 @@ export default {
 }
 
 .redirect-card {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 48px 40px;
   text-align: center;
@@ -59,13 +59,13 @@ export default {
 .redirect-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
   margin-bottom: 10px;
 }
 
 .redirect-sub {
   font-size: 0.88rem;
-  color: #71717a;
+  color: var(--text-dim);
   line-height: 1.6;
   margin: 0;
 }

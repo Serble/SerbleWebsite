@@ -86,8 +86,8 @@ function changeLanguage(e) {
 
 <style scoped>
 .site-footer {
-  border-top: 1px solid #27272a;
-  background: #111113;
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
   margin-top: 48px;
 }
 
@@ -128,12 +128,12 @@ function changeLanguage(e) {
 .footer-brand-name {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
 }
 
 .footer-tagline {
   font-size: 0.82rem;
-  color: #52525b;
+  color: var(--text-faint);
   line-height: 1.6;
   margin: 0;
 }
@@ -144,7 +144,7 @@ function changeLanguage(e) {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #71717a;
+  color: var(--text-dim);
   margin-bottom: 12px;
 }
 
@@ -159,18 +159,18 @@ function changeLanguage(e) {
 
 .footer-links a {
   font-size: 0.85rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-decoration: none;
   transition: color 0.15s;
 }
 
 .footer-links a:hover {
-  color: #f4f4f5;
+  color: var(--text);
 }
 
 /* Bottom bar */
 .footer-bottom {
-  border-top: 1px solid #1f1f23;
+  border-top: 1px solid var(--border-subtle);
   max-width: 1000px;
   margin: 0 auto;
   padding: 16px 24px;
@@ -180,16 +180,16 @@ function changeLanguage(e) {
   flex-wrap: wrap;
   gap: 8px;
   font-size: 0.8rem;
-  color: #52525b;
+  color: var(--text-faint);
 }
 
 .footer-bottom a {
-  color: #71717a;
+  color: var(--text-dim);
   text-decoration: none;
 }
 
 .footer-bottom a:hover {
-  color: #a1a1aa;
+  color: var(--text-muted);
 }
 
 .footer-discord-link {
@@ -214,7 +214,7 @@ function changeLanguage(e) {
 .lang-icon {
   position: absolute;
   left: 10px;
-  color: #71717a;
+  color: var(--text-dim);
   pointer-events: none;
   flex-shrink: 0;
 }
@@ -222,9 +222,9 @@ function changeLanguage(e) {
 .lang-select {
   appearance: none;
   background-color: #1c1c1f;
-  border: 1px solid #3f3f46;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  color: #a1a1aa;
+  color: var(--text-muted);
   font-size: 0.82rem;
   padding: 6px 28px 6px 30px;
   cursor: pointer;
@@ -237,12 +237,12 @@ function changeLanguage(e) {
 
 .lang-select:hover,
 .lang-select:focus {
-  border-color: #71717a;
-  color: #f4f4f5;
+  border-color: var(--text-dim);
+  color: var(--text);
 }
 
 .lang-select option {
-  background-color: #18181b;
+  background-color: var(--surface);
   color: #e4e4e7;
 }
 </style>

@@ -93,11 +93,11 @@ export default {
 
 .stuck-text {
   font-size: 0.82rem;
-  color: #52525b;
+  color: var(--text-faint);
 }
 
 .stuck-text a {
-  color: #60a5fa;
+  color: var(--accent-light);
   text-decoration: none;
 }
 

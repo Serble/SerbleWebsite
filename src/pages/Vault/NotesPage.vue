@@ -1,5 +1,5 @@
 <script>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import {
@@ -239,6 +239,16 @@ export default {
       return 'Save';
     });
 
+    // Ctrl/Cmd + S to save
+    function handleKeydown(e) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (saveState.value === 'dirty') doSave();
+      }
+    }
+    onMounted(() => window.addEventListener('keydown', handleKeydown));
+    onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
+
     // Load on mount
     loadAll();
 
@@ -435,8 +445,8 @@ export default {
 .notes-sidebar {
   width: 280px;
   min-width: 280px;
-  background: #111113;
-  border-right: 1px solid #27272a;
+  background: var(--surface-sunken);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -444,14 +454,14 @@ export default {
 
 .sidebar-header {
   padding: 14px 16px;
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .sidebar-title {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
 }
@@ -502,7 +512,7 @@ export default {
 .note-item-title {
   font-size: 0.83rem;
   font-weight: 600;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -515,7 +525,7 @@ export default {
 .note-delete-btn {
   background: none;
   border: none;
-  color: #52525b;
+  color: var(--text-faint);
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 4px;
@@ -525,13 +535,13 @@ export default {
 }
 
 .note-delete-btn:hover {
-  color: #f87171;
-  background: rgba(248,113,113,0.1);
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .note-item-summary {
   font-size: 0.75rem;
-  color: #52525b;
+  color: var(--text-faint);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -541,7 +551,7 @@ export default {
 /* Sidebar actions */
 .sidebar-actions {
   padding: 10px;
-  border-top: 1px solid #27272a;
+  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -563,21 +573,21 @@ export default {
 }
 
 .sidebar-btn-primary {
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
 }
 
-.sidebar-btn-primary:hover { background: #1d4ed8; }
+.sidebar-btn-primary:hover { background: var(--accent-hover); }
 
 .sidebar-btn-lock {
   background: rgba(255,255,255,0.05);
-  border: 1px solid #3f3f46;
-  color: #a1a1aa;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
 }
 
 .sidebar-btn-lock:hover {
   background: rgba(255,255,255,0.08);
-  color: #f4f4f5;
+  color: var(--text);
 }
 
 /* ── Editor ── */
@@ -596,7 +606,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #3f3f46;
+  color: var(--border-strong);
 }
 
 /* Lock screen */
@@ -609,8 +619,8 @@ export default {
 }
 
 .lock-card {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 40px 36px;
   text-align: center;
@@ -629,7 +639,7 @@ export default {
 .lock-card h4 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
@@ -640,13 +650,13 @@ export default {
 
 .lock-wrong {
   font-size: 0.82rem;
-  color: #f87171;
+  color: var(--danger);
   margin: 0;
 }
 
 .lock-input {
-  background: #111113;
-  border: 1px solid #3f3f46;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   color: #fff;
   font-size: 0.95rem;
@@ -656,9 +666,9 @@ export default {
   transition: border-color 0.15s;
 }
 
-.lock-input::placeholder { color: #52525b; }
+.lock-input::placeholder { color: var(--text-faint); }
 .lock-input:focus { border-color: #6ea8fe; }
-.lock-input-error { border-color: #f87171 !important; }
+.lock-input-error { border-color: var(--danger) !important; }
 
 .lock-btn {
   padding: 10px;
@@ -671,11 +681,11 @@ export default {
 }
 
 .lock-btn-primary {
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
 }
 
-.lock-btn-primary:hover { background: #1d4ed8; }
+.lock-btn-primary:hover { background: var(--accent-hover); }
 
 /* Top bar */
 .editor-topbar {
@@ -683,7 +693,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  border-bottom: 1px solid #1f1f23;
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   gap: 12px;
 }
@@ -697,7 +707,7 @@ export default {
 .editor-note-title {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #71717a;
+  color: var(--text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -708,9 +718,9 @@ export default {
   border-radius: 7px;
   font-size: 0.8rem;
   font-weight: 600;
-  border: 1px solid #3f3f46;
+  border: 1px solid var(--border-strong);
   background: transparent;
-  color: #71717a;
+  color: var(--text-dim);
   cursor: default;
   flex-shrink: 0;
   display: flex;
@@ -719,23 +729,23 @@ export default {
 }
 
 .save-btn-dirty {
-  border-color: #2563eb;
+  border-color: var(--accent);
   color: #93c5fd;
   cursor: pointer;
 }
 
 .save-btn-dirty:hover {
-  background: rgba(37, 99, 235, 0.15);
+  background: var(--accent-ring);
 }
 
 .save-btn-saving {
-  color: #52525b;
+  color: var(--text-faint);
   cursor: wait;
 }
 
 .save-btn-saved {
   border-color: #166534;
-  color: #4ade80;
+  color: var(--success);
 }
 
 /* Textarea */
@@ -746,7 +756,7 @@ export default {
   border: none;
   outline: none;
   resize: none;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
   font-size: 0.9rem;
   line-height: 1.7;
@@ -754,7 +764,7 @@ export default {
   caret-color: #6ea8fe;
 }
 
-.editor-textarea::placeholder { color: #3f3f46; }
+.editor-textarea::placeholder { color: var(--border-strong); }
 
 /* ── Mobile sidebar toggle ── */
 .sidebar-toggle {
@@ -766,7 +776,7 @@ export default {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
   border: none;
   cursor: pointer;

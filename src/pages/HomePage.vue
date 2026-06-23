@@ -242,7 +242,7 @@ export default {
   max-width: 720px;
   font-size: 1rem;
   line-height: 1.8;
-  color: #a1a1aa;
+  color: var(--text-muted);
   margin: 0 0 14px;
 }
 
@@ -264,7 +264,7 @@ export default {
 .home-divider {
   width: min(100%, 720px);
   height: 1px;
-  background: #27272a;
+  background: var(--border);
   margin: 0 auto 12px;
 }
 
@@ -282,7 +282,7 @@ export default {
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
@@ -295,8 +295,8 @@ export default {
 
 .account-card,
 .external-card {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 20px;
   text-decoration: none;
@@ -310,7 +310,7 @@ export default {
 .account-card:hover,
 .external-card:hover {
   transform: translateY(-2px);
-  border-color: #3f3f46;
+  border-color: var(--border-strong);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
   background: #1c1c20;
   color: inherit;
@@ -327,7 +327,7 @@ export default {
 .account-card-arrow,
 .external-card-arrow {
   font-size: 1rem;
-  color: #52525b;
+  color: var(--text-faint);
 }
 
 .account-card-title,
@@ -336,7 +336,7 @@ export default {
   line-height: 1.15;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
@@ -356,7 +356,7 @@ export default {
 }
 
 .external-card-icon {
-  color: #d4d4d8;
+  color: var(--text-secondary);
 }
 
 .service-icon-image {
@@ -365,11 +365,11 @@ export default {
 }
 
 .services-state {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 22px;
-  color: #a1a1aa;
+  color: var(--text-muted);
   font-size: 0.95rem;
   text-align: center;
 }

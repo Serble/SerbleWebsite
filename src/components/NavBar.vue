@@ -186,7 +186,7 @@ export default {
   background: rgba(17, 17, 19, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border);
 }
 
 .nav-inner {
@@ -215,7 +215,7 @@ export default {
 .nav-brand-name {
   font-size: 1rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
   letter-spacing: -0.01em;
 }
 
@@ -237,7 +237,7 @@ export default {
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-decoration: none;
   background: none;
   border: none;
@@ -248,7 +248,7 @@ export default {
 
 .nav-link:hover,
 .nav-link.active {
-  color: #f4f4f5;
+  color: var(--text);
   background: rgba(255,255,255,0.06);
 }
 
@@ -286,8 +286,8 @@ export default {
   left: 0;
   min-width: 180px;
   padding: 6px 4px 4px;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   opacity: 0;
@@ -320,7 +320,7 @@ export default {
   padding: 7px 10px;
   border-radius: 5px;
   font-size: 0.83rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-decoration: none;
   background: none;
   border: none;
@@ -330,12 +330,12 @@ export default {
 }
 
 .nav-dropdown-item:hover {
-  color: #f4f4f5;
+  color: var(--text);
   background: rgba(255,255,255,0.06);
 }
 
 .nav-dropdown-danger {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .nav-dropdown-danger:hover {
@@ -345,7 +345,7 @@ export default {
 
 .nav-dropdown-divider {
   height: 1px;
-  background: #27272a;
+  background: var(--border);
   margin: 4px 0;
 }
 
@@ -365,21 +365,21 @@ export default {
   padding: 5px 10px 5px 5px;
   border-radius: 8px;
   background: rgba(255,255,255,0.05);
-  border: 1px solid #3f3f46;
+  border: 1px solid var(--border-strong);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .nav-user-btn:hover {
   background: rgba(255,255,255,0.08);
-  border-color: #52525b;
+  border-color: var(--text-faint);
 }
 
 .nav-avatar {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -392,7 +392,7 @@ export default {
 .nav-username {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -411,13 +411,13 @@ export default {
   border-radius: 6px;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-decoration: none;
   transition: color 0.15s;
 }
 
 .btn-nav-login:hover {
-  color: #f4f4f5;
+  color: var(--text);
 }
 
 .btn-nav-register {
@@ -426,14 +426,14 @@ export default {
   font-size: 0.85rem;
   font-weight: 600;
   color: #fff;
-  background: #2563eb;
+  background: var(--accent);
   text-decoration: none;
   border: none;
   transition: background 0.15s;
 }
 
 .btn-nav-register:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 
 /* ── Hamburger ── */
@@ -459,20 +459,20 @@ export default {
 .nav-hamburger span {
   display: block;
   height: 2px;
-  background: #a1a1aa;
+  background: var(--text-muted);
   border-radius: 2px;
   transition: background 0.15s;
 }
 
 .nav-hamburger:hover span {
-  background: #f4f4f5;
+  background: var(--text);
 }
 
 /* ── Mobile menu ── */
 .nav-mobile {
   display: none;
   flex-direction: column;
-  border-top: 1px solid #27272a;
+  border-top: 1px solid var(--border);
   padding: 8px 12px 12px;
   gap: 2px;
 }
@@ -486,7 +486,7 @@ export default {
   padding: 9px 12px;
   border-radius: 6px;
   font-size: 0.9rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-decoration: none;
   background: none;
   border: none;
@@ -497,17 +497,17 @@ export default {
 }
 
 .nav-mobile-link:hover {
-  color: #f4f4f5;
+  color: var(--text);
   background: rgba(255,255,255,0.05);
 }
 
 .nav-mobile-danger {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .nav-mobile-divider {
   height: 1px;
-  background: #27272a;
+  background: var(--border);
   margin: 6px 0;
 }
 

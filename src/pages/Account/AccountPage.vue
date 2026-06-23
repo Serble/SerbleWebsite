@@ -275,15 +275,11 @@ export default {
   <div class="account-page">
 
     <!-- Profile header -->
-    <div class="profile-header bg-dark border rounded-3 d-flex align-items-center gap-4 mb-4">
-      <img
-        class="avatar rounded-circle flex-shrink-0"
-        src="https://st3.depositphotos.com/15648834/17930/v/600/depositphotos_179308454-stock-illustration-unknown-person-silhouette-glasses-profile.jpg"
-        alt="Profile picture"
-      >
+    <div class="profile-header">
+      <div class="avatar">{{ (user.username || '?').charAt(0).toUpperCase() }}</div>
       <div>
-        <h4 class="mb-1">{{ user.username }}</h4>
-        <div class="d-flex gap-2 flex-wrap">
+        <h2 class="profile-name">{{ user.username }}</h2>
+        <div class="badge-row">
           <span class="badge-pill badge-account">{{ $t(permStr) }}</span>
           <span class="badge-pill badge-premium">{{ $t(premiumStr) }}</span>
           <span v-if="user.totpEnabled" class="badge-pill badge-2fa">2FA</span>
@@ -293,8 +289,8 @@ export default {
 
     <!-- Success toast -->
     <transition name="fade">
-      <div v-if="successMessage" class="alert alert-success d-flex align-items-center mb-4 py-2" role="alert">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 flex-shrink-0" viewBox="0 0 16 16">
+      <div v-if="successMessage" class="success-toast" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="flex-shrink-0" viewBox="0 0 16 16">
           <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
         </svg>
         <span>{{ $t('save-changes-success') }}</span>
@@ -302,18 +298,18 @@ export default {
     </transition>
 
     <!-- Profile settings card -->
-    <div class="form-card bg-dark border rounded-3 mb-4">
-      <div class="card-header-row px-4 py-3 border-bottom border-secondary">
-        <h6 class="mb-0 fw-semibold">{{ $t('profile-settings') }}</h6>
+    <div class="section-card">
+      <div class="card-header-row">
+        <h6 class="card-title">{{ $t('profile-settings') }}</h6>
       </div>
 
       <!-- Username -->
-      <div class="form-section border-bottom border-secondary">
+      <div class="form-section">
         <label class="section-label" for="username">{{ $t('username') }}</label>
         <input
           id="username"
           type="text"
-          class="form-control dark-input"
+          class="dark-input"
           :class="{ 'is-invalid': errors.includes('invalidusername') || errors.includes('usernametaken') }"
           :placeholder="$t('username')"
           v-model="username"
@@ -323,7 +319,7 @@ export default {
       </div>
 
       <!-- Email -->
-      <div class="form-section border-bottom border-secondary">
+      <div class="form-section">
         <label class="section-label" for="email">
           {{ $t('email') }}
           <span v-if="user.email && user.email.trim() && user.verifiedEmail" class="verified-badge">✓ {{ $t('verified') }}</span>
@@ -332,7 +328,7 @@ export default {
         <input
           id="email"
           type="text"
-          class="form-control dark-input"
+          class="dark-input"
           :class="{ 'is-invalid': errors.includes('invalidemail') }"
           :placeholder="$t('email')"
           v-model="email"
@@ -347,61 +343,61 @@ export default {
           id="language"
           v-model="selectedLanguage"
           :placeholder="$t('language')"
-          class="form-control dark-input"
+          class="dark-input"
         />
       </div>
     </div>
 
     <!-- Security card -->
-    <div class="form-card bg-dark border rounded-3 mb-4">
-      <div class="card-header-row px-4 py-3 border-bottom border-secondary">
-        <h6 class="mb-0 fw-semibold">{{ $t('security') }}</h6>
+    <div class="section-card">
+      <div class="card-header-row">
+        <h6 class="card-title">{{ $t('security') }}</h6>
       </div>
 
       <!-- Password -->
-      <div class="form-section border-bottom border-secondary">
+      <div class="form-section">
         <label class="section-label" for="password">{{ $t('change-password') }}</label>
         <p class="section-hint">Leave blank to keep your current password.</p>
-        <div class="row g-3">
-          <div class="col-md-6">
+        <div class="field-grid">
+          <div>
             <label class="field-label" for="password">{{ $t('password') }}</label>
             <input
               id="password"
               type="password"
-              class="form-control dark-input"
+              class="dark-input"
               :class="{ 'is-invalid': errors.includes('passworddifferent') }"
               placeholder="••••••••••••"
               v-model="password"
             >
           </div>
-          <div class="col-md-6">
+          <div>
             <label class="field-label" for="confirmPassword">{{ $t('confirm-password') }}</label>
             <input
               id="confirmPassword"
               type="password"
-              class="form-control dark-input"
+              class="dark-input"
               :class="{ 'is-invalid': errors.includes('passworddifferent') }"
               placeholder="••••••••••••"
               v-model="confirmPassword"
             >
           </div>
         </div>
-        <p v-if="errors.includes('passworddifferent')" class="field-error mt-1">{{ $t('passwords-dont-match') }}</p>
+        <p v-if="errors.includes('passworddifferent')" class="field-error">{{ $t('passwords-dont-match') }}</p>
       </div>
 
       <!-- 2FA -->
-      <div class="form-section border-bottom border-secondary">
+      <div class="form-section">
         <label class="section-label">{{ $t('2fa') }}</label>
         <p class="section-hint">Protect your account with a time-based one-time password app.</p>
-        <div v-if="user.totpEnabled" class="d-flex gap-2 flex-wrap">
-          <RouterLink to="/setuptotp" class="btn btn-sm btn-outline-secondary">{{ $t('setup-totp-app') }}</RouterLink>
-          <button class="btn btn-sm btn-outline-danger" @click="disable2fa" :disabled="disabling2fa">
-            <span v-if="disabling2fa" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        <div v-if="user.totpEnabled" class="btn-row">
+          <RouterLink to="/setuptotp" class="btn btn-sm btn-secondary">{{ $t('setup-totp-app') }}</RouterLink>
+          <button class="btn btn-sm btn-danger" @click="disable2fa" :disabled="disabling2fa">
+            <span v-if="disabling2fa" class="spinner" role="status" aria-hidden="true"></span>
             {{ $t('disable-2fa') }}
           </button>
         </div>
-        <RouterLink v-else to="/setuptotp" class="btn btn-sm btn-success">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+        <RouterLink v-else to="/setuptotp" class="btn btn-sm btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
             <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
           </svg>
           {{ $t('setup-2fa') }}
@@ -413,13 +409,13 @@ export default {
         <label class="section-label">{{ $t('passkeys') }}</label>
         <p class="section-hint">Sign in without a password using a passkey stored on your device.</p>
 
-        <div v-if="passkeyError" class="passkey-error mb-3">
+        <div v-if="passkeyError" class="passkey-error">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
           {{ passkeyError }}
         </div>
 
         <div v-if="passkeysLoading" class="passkey-empty">
-          <span class="spinner-border spinner-border-sm me-2" role="status"></span> Loading...
+          <span class="spinner" role="status"></span> Loading...
         </div>
         <div v-else-if="passkeys.length === 0" class="passkey-empty">{{ $t('no-passkeys') }}</div>
         <ul v-else class="passkey-list">
@@ -443,37 +439,21 @@ export default {
             </div>
             <div class="passkey-actions">
               <template v-if="renamingPasskey === pk.name">
-                <button
-                  class="btn btn-sm btn-outline-primary passkey-action-btn"
-                  :disabled="savingRename"
-                  @click="submitRename(pk.name)"
-                >
-                  <span v-if="savingRename" class="spinner-border spinner-border-sm" role="status"></span>
+                <button class="btn btn-sm btn-primary" :disabled="savingRename" @click="submitRename(pk.name)">
+                  <span v-if="savingRename" class="spinner" role="status"></span>
                   {{ $t('save') }}
                 </button>
-                <button
-                  class="btn btn-sm btn-outline-secondary passkey-action-btn"
-                  :disabled="savingRename"
-                  @click="cancelRename"
-                >
+                <button class="btn btn-sm btn-secondary" :disabled="savingRename" @click="cancelRename">
                   {{ $t('cancel') }}
                 </button>
               </template>
               <template v-else>
-                <button
-                  class="btn btn-sm btn-outline-secondary passkey-action-btn"
-                  :disabled="deletingPasskey === pk.name"
-                  @click="startRename(pk.name)"
-                >
+                <button class="btn btn-sm btn-secondary" :disabled="deletingPasskey === pk.name" @click="startRename(pk.name)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/></svg>
                   {{ $t('rename') }}
                 </button>
-                <button
-                  class="btn btn-sm btn-outline-danger passkey-delete-btn"
-                  :disabled="deletingPasskey === pk.name"
-                  @click="removePasskey(pk.name)"
-                >
-                  <span v-if="deletingPasskey === pk.name" class="spinner-border spinner-border-sm" role="status"></span>
+                <button class="btn btn-sm btn-danger" :disabled="deletingPasskey === pk.name" @click="removePasskey(pk.name)">
+                  <span v-if="deletingPasskey === pk.name" class="spinner" role="status"></span>
                   <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
                   {{ $t('remove') }}
                 </button>
@@ -482,23 +462,23 @@ export default {
           </li>
         </ul>
 
-        <button class="btn btn-sm btn-outline-primary mt-3" @click="addPasskey" :disabled="registeringPasskey">
-          <span v-if="registeringPasskey" class="spinner-border spinner-border-sm me-1" role="status"></span>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/></svg>
+        <button class="btn btn-sm btn-secondary passkey-add-btn" @click="addPasskey" :disabled="registeringPasskey">
+          <span v-if="registeringPasskey" class="spinner" role="status"></span>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/></svg>
           {{ $t('add-passkey') }}
         </button>
       </div>
     </div>
 
     <!-- Account info card (read-only) -->
-    <div class="form-card bg-dark border rounded-3 mb-4">
-      <div class="card-header-row px-4 py-3 border-bottom border-secondary">
-        <h6 class="mb-0 fw-semibold">{{ $t('account-page') }}</h6>
+    <div class="section-card">
+      <div class="card-header-row">
+        <h6 class="card-title">{{ $t('account-page') }}</h6>
       </div>
-      <div class="form-section d-flex flex-column gap-3">
+      <div class="form-section info-section">
         <div class="info-row">
           <span class="info-label">{{ $t('id') }}</span>
-          <code class="info-value" style="color: #ccc;">{{ user.id }}</code>
+          <code class="info-value info-value-code">{{ user.id }}</code>
         </div>
         <div class="info-row">
           <span class="info-label">{{ $t('account-type') }}</span>
@@ -512,9 +492,9 @@ export default {
     </div>
 
     <!-- Save button -->
-    <div class="d-flex justify-content-end">
-      <button class="btn btn-primary px-4" @click="save">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+    <div class="save-row">
+      <button class="btn btn-primary btn-save" @click="save">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
           <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
         </svg>
         {{ $t('save-changes') }}
@@ -528,19 +508,46 @@ export default {
 .account-page {
   max-width: 680px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 40px 24px 60px;
 }
 
-/* Profile header */
+/* ── Profile header ── */
 .profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   padding: 24px 28px;
+  margin-bottom: 20px;
 }
 
 .avatar {
-  width: 72px;
-  height: 72px;
-  object-fit: cover;
-  border: 2px solid #444;
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.badge-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .badge-pill {
@@ -552,66 +559,98 @@ export default {
 }
 
 .badge-account {
-  background-color: #1e3a5f;
-  color: #90cdf4;
+  background: var(--accent-ring);
+  color: var(--accent-light);
 }
 
 .badge-premium {
-  background-color: #3b2a0a;
+  background: rgba(246, 196, 88, 0.12);
   color: #f6c458;
 }
 
 .badge-2fa {
-  background-color: #1a3d2b;
-  color: #68d391;
+  background: var(--success-bg);
+  color: var(--success);
 }
 
-/* Form card */
-.form-card {
+/* ── Success toast ── */
+.success-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+  font-size: 0.88rem;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+}
+
+/* ── Cards ── */
+.section-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   overflow: hidden;
+  margin-bottom: 20px;
 }
 
 .card-header-row {
-  background-color: rgba(255,255,255,0.03);
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
 }
 
 .form-section {
   padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.form-section:last-child {
+  border-bottom: none;
 }
 
 .section-label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #888;
+  color: var(--text-faint);
   margin-bottom: 8px;
 }
 
 .field-label {
   display: block;
   font-size: 0.82rem;
-  color: #aaa;
-  margin-bottom: 5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
 }
 
 .section-hint {
   font-size: 0.8rem;
-  color: #666;
-  margin-bottom: 12px;
+  color: var(--text-faint);
+  margin: 0 0 12px;
+  line-height: 1.5;
 }
 
 .field-error {
-  color: #fc8181;
+  color: var(--danger);
   font-size: 0.8rem;
-  margin-top: 5px;
-  margin-bottom: 0;
+  margin: 6px 0 0;
 }
 
 .verified-badge {
   font-size: 0.72rem;
-  color: #68d391;
+  color: var(--success);
   font-weight: 600;
   margin-left: 6px;
   text-transform: none;
@@ -627,25 +666,121 @@ export default {
   letter-spacing: 0;
 }
 
-/* Inputs */
-.dark-input {
-  background-color: rgb(28, 28, 28);
-  color: #fff;
-  border-color: #444;
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
-.dark-input::placeholder {
-  color: #666;
+@media (max-width: 540px) {
+  .field-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Inputs ── */
+.dark-input {
+  width: 100%;
+  background: var(--surface-sunken);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.dark-input::placeholder { color: var(--text-faint); }
 
 .dark-input:focus {
-  background-color: rgb(28, 28, 28);
-  color: #fff;
-  border-color: #6ea8fe;
-  box-shadow: 0 0 0 0.2rem rgba(110, 168, 254, 0.15);
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
-/* Read-only info rows */
+.dark-input.is-invalid {
+  border-color: var(--danger);
+}
+
+select.dark-input {
+  appearance: none;
+  cursor: pointer;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 9px 18px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-sm { font-size: 0.8rem; padding: 7px 13px; }
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-danger {
+  background: var(--danger-bg-soft);
+  color: var(--danger);
+  border-color: var(--danger-border-soft);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-strong);
+  border-color: var(--danger-strong);
+  color: #fff;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.save-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-save { padding: 10px 24px; }
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Read-only info rows ── */
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .info-row {
   display: flex;
   align-items: center;
@@ -654,36 +789,40 @@ export default {
 }
 
 .info-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #888;
+  color: var(--text-faint);
   min-width: 110px;
   flex-shrink: 0;
 }
 
 .info-value {
   font-size: 0.85rem;
+  color: var(--text-secondary);
   word-break: break-all;
 }
 
-/* Success toast animation */
-.fade-enter-active {
-  animation: fadeSlideIn 0.3s ease-out;
+.info-value-code {
+  color: var(--text-secondary);
 }
-.fade-leave-active {
-  animation: fadeSlideIn 0.2s ease-in reverse;
-}
+
+/* ── Success toast animation ── */
+.fade-enter-active { animation: fadeSlideIn 0.3s ease-out; }
+.fade-leave-active { animation: fadeSlideIn 0.2s ease-in reverse; }
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Passkeys */
+/* ── Passkeys ── */
 .passkey-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.82rem;
-  color: #555;
+  color: var(--text-faint);
   padding: 8px 0;
 }
 
@@ -692,11 +831,12 @@ export default {
   align-items: center;
   gap: 6px;
   font-size: 0.8rem;
-  color: #fc8181;
-  background: rgba(252,129,129,0.08);
-  border: 1px solid rgba(252,129,129,0.2);
-  border-radius: 6px;
-  padding: 7px 10px;
+  color: var(--danger);
+  background: var(--danger-bg-soft);
+  border: 1px solid var(--danger-border-soft);
+  border-radius: 8px;
+  padding: 8px 11px;
+  margin-bottom: 14px;
 }
 
 .passkey-list {
@@ -713,9 +853,9 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #333;
-  border-radius: 8px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 9px;
   padding: 10px 14px;
 }
 
@@ -727,13 +867,13 @@ export default {
 }
 
 .passkey-icon {
-  color: #71717a;
+  color: var(--text-dim);
   flex-shrink: 0;
 }
 
 .passkey-name {
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -750,21 +890,13 @@ export default {
 }
 
 .passkey-badge-synced {
-  background: #1a3d2b;
-  color: #68d391;
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .passkey-badge-eligible {
-  background: #1e3a5f;
-  color: #90cdf4;
-}
-
-.passkey-delete-btn {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.78rem;
+  background: var(--accent-ring);
+  color: var(--accent-light);
 }
 
 .passkey-actions {
@@ -774,19 +906,13 @@ export default {
   flex-shrink: 0;
 }
 
-.passkey-action-btn {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.78rem;
-}
+.passkey-add-btn { margin-top: 14px; }
 
 .passkey-rename-input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid #444;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  color: #f4f4f5;
+  color: var(--text);
   font-size: 0.85rem;
   padding: 4px 8px;
   min-width: 0;
@@ -795,6 +921,6 @@ export default {
 
 .passkey-rename-input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--accent);
 }
 </style>

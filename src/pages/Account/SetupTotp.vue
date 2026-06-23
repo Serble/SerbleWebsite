@@ -202,8 +202,8 @@ export default {
 
 /* Cards */
 .setup-card {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 28px 28px;
   display: flex;
@@ -223,8 +223,8 @@ export default {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: rgba(37,99,235,0.15);
-  color: #60a5fa;
+  background: var(--accent-ring);
+  color: var(--accent-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -237,20 +237,20 @@ export default {
 .setup-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
 .setup-sub {
   font-size: 0.82rem;
-  color: #71717a;
+  color: var(--text-dim);
   margin: 0;
   line-height: 1.5;
 }
 
 .setup-instructions {
   font-size: 0.85rem;
-  color: #71717a;
+  color: var(--text-dim);
   line-height: 1.65;
   margin: 0;
 }
@@ -265,7 +265,7 @@ export default {
 
 .qr-img {
   border-radius: 10px;
-  border: 2px solid #27272a;
+  border: 2px solid var(--border);
   image-rendering: pixelated;
   background: #fff;
   padding: 8px;
@@ -299,8 +299,8 @@ export default {
   align-items: center;
   gap: 6px;
   font-size: 0.83rem;
-  color: #f87171;
-  background: rgba(248,113,113,0.08);
+  color: var(--danger);
+  background: var(--danger-bg-soft);
   border: 1px solid rgba(248,113,113,0.2);
   border-radius: 7px;
   padding: 8px 12px;
@@ -317,14 +317,14 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #71717a;
+  color: var(--text-dim);
 }
 
 .code-input {
-  background: #111113;
-  border: 1px solid #3f3f46;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: #f4f4f5;
+  color: var(--text);
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: 0.3em;
@@ -335,20 +335,20 @@ export default {
 }
 
 .code-input::placeholder {
-  color: #3f3f46;
+  color: var(--border-strong);
   font-size: 0.9rem;
   letter-spacing: 0;
   font-weight: 400;
 }
 
 .code-input:focus { border-color: #6ea8fe; }
-.code-input-error { border-color: #f87171 !important; }
+.code-input-error { border-color: var(--danger) !important; }
 
 .code-submit {
   width: 100%;
   padding: 11px;
   border-radius: 8px;
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
@@ -360,18 +360,18 @@ export default {
   transition: background 0.15s, opacity 0.15s;
 }
 
-.code-submit:hover:not(:disabled) { background: #1d4ed8; }
+.code-submit:hover:not(:disabled) { background: var(--accent-hover); }
 .code-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .cancel-link {
   font-size: 0.82rem;
-  color: #52525b;
+  color: var(--text-faint);
   text-decoration: none;
   text-align: center;
   transition: color 0.15s;
 }
 
-.cancel-link:hover { color: #a1a1aa; }
+.cancel-link:hover { color: var(--text-muted); }
 
 /* Spinner */
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -25,6 +25,14 @@ export default {
       error.value = { code, detail, params };
     }
 
+    // True if every scope requested (requestedStr) is already granted (grantedStr).
+    function isScopeSubset(requestedStr, grantedStr) {
+      for (let i = 0; i < requestedStr.length; i++) {
+        if (requestedStr[i] === '1' && grantedStr[i] !== '1') return false;
+      }
+      return true;
+    }
+
     const errorMessages = {
       'missing-params':         'One or more required query parameters are missing.',
       'app-not-found':          'No application with the given client_id was found.',
@@ -60,11 +68,19 @@ export default {
       const validIds     = filterInvalidScopes(requestedIds);
       scopeNames.value   = scopeIdsToNames(validIds);
 
-      // 4. Check if already authorized — auto-allow
+      // 4. Check if already authorized — auto-allow only if no new scopes are requested.
+      //    The authorized-app entry's appId is the OAuth client_id, so match on that
+      //    rather than the public app payload (which may not include an id field).
       const currentUser = user.value ?? userStore?.state?.user;
-      if (currentUser?.authorizedApps?.some(a => a.appId === app.value.id || a.AppId === app.value.Id)) {
-        await doAuthorize(true, true);
-        return;
+      const authorizedApps = currentUser?.authorizedApps ?? currentUser?.AuthorizedApps ?? [];
+      const existing = authorizedApps.find(a => (a.appId ?? a.AppId) === q.client_id);
+      if (existing) {
+        const grantedStr   = existing.scopes ?? existing.Scopes ?? '';
+        const requestedStr = scopeIdsToString(validIds);
+        if (isScopeSubset(requestedStr, grantedStr)) {
+          await doAuthorize(true, true);
+          return;
+        }
       }
 
       state.value = 'ready';
@@ -256,8 +272,8 @@ export default {
 .oauth-card {
   width: 100%;
   max-width: 480px;
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 36px 32px;
   display: flex;
@@ -271,7 +287,7 @@ export default {
   max-width: 560px;
   text-align: left;
   align-items: stretch;
-  border-color: #3f1515;
+  border-color: var(--danger-border);
 }
 
 /* ── Loading spinner ── */
@@ -282,7 +298,7 @@ export default {
 
 /* ── Error state ── */
 .oauth-error-icon {
-  color: #f87171;
+  color: var(--danger);
   display: flex;
   justify-content: center;
   animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
@@ -296,14 +312,14 @@ export default {
 .oauth-error-title {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
   text-align: center;
 }
 
 .oauth-error-sub {
   font-size: 0.85rem;
-  color: #71717a;
+  color: var(--text-dim);
   margin: 0;
   text-align: center;
   line-height: 1.6;
@@ -311,8 +327,8 @@ export default {
 
 .oauth-error-detail {
   width: 100%;
-  background: #111113;
-  border: 1px solid #27272a;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
   display: flex;
@@ -331,7 +347,7 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #52525b;
+  color: var(--text-faint);
   min-width: 88px;
   flex-shrink: 0;
   padding-top: 2px;
@@ -339,13 +355,13 @@ export default {
 
 .error-detail-value {
   font-size: 0.83rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   word-break: break-all;
 }
 
 .error-code-badge {
-  background: rgba(248,113,113,0.1);
-  color: #f87171;
+  background: var(--danger-bg);
+  color: var(--danger);
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.8rem;
@@ -354,7 +370,7 @@ export default {
 .error-detail-pre {
   font-family: monospace;
   font-size: 0.8rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   white-space: pre-wrap;
   word-break: break-all;
   margin: 0;
@@ -366,8 +382,8 @@ export default {
 /* Params dump */
 .oauth-params-dump {
   width: 100%;
-  background: #111113;
-  border: 1px solid #27272a;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
 }
@@ -377,7 +393,7 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #52525b;
+  color: var(--text-faint);
   margin-bottom: 10px;
 }
 
@@ -390,24 +406,24 @@ export default {
 
 .param-key {
   font-size: 0.78rem;
-  color: #60a5fa;
+  color: var(--accent-light);
   white-space: nowrap;
 }
 
 .param-val {
   font-size: 0.78rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   word-break: break-all;
 }
 
 .oauth-back-link {
   font-size: 0.82rem;
-  color: #71717a;
+  color: var(--text-dim);
   text-decoration: none;
   align-self: flex-start;
 }
 
-.oauth-back-link:hover { color: #a1a1aa; }
+.oauth-back-link:hover { color: var(--text-muted); }
 
 /* ── Auth UI ── */
 .oauth-app-header {
@@ -421,7 +437,7 @@ export default {
   width: 60px;
   height: 60px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
   color: #fff;
   font-size: 1.6rem;
   font-weight: 800;
@@ -433,13 +449,13 @@ export default {
 .oauth-app-name {
   font-size: 1.4rem;
   font-weight: 800;
-  color: #f4f4f5;
+  color: var(--text);
   margin: 0;
 }
 
 .oauth-warning-text {
   font-size: 0.85rem;
-  color: #71717a;
+  color: var(--text-dim);
   line-height: 1.6;
   margin: 0;
 }
@@ -447,8 +463,8 @@ export default {
 /* Scopes */
 .oauth-scopes {
   width: 100%;
-  background: #111113;
-  border: 1px solid #27272a;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
   text-align: left;
@@ -459,7 +475,7 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #52525b;
+  color: var(--text-faint);
   margin-bottom: 10px;
 }
 
@@ -482,7 +498,7 @@ export default {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--accent);
   flex-shrink: 0;
   margin-top: 5px;
 }
@@ -496,25 +512,25 @@ export default {
 .scope-name {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #d4d4d8;
+  color: var(--text-secondary);
 }
 
 .scope-desc {
   font-size: 0.77rem;
-  color: #52525b;
+  color: var(--text-faint);
   line-height: 1.4;
 }
 
 .no-scopes {
   font-size: 0.85rem;
-  color: #52525b;
+  color: var(--text-faint);
   margin: 0;
 }
 
 .oauth-deny-warning {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #f87171;
+  color: var(--danger);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin: 0;
@@ -547,16 +563,16 @@ export default {
 }
 
 .oauth-btn-allow {
-  background: #2563eb;
+  background: var(--accent);
   color: #fff;
 }
 
-.oauth-btn-allow:hover:not(:disabled) { background: #1d4ed8; }
+.oauth-btn-allow:hover:not(:disabled) { background: var(--accent-hover); }
 
 .oauth-btn-deny {
-  background: #dc2626;
+  background: var(--danger-strong);
   color: #fff;
 }
 
-.oauth-btn-deny:hover:not(:disabled) { background: #b91c1c; }
+.oauth-btn-deny:hover:not(:disabled) { background: var(--danger-stronger); }
 </style>

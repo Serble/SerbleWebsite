@@ -1855,8 +1855,8 @@ export default {
   color: #9ca3af !important;
 }
 .stat-card {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px 18px;
 }
@@ -1864,17 +1864,17 @@ export default {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #a1a1aa;
+  color: var(--text-muted);
   margin-bottom: 6px;
 }
 .stat-value {
   font-size: 1.6rem;
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--text);
 }
 .search-card, .user-panel {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 20px 22px;
   color: #e4e4e7;
@@ -1883,7 +1883,7 @@ export default {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #a1a1aa;
+  color: var(--text-muted);
   margin-bottom: 10px;
 }
 
@@ -1904,7 +1904,7 @@ export default {
 }
 
 .form-label {
-  color: #d4d4d8;
+  color: var(--text-secondary);
 }
 
 /* Table */
@@ -1915,57 +1915,57 @@ export default {
   --bs-table-striped-bg: rgba(255,255,255,0.03);
   --bs-table-hover-bg: rgba(255,255,255,0.06);
   --bs-table-hover-color: #fff;
-  --bs-table-border-color: #27272a;
+  --bs-table-border-color: var(--border);
   color: #e4e4e7;
 }
 .admin-page :deep(.table thead th) {
-  color: #a1a1aa;
+  color: var(--text-muted);
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom-color: #27272a;
+  border-bottom-color: var(--border);
   font-weight: 600;
 }
 .admin-page :deep(.table code) {
-  color: #d4d4d8;
+  color: var(--text-secondary);
 }
 
 .text-muted-light {
-  color: #a1a1aa;
+  color: var(--text-muted);
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
   color: #e4e4e7;
 }
 .info-row:last-child { border-bottom: none; }
 .info-label {
-  color: #a1a1aa;
+  color: var(--text-muted);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-code { color: #d4d4d8; }
+code { color: var(--text-secondary); }
 
 .user-panel :deep(.list-group-item) {
   background: transparent !important;
   color: #e4e4e7;
-  border-color: #27272a;
+  border-color: var(--border);
 }
 
 /* Tabs */
 .admin-tabs {
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border);
   gap: 4px;
 }
 .admin-tabs .nav-link {
   background: none;
   border: none;
-  color: #a1a1aa;
+  color: var(--text-muted);
   padding: 8px 16px;
   font-size: 0.9rem;
   font-weight: 500;
@@ -1975,11 +1975,11 @@ code { color: #d4d4d8; }
   transition: color 0.15s, border-color 0.15s;
 }
 .admin-tabs .nav-link:hover {
-  color: #f4f4f5;
+  color: var(--text);
 }
 .admin-tabs .nav-link.active {
   color: #fff;
-  border-bottom-color: #2563eb;
+  border-bottom-color: var(--accent);
 }
 
 .secret-box {
@@ -1989,15 +1989,15 @@ code { color: #d4d4d8; }
   border-radius: 5px;
   padding: 6px 10px;
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   word-break: break-all;
   max-width: 100%;
 }
 
 /* Product cards */
 .product-card {
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px 18px;
   height: 100%;
@@ -2005,21 +2005,21 @@ code { color: #d4d4d8; }
   flex-direction: column;
 }
 .product-card:hover {
-  border-color: #3f3f46;
+  border-color: var(--border-strong);
 }
 .admin-page :deep(.form-check-input) {
   background-color: rgb(28, 28, 28);
   border-color: #444;
 }
 .admin-page :deep(.form-check-input:checked) {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: var(--accent);
+  border-color: var(--accent);
 }
 .admin-page textarea.dark-input {
   resize: vertical;
 }
 .oidc-sep {
   border: 0;
-  border-top: 1px solid #27272a;
+  border-top: 1px solid var(--border);
 }
 </style>
