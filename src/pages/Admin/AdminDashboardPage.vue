@@ -695,6 +695,7 @@ export default {
         iconUrl: '',
         visibilityMode: 'Public',
         allowedGroupIds: [],
+        new: false,
       };
     }
 
@@ -707,6 +708,7 @@ export default {
         iconUrl: service?.iconUrl ?? '',
         visibilityMode: service?.visibilityMode ?? 'Public',
         allowedGroupIds: Array.isArray(service?.allowedGroupIds) ? [...service.allowedGroupIds] : [],
+        new: !!service?.new,
       };
     }
 
@@ -778,6 +780,7 @@ export default {
         iconUrl: serviceForm.value.iconUrl.trim() || null,
         visibilityMode,
         allowedGroupIds: [...serviceForm.value.allowedGroupIds],
+        new: !!serviceForm.value.new,
       };
 
       if (!body.id) {
@@ -1653,6 +1656,7 @@ export default {
                 </div>
               </div>
               <div class="mt-3 d-flex flex-wrap gap-2">
+                <span v-if="service.new" class="badge bg-info text-dark">New</span>
                 <span class="badge" :class="service.visibilityMode === 'RestrictedToGroups' ? 'bg-warning text-dark' : 'bg-success'">
                   {{ serviceVisibilityLabel(service) }}
                 </span>
@@ -1704,6 +1708,12 @@ export default {
                 <option value="Public">Public</option>
                 <option value="RestrictedToGroups">Restricted to groups</option>
               </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check">
+                <input id="service-new" v-model="serviceForm.new" type="checkbox" class="form-check-input" />
+                <label for="service-new" class="form-check-label" style="font-size:0.85rem;">Mark as new</label>
+              </div>
             </div>
             <div v-if="serviceForm.visibilityMode === 'RestrictedToGroups'" class="col-12">
               <label class="form-label mb-2" style="font-size:0.8rem;">Allowed groups</label>

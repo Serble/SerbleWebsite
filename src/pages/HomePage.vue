@@ -11,6 +11,9 @@ export default {
     };
   },
   computed: {
+    sortedServices() {
+      return [...this.services].sort((a, b) => (b.new ? 1 : 0) - (a.new ? 1 : 0));
+    },
     welcomeText() {
       return this.$t('welcome-to-serble')
         .replace('[', '')
@@ -155,12 +158,13 @@ export default {
 
       <div v-else class="external-grid">
         <a
-          v-for="service in services"
+          v-for="service in sortedServices"
           :key="service.id"
           :href="service.url"
           target="_blank"
           rel="noopener"
           class="external-card"
+          :class="{ 'external-card-new': service.new }"
         >
           <div class="external-card-top">
             <img
@@ -179,7 +183,10 @@ export default {
             </svg>
             <span class="external-card-arrow">↗</span>
           </div>
-          <h3 class="external-card-title">{{ service.name }}</h3>
+          <h3 class="external-card-title">
+            {{ service.name }}
+            <span v-if="service.new" class="service-new-badge">New</span>
+          </h3>
           <p class="external-card-desc">{{ service.description }}</p>
         </a>
       </div>
@@ -338,6 +345,30 @@ export default {
   letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
+}
+
+.service-new-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: #fff;
+  background: var(--accent, #2563eb);
+  border-radius: 999px;
+}
+
+.external-card-new {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 1px var(--accent, #2563eb);
+}
+
+.external-card-new:hover {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 1px var(--accent, #2563eb);
 }
 
 .account-card-desc,
