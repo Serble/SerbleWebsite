@@ -1,8 +1,10 @@
 <script>
 import { inject, computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import CoinIcon from '@/components/CoinIcon.vue';
 
 export default {
+  components: { CoinIcon },
   setup() {
     const userStore = inject('userStore');
     const route = useRoute();
@@ -122,6 +124,10 @@ export default {
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533.18.085.293.118.293.118s.114-.033.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524z"/></svg>
               {{ $t('authorized-applications') }}
             </RouterLink>
+            <RouterLink to="/account/balance" class="nav-dropdown-item">
+              <CoinIcon :size="13" class="me-2 opacity-50" />
+              {{ $t('balance') }}
+            </RouterLink>
             <RouterLink to="/account/paymentportal" class="nav-dropdown-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/></svg>
               {{ $t('manage-payments') }}
@@ -166,6 +172,7 @@ export default {
         <RouterLink to="/account" class="nav-mobile-link" @click="closeMobile">{{ $t('account') }}</RouterLink>
         <RouterLink to="/oauthapps" class="nav-mobile-link" @click="closeMobile">{{ $t('my-applications') }}</RouterLink>
         <RouterLink to="/authorizedapps" class="nav-mobile-link" @click="closeMobile">{{ $t('authorized-applications') }}</RouterLink>
+        <RouterLink to="/account/balance" class="nav-mobile-link" @click="closeMobile">{{ $t('balance') }}</RouterLink>
         <RouterLink to="/account/paymentportal" class="nav-mobile-link" @click="closeMobile">{{ $t('manage-payments') }}</RouterLink>
         <button class="nav-mobile-link nav-mobile-danger" @click="logout">{{ $t('logout') }}</button>
       </template>

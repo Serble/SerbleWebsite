@@ -2,6 +2,7 @@
 import { ref, onMounted, inject, computed, watch } from 'vue';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getPublicAppInfo, deauthorizeApp } from '@/assets/js/serble.js';
+import { isSensitiveScopeName } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 
 // Scope metadata matching the API's ScopeHandler
@@ -13,6 +14,7 @@ const SCOPE_NAMES = [
   'Payment Information',
   'Account Management',
   'OAuth App Management',
+  'Economy',
 ];
 
 const SCOPE_DESCRIPTIONS = [
@@ -23,13 +25,14 @@ const SCOPE_DESCRIPTIONS = [
   'Allows access to a user\'s list of purchased products and allows them to manage their subscriptions.',
   'Grants the ability to control the user\'s account, including changing their email and username.',
   'Allows management over all of your OAuth applications.',
+  'Allows reading and modifying the account\'s coin balance.',
 ];
 
 function parseScopeString(scopeString) {
   if (!scopeString) return [];
   return scopeString
     .split('')
-    .map((bit, i) => bit === '1' ? { name: SCOPE_NAMES[i], description: SCOPE_DESCRIPTIONS[i] } : null)
+    .map((bit, i) => bit === '1' ? { name: SCOPE_NAMES[i], description: SCOPE_DESCRIPTIONS[i], sensitive: isSensitiveScopeName(SCOPE_NAMES[i]) } : null)
     .filter(Boolean);
 }
 
@@ -179,10 +182,13 @@ export default {
             <p class="scopes-heading">{{ $t('scopes') }}</p>
             <p v-if="entry.parsedScopes.length === 0" class="no-scopes">{{ $t('none') }}</p>
             <ul v-else class="scope-list">
-              <li v-for="scope in entry.parsedScopes" :key="scope.name" class="scope-item">
+              <li v-for="scope in entry.parsedScopes" :key="scope.name" class="scope-item" :class="{ 'scope-item-sensitive': scope.sensitive }">
                 <div class="scope-dot"></div>
                 <div class="scope-text">
-                  <span class="scope-name">{{ scope.name }}</span>
+                  <span class="scope-name">
+                    {{ scope.name }}
+                    <span v-if="scope.sensitive" class="scope-sensitive-tag">{{ $t('sensitive') }}</span>
+                  </span>
                   <span class="scope-desc">{{ scope.description }}</span>
                 </div>
               </li>
@@ -403,6 +409,35 @@ export default {
   font-size: 0.85rem;
   color: var(--text-faint);
   margin: 0;
+}
+
+.scope-item-sensitive {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.scope-item-sensitive .scope-dot {
+  background: var(--danger);
+}
+
+.scope-item-sensitive .scope-name {
+  color: var(--danger);
+}
+
+.scope-sensitive-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
 }
 
 /* ── Card footer ── */

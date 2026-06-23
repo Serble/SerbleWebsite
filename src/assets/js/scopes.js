@@ -9,6 +9,7 @@ export const SCOPES = [
     'payment_info',
     'manage_account',
     'manage_apps',
+    'economy',
 ];
 
 export const SCOPE_NAMES = [
@@ -19,6 +20,7 @@ export const SCOPE_NAMES = [
     'Payment Information',
     'Account Management',
     'OAuth App Management',
+    'Economy',
 ];
 
 export const SCOPE_DESCRIPTIONS = [
@@ -30,7 +32,28 @@ export const SCOPE_DESCRIPTIONS = [
     'including viewing the last 4 digits of their credit card and viewing purchase history.',
     'Grants the ability to control the user\'s account, including changing their email, and username. Only you can change your password.',
     'Allows management over all of your OAuth application, this does not allow the authorization of apps.',
+    'Allows reading and modifying the account\'s coin balance.',
 ];
+
+/**
+ * Scopes that grant powerful or dangerous access and should be highlighted
+ * prominently on consent screens.
+ */
+export const SENSITIVE_SCOPES = [
+    'full_access',
+    'economy',
+];
+
+/** True if the given scope ID is considered sensitive/dangerous */
+export function isSensitiveScope(scopeId) {
+    return SENSITIVE_SCOPES.includes(scopeId);
+}
+
+/** True if the given scope display name maps to a sensitive scope */
+export function isSensitiveScopeName(name) {
+    const idx = SCOPE_NAMES.indexOf(name);
+    return idx >= 0 && SENSITIVE_SCOPES.includes(SCOPES[idx]);
+}
 
 /** Convert an array of scope IDs → the 1/0 string the API expects */
 export function scopeIdsToString(scopeIds) {

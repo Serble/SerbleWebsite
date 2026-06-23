@@ -3,7 +3,7 @@ import { ref, computed, onMounted, inject } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getPublicAppInfo, authorizeApp } from '@/assets/js/serble.js';
-import { filterInvalidScopes, scopeIdsToNames, scopeIdsToString, getDescriptionFromName } from '@/assets/js/scopes.js';
+import { filterInvalidScopes, scopeIdsToNames, scopeIdsToString, getDescriptionFromName, isSensitiveScopeName } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 
 const REQUIRED_PARAMS = ['redirect_uri', 'client_id', 'response_type', 'scope', 'state'];
@@ -139,8 +139,12 @@ export default {
 
     const appName = computed(() => app.value?.name ?? app.value?.Name ?? '');
     const appIsOfficial = computed(() => app.value?.isOfficial ?? app.value?.IsOfficial ?? false);
+    const hasSensitiveScopes = computed(() => scopeNames.value.some(isSensitiveScopeName));
+    // Only warn / require acknowledgement for non-official apps.
+    const showSensitive = computed(() => hasSensitiveScopes.value && !appIsOfficial.value);
+    const acknowledged = ref(false);
 
-    return { state, app, appName, appIsOfficial, scopeNames, error, errorMessages, doAuthorize, getDescriptionFromName };
+    return { state, app, appName, appIsOfficial, scopeNames, error, errorMessages, doAuthorize, getDescriptionFromName, isSensitiveScopeName, hasSensitiveScopes, showSensitive, acknowledged };
   }
 };
 </script>
@@ -217,11 +221,20 @@ export default {
       <!-- Scope list -->
       <div class="oauth-scopes">
         <p class="scopes-heading">{{ $t('scopes') }}</p>
+
         <ul v-if="scopeNames.length" class="scope-list">
-          <li v-for="name in scopeNames" :key="name" class="scope-item">
+          <li
+            v-for="name in scopeNames"
+            :key="name"
+            class="scope-item"
+            :class="{ 'scope-item-sensitive': showSensitive && isSensitiveScopeName(name) }"
+          >
             <div class="scope-dot"></div>
             <div class="scope-text">
-              <span class="scope-name">{{ name }}</span>
+              <span class="scope-name">
+                {{ name }}
+                <span v-if="showSensitive && isSensitiveScopeName(name)" class="scope-sensitive-tag">{{ $t('sensitive') }}</span>
+              </span>
               <span class="scope-desc">{{ getDescriptionFromName(name) }}</span>
             </div>
           </li>
@@ -229,13 +242,30 @@ export default {
         <p v-else class="no-scopes">{{ $t('none') }}</p>
       </div>
 
+      <!-- Sensitive scope acknowledgement (skipped for official apps) -->
+      <label v-if="showSensitive" class="sensitive-ack" :class="{ 'sensitive-ack-checked': acknowledged }">
+        <input type="checkbox" v-model="acknowledged" class="sensitive-ack-input">
+        <span class="sensitive-ack-box" aria-hidden="true">
+          <svg v-if="acknowledged" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
+          </svg>
+        </span>
+        <span class="sensitive-ack-text">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="sensitive-ack-icon">
+            <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
+            <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+          </svg>
+          {{ $t('sensitive-scope-warning') }}
+        </span>
+      </label>
+
       <p class="oauth-deny-warning">{{ $t('click-deny-if-confused') }}</p>
 
       <!-- Action buttons -->
       <div class="oauth-actions">
         <button
           class="oauth-btn oauth-btn-allow"
-          :disabled="state === 'working'"
+          :disabled="state === 'working' || (showSensitive && !acknowledged)"
           @click="doAuthorize(true)"
         >
           <svg v-if="state !== 'working'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
@@ -529,6 +559,94 @@ export default {
   font-size: 0.85rem;
   color: var(--text-faint);
   margin: 0;
+}
+
+/* ── Sensitive scope highlighting ── */
+.sensitive-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sensitive-ack-checked {
+  border-color: var(--danger);
+}
+
+.sensitive-ack-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sensitive-ack-box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 5px;
+  border: 1.5px solid var(--danger);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: background 0.15s;
+}
+
+.sensitive-ack-checked .sensitive-ack-box {
+  background: var(--danger);
+}
+
+.sensitive-ack-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sensitive-ack-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.scope-item-sensitive {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.scope-item-sensitive .scope-dot {
+  background: var(--danger);
+}
+
+.scope-item-sensitive .scope-name {
+  color: var(--danger);
+}
+
+.scope-sensitive-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
 }
 
 .oauth-deny-warning {

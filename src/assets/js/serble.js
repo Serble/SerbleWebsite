@@ -1235,3 +1235,256 @@ export async function adminSetAppClaimMappings(id, mappings) {
         return { success: false, error: error?.response?.status };
     }
 }
+
+// ── Economy / Balances & App API keys ──
+//
+// Coin amounts are unsigned 64-bit integers that can exceed JS Number precision
+// (2^53). To avoid precision loss we (a) emit request bodies with the amount as
+// an unquoted JSON integer built from a digit string, and (b) read the `coins`
+// field back out of the raw response text as a string.
+
+function coinReqConfig() {
+    return {
+        headers: { SerbleAuth: `User ${getAuthToken()}`, 'Content-Type': 'application/json' },
+        transformResponse: [(d) => d],
+    };
+}
+
+function coinGetConfig() {
+    return {
+        headers: { SerbleAuth: `User ${getAuthToken()}` },
+        transformResponse: [(d) => d],
+    };
+}
+
+// Build a JSON body with `key` set to an unquoted integer, preserving full
+// precision. Non-digit input falls back to 0.
+function intBody(key, value) {
+    const digits = String(value ?? '').trim();
+    const safe = /^\d+$/.test(digits) ? digits : '0';
+    return `{"${key}":${safe}}`;
+}
+
+// Parse a balance response, keeping `coins` as a precision-safe string.
+function parseCoinResponse(rawText) {
+    let obj = {};
+    try { obj = JSON.parse(rawText); } catch { /* ignore */ }
+    const m = /"coins"\s*:\s*(\d+)/.exec(rawText || '');
+    if (m) obj.coins = m[1];
+    return obj;
+}
+
+// Generic balance of the current principal (user) — GET/POST /balance
+export async function getBalance() {
+    try {
+        const response = await axios.get(`${API_URL}/balance`, coinGetConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching balance', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// Build a transfer body: amount as an unquoted integer (precision-safe),
+// recipient and description as JSON-escaped strings.
+function transferBody(recipient, amount, description) {
+    const digits = String(amount ?? '').trim();
+    const safe = /^\d+$/.test(digits) ? digits : '0';
+    const r = JSON.stringify(String(recipient ?? ''));
+    const d = JSON.stringify(String(description ?? ''));
+    return `{"recipient":${r},"amount":${safe},"description":${d}}`;
+}
+
+// Keep nested balance `coins` and the transaction `amount` as precision-safe strings.
+function parseTransferResponse(rawText) {
+    let obj = {};
+    try { obj = JSON.parse(rawText); } catch { /* ignore */ }
+    const fm = /"fromBalance"\s*:\s*\{[^}]*?"coins"\s*:\s*(\d+)/.exec(rawText || '');
+    if (fm && obj.fromBalance) obj.fromBalance.coins = fm[1];
+    const tm = /"toBalance"\s*:\s*\{[^}]*?"coins"\s*:\s*(\d+)/.exec(rawText || '');
+    if (tm && obj.toBalance) obj.toBalance.coins = tm[1];
+    const am = /"transaction"\s*:\s*\{[^}]*?"amount"\s*:\s*(\d+)/.exec(rawText || '');
+    if (am && obj.transaction) obj.transaction.amount = am[1];
+    return obj;
+}
+
+// Send coins to another user — POST /balance/transfer
+export async function transferCoins(recipient, amount, description) {
+    try {
+        const response = await axios.post(`${API_URL}/balance/transfer`, transferBody(recipient, amount, description), coinReqConfig());
+        return { success: true, data: parseTransferResponse(response.data) };
+    } catch (error) {
+        console.error('Error transferring coins', error);
+        const raw = error?.response?.data;
+        const message = typeof raw === 'string' ? raw.trim() : '';
+        return { success: false, error: error?.response?.status, message };
+    }
+}
+
+// Keep each transaction's `amount` as a precision-safe string.
+function parseTransactionsResponse(rawText) {
+    let arr = [];
+    try { arr = JSON.parse(rawText); } catch { /* ignore */ }
+    if (!Array.isArray(arr)) return [];
+    const amounts = [...(rawText || '').matchAll(/"amount"\s*:\s*(\d+)/g)].map(m => m[1]);
+    arr.forEach((t, i) => { if (amounts[i] !== undefined) t.amount = amounts[i]; });
+    return arr;
+}
+
+// Transaction history for the current user — GET /balance/transactions
+export async function getTransactions(limit = 50) {
+    try {
+        const response = await axios.get(`${API_URL}/balance/transactions?limit=${encodeURIComponent(limit)}`, coinGetConfig());
+        return { success: true, transactions: parseTransactionsResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching transactions', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// App API keys (owner) — /app/{appid}/keys
+export async function getAppKeys(appId) {
+    try {
+        const response = await axios.get(`${API_URL}/app/${encodeURIComponent(appId)}/keys`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, keys: response.data };
+    } catch (error) {
+        console.error('Error fetching app keys', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function createAppKey(appId, name) {
+    try {
+        const response = await axios.post(`${API_URL}/app/${encodeURIComponent(appId)}/keys`, { name }, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, key: response.data };
+    } catch (error) {
+        console.error('Error creating app key', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function deleteAppKey(appId, keyId) {
+    try {
+        await axios.delete(`${API_URL}/app/${encodeURIComponent(appId)}/keys/${encodeURIComponent(keyId)}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting app key', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// Owner-managed app balance — /app/{appid}/balance
+export async function getAppBalance(appId) {
+    try {
+        const response = await axios.get(`${API_URL}/app/${encodeURIComponent(appId)}/balance`, coinGetConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching app balance', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// Admin: user coins — /admin/users/{id}/coins
+export async function adminGetUserCoins(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/users/${encodeURIComponent(id)}/coins`, coinGetConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching user coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSetUserCoins(id, balance) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/users/${encodeURIComponent(id)}/coins/set`, intBody('balance', balance), coinReqConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error setting user coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminAddUserCoins(id, amount) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/users/${encodeURIComponent(id)}/coins/add`, intBody('amount', amount), coinReqConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error adding user coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminRemoveUserCoins(id, amount) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/users/${encodeURIComponent(id)}/coins/remove`, intBody('amount', amount), coinReqConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error removing user coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// Admin: app coins — /admin/apps/{id}/coins
+export async function adminGetAppCoins(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/${encodeURIComponent(id)}/coins`, coinGetConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching app coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminSetAppCoins(id, balance) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/apps/${encodeURIComponent(id)}/coins/set`, intBody('balance', balance), coinReqConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error setting app coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminAddAppCoins(id, amount) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/apps/${encodeURIComponent(id)}/coins/add`, intBody('amount', amount), coinReqConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error adding app coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminRemoveAppCoins(id, amount) {
+    try {
+        const response = await axios.post(`${API_URL}/admin/apps/${encodeURIComponent(id)}/coins/remove`, intBody('amount', amount), coinReqConfig());
+        return { success: true, balance: parseCoinResponse(response.data) };
+    } catch (error) {
+        console.error('Error removing app coins', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// Admin: transaction audit log — GET /admin/transactions
+export async function adminGetTransactions({ user, from, to, limit = 50, offset = 0 } = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (user) params.set('user', user);
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        params.set('limit', limit);
+        params.set('offset', offset);
+        const response = await axios.get(`${API_URL}/admin/transactions?${params.toString()}`, coinGetConfig());
+        return { success: true, transactions: parseTransactionsResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching admin transactions', error);
+        return { success: false, error: error?.response?.status };
+    }
+}

@@ -68,6 +68,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/account/balance',
+      name: 'Balance',
+      component: () => import('@/pages/Account/BalancePage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/account/paymentportal',
       name: 'PaymentPortal',
       component: () => import('@/pages/Account/PaymentPortalPage.vue'),

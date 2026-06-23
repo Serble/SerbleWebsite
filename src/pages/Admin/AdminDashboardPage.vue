@@ -47,6 +47,15 @@ import {
   adminSetAppAccessPolicy,
   adminSetAppAccessGroups,
   adminSetAppClaimMappings,
+  adminGetUserCoins,
+  adminSetUserCoins,
+  adminAddUserCoins,
+  adminRemoveUserCoins,
+  adminGetAppCoins,
+  adminSetAppCoins,
+  adminAddAppCoins,
+  adminRemoveAppCoins,
+  adminGetTransactions,
 } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
@@ -85,6 +94,51 @@ export default {
       setTimeout(() => { if (actionMessage.value === msg) actionMessage.value = null; }, 4000);
     }
 
+    function formatCoins(value) {
+      const digits = String(value ?? '0').trim();
+      if (!/^\d+$/.test(digits)) return digits || '0';
+      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function formatDate(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? String(value) : d.toLocaleString();
+    }
+
+    // ── User coins ──
+    const userCoins = ref(null);
+    const userCoinsAmount = ref('');
+    const userCoinsBusy = ref(false);
+
+    async function loadUserCoins() {
+      if (!selected.value) return;
+      const r = await adminGetUserCoins(selected.value.id);
+      if (r.success) userCoins.value = String(r.balance?.coins ?? '0');
+    }
+
+    async function adjustUserCoins(op) {
+      if (!selected.value) return;
+      const amount = userCoinsAmount.value.trim();
+      if (!/^\d+$/.test(amount)) {
+        flash('Enter a whole number for coins', 'danger');
+        return;
+      }
+      const id = selected.value.id;
+      let fn;
+      if (op === 'set') fn = () => adminSetUserCoins(id, amount);
+      else if (op === 'add') fn = () => adminAddUserCoins(id, amount);
+      else fn = () => adminRemoveUserCoins(id, amount);
+      userCoinsBusy.value = true;
+      const r = await withBusy(fn, 'Coins updated');
+      userCoinsBusy.value = false;
+      if (r?.success) {
+        userCoins.value = String(r.balance?.coins ?? '0');
+        userCoinsAmount.value = '';
+        if (selected.value) selected.value.coins = userCoins.value;
+      }
+    }
+
     async function loadStats() {
       stats.value = null;
       statsError.value = null;
@@ -111,6 +165,8 @@ export default {
       selectedLoading.value = false;
       if (r.success) {
         selected.value = r.user;
+        userCoins.value = String(r.user?.coins ?? '0');
+        userCoinsAmount.value = '';
         loadPasskeys(id);
       } else {
         selectedError.value = r.error ?? 'unknown';
@@ -129,6 +185,8 @@ export default {
       selected.value = null;
       passkeys.value = null;
       passwordInput.value = '';
+      userCoins.value = null;
+      userCoinsAmount.value = '';
     }
 
     async function withBusy(fn, successMsg) {
@@ -276,14 +334,45 @@ export default {
           ownerId: r.app.ownerId ?? '',
         };
         loadAppOidc(id);
+        appCoins.value = String(r.app?.coins ?? '0');
+        appCoinsAmount.value = '';
       } else {
         selectedAppError.value = r.error ?? 'unknown';
+      }
+    }
+
+    // ── App coins ──
+    const appCoins = ref(null);
+    const appCoinsAmount = ref('');
+    const appCoinsBusy = ref(false);
+
+    async function adjustAppCoins(op) {
+      if (!selectedApp.value) return;
+      const amount = appCoinsAmount.value.trim();
+      if (!/^\d+$/.test(amount)) {
+        flash('Enter a whole number for coins', 'danger');
+        return;
+      }
+      const id = selectedApp.value.id;
+      let fn;
+      if (op === 'set') fn = () => adminSetAppCoins(id, amount);
+      else if (op === 'add') fn = () => adminAddAppCoins(id, amount);
+      else fn = () => adminRemoveAppCoins(id, amount);
+      appCoinsBusy.value = true;
+      const r = await withBusy(fn, 'App coins updated');
+      appCoinsBusy.value = false;
+      if (r?.success) {
+        appCoins.value = String(r.balance?.coins ?? '0');
+        appCoinsAmount.value = '';
+        if (selectedApp.value) selectedApp.value.coins = appCoins.value;
       }
     }
 
     function closeApp() {
       selectedApp.value = null;
       showSecret.value = false;
+      appCoins.value = null;
+      appCoinsAmount.value = '';
       appOidcClient.value = null;
       appOidcClientForm.value = { additionalRedirectUris: [], isPublicClient: false, requirePkce: true };
       appAccess.value = null;
@@ -296,6 +385,7 @@ export default {
       const r = await adminGetApp(selectedApp.value.id);
       if (r.success) {
         selectedApp.value = r.app;
+        appCoins.value = String(r.app?.coins ?? '0');
         appEdits.value = {
           name: r.app.name ?? '',
           description: r.app.description ?? '',
@@ -1003,6 +1093,51 @@ export default {
       return 'User';
     }
 
+    // ── Transaction audit log ──
+    const txFilters = ref({ user: '', from: '', to: '' });
+    const txLimit = ref(50);
+    const txOffset = ref(0);
+    const txList = ref([]);
+    const txLoading = ref(false);
+    const txError = ref(null);
+    const txLoaded = ref(false);
+
+    async function loadTransactions(resetOffset = true) {
+      if (resetOffset) txOffset.value = 0;
+      txLoading.value = true;
+      txError.value = null;
+      const r = await adminGetTransactions({
+        user: txFilters.value.user.trim() || undefined,
+        from: txFilters.value.from.trim() || undefined,
+        to: txFilters.value.to.trim() || undefined,
+        limit: txLimit.value,
+        offset: txOffset.value,
+      });
+      txLoading.value = false;
+      txLoaded.value = true;
+      if (r.success) {
+        txList.value = Array.isArray(r.transactions) ? r.transactions : [];
+      } else {
+        txList.value = [];
+        txError.value = r.error === 404 ? 'No user matched that filter.' : ('Error: ' + (r.error ?? 'unknown'));
+      }
+    }
+
+    function clearTxFilters() {
+      txFilters.value = { user: '', from: '', to: '' };
+      loadTransactions(true);
+    }
+
+    function txNextPage() {
+      txOffset.value += txLimit.value;
+      loadTransactions(false);
+    }
+
+    function txPrevPage() {
+      txOffset.value = Math.max(0, txOffset.value - txLimit.value);
+      loadTransactions(false);
+    }
+
     return {
       isAdmin, stats, statsError, query, limit, searching, results, searchError,
       selected, selectedLoading, selectedError, passkeys, passkeysLoading,
@@ -1010,6 +1145,9 @@ export default {
       loadStats, runSearch, selectUser, closeUser,
       actDisable, actEnable, actDelete, actDisable2fa, actChangePassword,
       actToggleAdmin, actLoginAs, actDeletePasskey, permLabel,
+      formatCoins, formatDate,
+      userCoins, userCoinsAmount, userCoinsBusy, loadUserCoins, adjustUserCoins,
+      appCoins, appCoinsAmount, appCoinsBusy, adjustAppCoins,
       activeTab,
       appStats, appStatsError, appQuery, appLimit, appSearching, appResults, appSearchError,
       selectedApp, selectedAppLoading, selectedAppError, appEdits, showSecret,
@@ -1038,6 +1176,9 @@ export default {
       groupMembers, groupMembersLoading, newMemberId, memberDetails,
       loadGroups, openNewGroup, openEditGroup, closeGroupPanel,
       saveGroup, deleteGroup, addGroupMember, removeGroupMember,
+      // Transactions audit log
+      txFilters, txLimit, txOffset, txList, txLoading, txError, txLoaded,
+      loadTransactions, clearTxFilters, txNextPage, txPrevPage,
     };
   }
 };
@@ -1074,6 +1215,9 @@ export default {
         </li>
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">Services</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" :class="{ active: activeTab === 'transactions' }" @click="activeTab = 'transactions'; if (!txLoaded) loadTransactions()">Transactions</button>
         </li>
       </ul>
 
@@ -1135,6 +1279,7 @@ export default {
                 <th>Email</th>
                 <th>ID</th>
                 <th>Role</th>
+                <th>Coins</th>
                 <th></th>
               </tr>
             </thead>
@@ -1152,6 +1297,7 @@ export default {
                   <span v-else-if="u.permLevel >= 2" class="badge bg-primary">Admin</span>
                   <span v-else class="text-muted-light">User</span>
                 </td>
+                <td>{{ formatCoins(u.coins) }}</td>
                 <td class="text-end">
                   <button class="btn btn-sm btn-outline-primary" @click="selectUser(u.id)">Manage</button>
                 </td>
@@ -1188,6 +1334,26 @@ export default {
             <div class="info-row"><span class="info-label">TOTP enabled</span><span>{{ selected.totpEnabled ? 'Yes' : 'No' }}</span></div>
             <div class="info-row"><span class="info-label">Language</span><span>{{ selected.language || '—' }}</span></div>
             <div class="info-row"><span class="info-label">Password salted</span><span>{{ selected.hasPasswordSalt ? 'Yes' : 'No (pre-migration)' }}</span></div>
+            <div class="info-row"><span class="info-label">Coins</span><span>{{ formatCoins(userCoins ?? selected.coins) }}</span></div>
+            <div class="info-row"><span class="info-label">Created</span><span>{{ formatDate(selected.dateCreated) }}</span></div>
+          </div>
+        </div>
+
+        <h6 class="section-heading">Coins</h6>
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+          <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
+            {{ formatCoins(userCoins ?? selected.coins) }} coins
+          </span>
+          <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserCoins">Refresh</button>
+        </div>
+        <div class="row g-2 mb-4">
+          <div class="col-md-6">
+            <input v-model="userCoinsAmount" type="text" inputmode="numeric" class="form-control dark-input" placeholder="Amount" />
+          </div>
+          <div class="col-md-6 d-flex gap-2">
+            <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustUserCoins('add')">Add</button>
+            <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustUserCoins('remove')">Remove</button>
+            <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustUserCoins('set')">Set</button>
           </div>
         </div>
 
@@ -1289,6 +1455,7 @@ export default {
                   <th>Name</th>
                   <th>ID</th>
                   <th>Owner ID</th>
+                  <th>Coins</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1303,6 +1470,7 @@ export default {
                   </td>
                   <td><code style="font-size:0.78rem;">{{ a.id }}</code></td>
                   <td><code style="font-size:0.78rem;">{{ a.ownerId }}</code></td>
+                  <td>{{ formatCoins(a.coins) }}</td>
                   <td class="text-end">
                     <button class="btn btn-sm btn-outline-primary" @click="selectApp(a.id)">Manage</button>
                   </td>
@@ -1354,6 +1522,24 @@ export default {
               <button type="submit" class="btn btn-primary" :disabled="actionBusy">Save changes</button>
             </div>
           </form>
+
+          <h6 class="section-heading">Coins</h6>
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+            <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
+              {{ formatCoins(appCoins ?? selectedApp.coins) }} coins
+            </span>
+            <span class="text-muted-light" style="font-size:0.8rem;">Created: {{ formatDate(selectedApp.dateCreated) }}</span>
+          </div>
+          <div class="row g-2 mb-4">
+            <div class="col-md-6">
+              <input v-model="appCoinsAmount" type="text" inputmode="numeric" class="form-control dark-input" placeholder="Amount" />
+            </div>
+            <div class="col-md-6 d-flex gap-2">
+              <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustAppCoins('add')">Add</button>
+              <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustAppCoins('remove')">Remove</button>
+              <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustAppCoins('set')">Set</button>
+            </div>
+          </div>
 
           <h6 class="section-heading">Official app</h6>
           <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
@@ -1897,6 +2083,94 @@ export default {
             </ul>
           </template>
         </div>
+      </div>
+
+      <!-- TRANSACTIONS TAB -->
+      <div v-show="activeTab === 'transactions'">
+        <div class="search-card p-3 mb-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+              <label class="form-label mb-1" style="font-size:0.8rem;">User (sender or recipient)</label>
+              <input v-model="txFilters.user" class="form-control form-control-sm dark-input" placeholder="username or id" @keyup.enter="loadTransactions()">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label mb-1" style="font-size:0.8rem;">From (sender)</label>
+              <input v-model="txFilters.from" class="form-control form-control-sm dark-input" placeholder="username or id" @keyup.enter="loadTransactions()">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label mb-1" style="font-size:0.8rem;">To (recipient)</label>
+              <input v-model="txFilters.to" class="form-control form-control-sm dark-input" placeholder="username or id" @keyup.enter="loadTransactions()">
+            </div>
+            <div class="col-6 col-md-1">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Limit</label>
+              <select v-model.number="txLimit" class="form-control form-control-sm dark-input" @change="loadTransactions()">
+                <option :value="25">25</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+                <option :value="200">200</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2 d-flex gap-2">
+              <button class="btn btn-sm btn-primary w-100" :disabled="txLoading" @click="loadTransactions()">Search</button>
+              <button class="btn btn-sm btn-outline-secondary" :disabled="txLoading" @click="clearTxFilters" title="Clear filters">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="txError" class="alert alert-danger py-2">{{ txError }}</div>
+
+        <div v-if="txLoading" class="text-muted py-3">Loading…</div>
+
+        <template v-else>
+          <div v-if="txList.length === 0 && txLoaded" class="text-muted py-3">No transactions found.</div>
+
+          <div v-else-if="txList.length" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th class="text-end">Amount</th>
+                  <th>Note</th>
+                  <th>Tx ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="tx in txList" :key="tx.id">
+                  <td style="white-space:nowrap;">{{ formatDate(tx.dateCreated) }}</td>
+                  <td>
+                    <span v-if="tx.fromOwnerId">
+                      <span class="badge bg-secondary me-1">{{ tx.fromOwnerType }}</span>
+                      <code>{{ tx.fromOwnerId }}</code>
+                    </span>
+                    <span v-else class="text-muted">deleted</span>
+                  </td>
+                  <td>
+                    <span v-if="tx.toOwnerId">
+                      <span class="badge bg-secondary me-1">{{ tx.toOwnerType }}</span>
+                      <code>{{ tx.toOwnerId }}</code>
+                    </span>
+                    <span v-else class="text-muted">deleted</span>
+                  </td>
+                  <td class="text-end fw-semibold" style="white-space:nowrap;">{{ formatCoins(tx.amount) }}</td>
+                  <td>{{ tx.description || '—' }}</td>
+                  <td><code style="font-size:0.75rem;">{{ tx.id }}</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <span class="text-muted" style="font-size:0.85rem;">
+              Showing {{ txList.length }} result(s), offset {{ txOffset }}
+            </span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" :disabled="txLoading || txOffset === 0" @click="txPrevPage">Previous</button>
+              <button class="btn btn-sm btn-outline-secondary" :disabled="txLoading || txList.length < txLimit" @click="txNextPage">Next</button>
+            </div>
+          </div>
+        </template>
       </div>
     </template>
   </div>
