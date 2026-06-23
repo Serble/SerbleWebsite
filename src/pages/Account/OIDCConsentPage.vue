@@ -5,7 +5,9 @@ import {
   getOidcAuthorizeSession,
   approveOidcAuthorizeSession,
   denyOidcAuthorizeSession,
+  getPublicAppInfo,
 } from '@/assets/js/serble.js';
+import OfficialBadge from '@/components/OfficialBadge.vue';
 
 // Friendly descriptions for the standard OIDC scopes.
 const SCOPE_DESCRIPTIONS = {
@@ -17,6 +19,7 @@ const SCOPE_DESCRIPTIONS = {
 };
 
 export default {
+  components: { OfficialBadge },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -24,6 +27,7 @@ export default {
     // state: 'loading' | 'ready' | 'working' | 'redirecting' | 'error'
     const state = ref('loading');
     const sessionInfo = ref(null);
+    const appIsOfficial = ref(false);
     const error = ref({ code: '', detail: '' });
 
     const sessionId = computed(() => route.query.session ?? '');
@@ -73,6 +77,23 @@ export default {
 
       sessionInfo.value = r.session;
 
+      // The official flag may be returned directly on the session, otherwise
+      // fall back to the public app profile (which exposes isOfficial).
+      const direct = r.session?.isOfficial ?? r.session?.IsOfficial
+        ?? r.session?.appIsOfficial ?? r.session?.AppIsOfficial;
+      if (typeof direct === 'boolean') {
+        appIsOfficial.value = direct;
+      } else {
+        const appId = r.session?.appId ?? r.session?.AppId
+          ?? r.session?.clientId ?? r.session?.ClientId;
+        if (appId) {
+          const pub = await getPublicAppInfo(appId);
+          if (pub.success) {
+            appIsOfficial.value = pub.app?.isOfficial ?? pub.app?.IsOfficial ?? false;
+          }
+        }
+      }
+
       // Backend says user is denied — bounce back without showing UI.
       if (r.session?.denied) {
         followRedirect(r.session.redirect);
@@ -104,7 +125,7 @@ export default {
 
     return {
       state, sessionInfo, error, errorMessages,
-      appName, appDescription, scopes,
+      appName, appDescription, scopes, appIsOfficial,
       describeScope, decide,
     };
   }
@@ -154,6 +175,7 @@ export default {
       <div class="oidc-app-header">
         <div class="oidc-app-icon">{{ (appName || '?').charAt(0).toUpperCase() }}</div>
         <h2 class="oidc-app-name">{{ appName }}</h2>
+        <OfficialBadge v-if="appIsOfficial" />
         <p v-if="appDescription" class="oidc-app-desc">{{ appDescription }}</p>
       </div>
 

@@ -904,6 +904,18 @@ export async function adminCycleAppSecret(id) {
     }
 }
 
+export async function adminSetAppOfficial(id, isOfficial) {
+    try {
+        const response = await axios.put(`${API_URL}/admin/apps/${id}/official`, { isOfficial }, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, app: response.data };
+    } catch (error) {
+        console.error('Error setting app official flag', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
 // ── Admin Product helpers ──
 
 export async function adminListProducts() {

@@ -21,6 +21,7 @@ import {
   adminDeleteApp,
   adminGetAppsByUser,
   adminCycleAppSecret,
+  adminSetAppOfficial,
   adminListProducts,
   adminGetProduct,
   adminCreateProduct,
@@ -48,8 +49,10 @@ import {
   adminSetAppClaimMappings,
 } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
+import OfficialBadge from '@/components/OfficialBadge.vue';
 
 export default {
+  components: { OfficialBadge },
   setup() {
     const router = useRouter();
     const userStore = inject('userStore');
@@ -336,6 +339,24 @@ export default {
       await withBusy(() => adminCycleAppSecret(selectedApp.value.id), 'Secret cycled');
       showSecret.value = true;
       await refreshSelectedApp();
+    }
+
+    async function actToggleOfficial() {
+      if (!selectedApp.value) return;
+      const next = !selectedApp.value.isOfficial;
+      const r = await withBusy(
+        () => adminSetAppOfficial(selectedApp.value.id, next),
+        next ? 'Marked as official' : 'Removed official status'
+      );
+      if (r?.success && r.app) {
+        selectedApp.value = r.app;
+        const row = appResults.value.find(x => x.id === r.app.id);
+        if (row) row.isOfficial = r.app.isOfficial;
+        if (userApps.value) {
+          const ua = userApps.value.find(x => x.id === r.app.id);
+          if (ua) ua.isOfficial = r.app.isOfficial;
+        }
+      }
     }
 
     async function copySecret() {
@@ -994,7 +1015,7 @@ export default {
       selectedApp, selectedAppLoading, selectedAppError, appEdits, showSecret,
       userApps, userAppsLoading,
       loadAppStats, runAppSearch, selectApp, closeApp,
-      actSaveApp, actDeleteApp, actCycleSecret, copySecret,
+      actSaveApp, actDeleteApp, actCycleSecret, actToggleOfficial, copySecret,
       loadUserApps, viewAppFromUser,
       products, productsLoading, productsError, productForm, editingProduct, productPanelOpen,
       loadProducts, openNewProduct, editProduct, closeProductPanel,
@@ -1274,7 +1295,10 @@ export default {
               <tbody>
                 <tr v-for="a in appResults" :key="a.id">
                   <td>
-                    <div>{{ a.name }}</div>
+                    <div>
+                      {{ a.name }}
+                      <OfficialBadge v-if="a.isOfficial" class="ms-1" />
+                    </div>
                     <div v-if="a.description" class="text-muted-light" style="font-size:0.8rem;">{{ a.description }}</div>
                   </td>
                   <td><code style="font-size:0.78rem;">{{ a.id }}</code></td>
@@ -1297,7 +1321,10 @@ export default {
         <div v-if="selectedApp" class="user-panel">
           <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
             <div>
-              <h4 class="mb-0">{{ selectedApp.name }}</h4>
+              <h4 class="mb-0">
+                {{ selectedApp.name }}
+                <OfficialBadge v-if="selectedApp.isOfficial" class="ms-2" />
+              </h4>
               <div class="text-muted" style="font-size:0.85rem;"><code>{{ selectedApp.id }}</code></div>
             </div>
             <button class="btn btn-sm btn-outline-secondary" @click="closeApp">Close</button>
@@ -1327,6 +1354,27 @@ export default {
               <button type="submit" class="btn btn-primary" :disabled="actionBusy">Save changes</button>
             </div>
           </form>
+
+          <h6 class="section-heading">Official app</h6>
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+            <div class="form-check form-switch m-0">
+              <input
+                id="officialToggle"
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                :checked="selectedApp.isOfficial"
+                :disabled="actionBusy"
+                @change="actToggleOfficial"
+              />
+              <label class="form-check-label" for="officialToggle" style="font-size:0.9rem;">
+                Mark this as an official (first-party) app
+              </label>
+            </div>
+            <span v-if="selectedApp.isOfficial" class="ms-auto">
+              <OfficialBadge />
+            </span>
+          </div>
 
           <h6 class="section-heading">Client secret</h6>
           <div class="d-flex flex-wrap gap-2 align-items-center mb-4">

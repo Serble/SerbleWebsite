@@ -2,6 +2,7 @@
 import { ref, onMounted, inject, computed, watch } from 'vue';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getPublicAppInfo, deauthorizeApp } from '@/assets/js/serble.js';
+import OfficialBadge from '@/components/OfficialBadge.vue';
 
 // Scope metadata matching the API's ScopeHandler
 const SCOPE_NAMES = [
@@ -33,6 +34,7 @@ function parseScopeString(scopeString) {
 }
 
 export default {
+  components: { OfficialBadge },
   setup() {
     const user = ensureLoggedIn();
     const userStore = inject('userStore');
@@ -163,7 +165,10 @@ export default {
           <div class="card-header">
             <div class="app-icon">{{ (entry.publicApp?.Name ?? entry.publicApp?.name ?? '?').charAt(0).toUpperCase() }}</div>
             <div class="app-heading">
-              <h4 class="app-name">{{ entry.publicApp?.Name ?? entry.publicApp?.name }}</h4>
+              <h4 class="app-name">
+                {{ entry.publicApp?.Name ?? entry.publicApp?.name }}
+                <OfficialBadge v-if="entry.publicApp?.isOfficial ?? entry.publicApp?.IsOfficial" class="ms-1" />
+              </h4>
               <p v-if="(entry.publicApp?.Description ?? entry.publicApp?.description)" class="app-desc">
                 {{ entry.publicApp?.Description ?? entry.publicApp?.description }}
               </p>

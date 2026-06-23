@@ -4,10 +4,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getPublicAppInfo, authorizeApp } from '@/assets/js/serble.js';
 import { filterInvalidScopes, scopeIdsToNames, scopeIdsToString, getDescriptionFromName } from '@/assets/js/scopes.js';
+import OfficialBadge from '@/components/OfficialBadge.vue';
 
 const REQUIRED_PARAMS = ['redirect_uri', 'client_id', 'response_type', 'scope', 'state'];
 
 export default {
+  components: { OfficialBadge },
   setup() {
     const user = ensureLoggedIn();
     const route  = useRoute();
@@ -136,8 +138,9 @@ export default {
     }
 
     const appName = computed(() => app.value?.name ?? app.value?.Name ?? '');
+    const appIsOfficial = computed(() => app.value?.isOfficial ?? app.value?.IsOfficial ?? false);
 
-    return { state, app, appName, scopeNames, error, errorMessages, doAuthorize, getDescriptionFromName };
+    return { state, app, appName, appIsOfficial, scopeNames, error, errorMessages, doAuthorize, getDescriptionFromName };
   }
 };
 </script>
@@ -204,6 +207,7 @@ export default {
       <div class="oauth-app-header">
         <div class="oauth-app-icon">{{ appName.charAt(0).toUpperCase() }}</div>
         <h2 class="oauth-app-name">{{ appName }}</h2>
+        <OfficialBadge v-if="appIsOfficial" />
       </div>
 
       <p class="oauth-warning-text">
