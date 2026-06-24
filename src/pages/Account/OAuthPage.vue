@@ -6,7 +6,10 @@ import { getPublicAppInfo, authorizeApp } from '@/assets/js/serble.js';
 import { filterInvalidScopes, scopeIdsToNames, scopeIdsToString, getDescriptionFromName, isSensitiveScopeName } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 
-const REQUIRED_PARAMS = ['redirect_uri', 'client_id', 'response_type', 'scope', 'state'];
+// Note: `response_type` is intentionally NOT required. The legacy Serble OAuth
+// flow always issues an authorization code and never reads response_type, so
+// requiring it only rejects otherwise-valid requests.
+const REQUIRED_PARAMS = ['redirect_uri', 'client_id', 'scope', 'state'];
 
 export default {
   components: { OfficialBadge },

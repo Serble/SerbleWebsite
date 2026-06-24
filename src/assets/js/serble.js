@@ -1332,9 +1332,15 @@ function parseTransactionsResponse(rawText) {
 }
 
 // Transaction history for the current user — GET /balance/transactions
-export async function getTransactions(limit = 50) {
+// Supports limit/offset pagination. Returns up to `limit` items starting at `offset`.
+export async function getTransactions(limit = 50, offset = 0) {
     try {
-        const response = await axios.get(`${API_URL}/balance/transactions?limit=${encodeURIComponent(limit)}`, coinGetConfig());
+        const safeLimit = /^\d+$/.test(String(limit)) ? limit : 50;
+        const safeOffset = /^\d+$/.test(String(offset)) ? offset : 0;
+        const response = await axios.get(
+            `${API_URL}/balance/transactions?limit=${encodeURIComponent(safeLimit)}&offset=${encodeURIComponent(safeOffset)}`,
+            coinGetConfig()
+        );
         return { success: true, transactions: parseTransactionsResponse(response.data) };
     } catch (error) {
         console.error('Error fetching transactions', error);
@@ -1485,6 +1491,21 @@ export async function adminGetTransactions({ user, from, to, limit = 50, offset 
         return { success: true, transactions: parseTransactionsResponse(response.data) };
     } catch (error) {
         console.error('Error fetching admin transactions', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+// Admin: total economy value in circulation — GET /admin/economy/total
+// Coin totals come back as decimal strings (they can exceed ulong/Number),
+// so leave them as strings and parse with BigInt at the display layer.
+export async function adminGetEconomyTotal() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/economy/total`, coinGetConfig());
+        let data = {};
+        try { data = JSON.parse(response.data); } catch { /* ignore */ }
+        return { success: true, total: data };
+    } catch (error) {
+        console.error('Error fetching economy total', error);
         return { success: false, error: error?.response?.status };
     }
 }

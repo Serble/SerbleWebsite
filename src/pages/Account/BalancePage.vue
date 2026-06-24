@@ -1,15 +1,10 @@
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getBalance, transferCoins, getTransactions } from '@/assets/js/serble.js';
+import { parseCoinsToRaw, isValidCoinAmount } from '@/assets/js/coins.js';
 import CoinIcon from '@/components/CoinIcon.vue';
-
-function formatCoins(value) {
-  const digits = String(value ?? '0').trim();
-  if (!/^\d+$/.test(digits)) return digits;
-  // Group digits in threes without relying on Number (precision-safe).
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
+import CoinAmount from '@/components/CoinAmount.vue';
 
 function formatDate(value) {
   if (!value) return '';
@@ -19,7 +14,7 @@ function formatDate(value) {
 }
 
 export default {
-  components: { CoinIcon },
+  components: { CoinIcon, CoinAmount },
   setup() {
     ensureLoggedIn();
 
@@ -37,8 +32,11 @@ export default {
     const sendSuccess = ref('');
 
     // Transaction history
+    const TX_PAGE_SIZE = 50;
     const txLoading = ref(true);
     const txError = ref(false);
+    const txLoadingMore = ref(false);
+    const txHasMore = ref(false);
     const transactions = ref([]);
 
     async function load() {
@@ -57,10 +55,28 @@ export default {
     async function loadTransactions() {
       txLoading.value = true;
       txError.value = false;
-      const r = await getTransactions(50);
+      const r = await getTransactions(TX_PAGE_SIZE, 0);
       txLoading.value = false;
       if (r.success) {
-        transactions.value = Array.isArray(r.transactions) ? r.transactions : [];
+        const list = Array.isArray(r.transactions) ? r.transactions : [];
+        transactions.value = list;
+        // If we got a full page back there may be more to load.
+        txHasMore.value = list.length === TX_PAGE_SIZE;
+      } else {
+        txError.value = true;
+        txHasMore.value = false;
+      }
+    }
+
+    async function loadMoreTransactions() {
+      if (txLoadingMore.value || !txHasMore.value) return;
+      txLoadingMore.value = true;
+      const r = await getTransactions(TX_PAGE_SIZE, transactions.value.length);
+      txLoadingMore.value = false;
+      if (r.success) {
+        const list = Array.isArray(r.transactions) ? r.transactions : [];
+        transactions.value = transactions.value.concat(list);
+        txHasMore.value = list.length === TX_PAGE_SIZE;
       } else {
         txError.value = true;
       }
@@ -76,13 +92,14 @@ export default {
         sendError.value = 'Enter a recipient.';
         return;
       }
-      if (!/^\d+$/.test(amt) || amt === '0') {
-        sendError.value = 'Enter a whole amount greater than zero.';
+      if (!isValidCoinAmount(amt)) {
+        sendError.value = 'Enter an amount greater than zero.';
         return;
       }
+      const rawAmount = parseCoinsToRaw(amt);
 
       sending.value = true;
-      const r = await transferCoins(recip, amt, description.value.trim());
+      const r = await transferCoins(recip, rawAmount, description.value.trim());
       sending.value = false;
 
       if (r.success) {
@@ -110,17 +127,16 @@ export default {
       loadTransactions();
     });
 
-    const formattedCoins = computed(() => formatCoins(coins.value));
-
     function isSent(tx) {
       return balanceId.value && tx.fromBalanceId === balanceId.value;
     }
 
     return {
-      loading, error, coins, balanceId, formattedCoins, load,
+      loading, error, coins, balanceId, load,
       recipient, amount, description, sending, sendError, sendSuccess, send,
       txLoading, txError, transactions, loadTransactions,
-      formatCoins, formatDate, isSent,
+      txLoadingMore, txHasMore, loadMoreTransactions,
+      formatDate, isSent,
     };
   }
 };
@@ -143,7 +159,7 @@ export default {
       <div v-else-if="error" class="balance-state balance-error">{{ $t('unknown-error') }}</div>
       <template v-else>
         <CoinIcon :size="64" class="coin-badge-icon" />
-        <div class="coin-amount">{{ formattedCoins }}</div>
+        <div class="coin-amount"><CoinAmount :value="coins" /></div>
         <div class="coin-label">{{ $t('coins') }}</div>
       </template>
     </div>
@@ -169,7 +185,7 @@ export default {
           <span class="field-label">{{ $t('amount') }}</span>
           <input
             type="text"
-            inputmode="numeric"
+            inputmode="decimal"
             class="dark-input"
             placeholder="0"
             v-model="amount"
@@ -234,7 +250,7 @@ export default {
             <div class="tx-top">
               <span class="tx-type">{{ isSent(tx) ? $t('sent') : $t('received') }}</span>
               <span class="tx-amount" :class="isSent(tx) ? 'tx-amount-sent' : 'tx-amount-received'">
-                {{ isSent(tx) ? '-' : '+' }}{{ formatCoins(tx.amount) }}
+                <CoinAmount :value="tx.amount" :sign="isSent(tx) ? '-' : '+'" />
               </span>
             </div>
             <div class="tx-meta">
@@ -244,6 +260,19 @@ export default {
           </div>
         </li>
       </ul>
+
+      <button
+        v-if="!txLoading && !txError && txHasMore"
+        class="load-more-btn"
+        :disabled="txLoadingMore"
+        @click="loadMoreTransactions"
+      >
+        <svg v-if="txLoadingMore" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-1">
+          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+        </svg>
+        {{ $t('load-more') }}
+      </button>
     </div>
   </div>
 </template>
@@ -522,6 +551,30 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 16px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text);
+}
+
+.load-more-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 @media (max-width: 520px) {
   .form-grid { grid-template-columns: 1fr; }

@@ -8,15 +8,10 @@ import {
   getAppBalance,
 } from '@/assets/js/serble.js';
 import CoinIcon from '@/components/CoinIcon.vue';
-
-function formatCoins(value) {
-  const digits = String(value ?? '0').trim();
-  if (!/^\d+$/.test(digits)) return digits;
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
+import CoinAmount from '@/components/CoinAmount.vue';
 
 export default {
-  components: { CoinIcon },
+  components: { CoinIcon, CoinAmount },
   setup() {
     ensureLoggedIn();
 
@@ -199,7 +194,7 @@ export default {
       keys, keysLoading, keysError, newKeyName, creatingKey, revealedKey, keyMessage,
       loadKeys, createKey, removeKey, copyKey, dismissRevealedKey,
       balanceCoins, balanceLoading, balanceError,
-      loadBalance, formatCoins,
+      loadBalance,
     };
   }
 };
@@ -378,7 +373,7 @@ export default {
         <CoinIcon :size="22" />
         <span v-if="balanceLoading" class="balance-value">…</span>
         <span v-else-if="balanceError" class="balance-value balance-err">{{ $t('unknown-error') }}</span>
-        <span v-else class="balance-value">{{ formatCoins(balanceCoins) }} {{ $t('coins') }}</span>
+        <span v-else class="balance-value"><CoinAmount :value="balanceCoins" /> {{ $t('coins') }}</span>
       </div>
     </div>
 

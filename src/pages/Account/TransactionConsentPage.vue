@@ -6,14 +6,9 @@ import {
   getTransactionProposal,
   approveTransactionProposal,
   denyTransactionProposal,
+  getBalance,
 } from '@/assets/js/serble.js';
-
-// Group digits in threes without relying on Number (precision-safe for ulong).
-function formatCoins(value) {
-  const digits = String(value ?? '0').trim();
-  if (!/^\d+$/.test(digits)) return digits;
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
+import CoinAmount from '@/components/CoinAmount.vue';
 
 function formatDate(value) {
   if (!value) return '';
@@ -23,6 +18,7 @@ function formatDate(value) {
 }
 
 export default {
+  components: { CoinAmount },
   setup() {
     ensureLoggedIn();
     const route = useRoute();
@@ -31,6 +27,7 @@ export default {
     // state: 'loading' | 'ready' | 'working' | 'result' | 'redirecting' | 'error'
     const state = ref('loading');
     const proposal = ref(null);
+    const balance = ref(null); // precision-safe coin string of the user's balance
     const result = ref(null); // { status, transactionId, failureReason }
     const error = ref({ code: '', detail: '' });
 
@@ -72,6 +69,13 @@ export default {
       }
 
       proposal.value = r.proposal;
+
+      // Best-effort fetch of the user's balance so we can show it and warn
+      // when it's insufficient for this payment. A failure here shouldn't
+      // block the consent flow.
+      const b = await getBalance();
+      if (b.success) balance.value = b.balance?.coins ?? null;
+
       state.value = 'ready';
     });
 
@@ -108,7 +112,21 @@ export default {
     const recipientName = computed(() => proposal.value?.recipientName ?? proposal.value?.recipientId ?? '');
     const recipientType = computed(() => proposal.value?.recipientType ?? '');
     const description = computed(() => proposal.value?.description ?? '');
-    const formattedAmount = computed(() => formatCoins(proposal.value?.amount));
+    const amount = computed(() => proposal.value?.amount ?? '0');
+    const hasBalance = computed(() => balance.value != null);
+
+    // Precision-safe comparison of the user's balance against the amount.
+    // Only treat as insufficient when both values are known, valid integers.
+    const insufficientFunds = computed(() => {
+      const amt = String(proposal.value?.amount ?? '').trim();
+      const bal = String(balance.value ?? '').trim();
+      if (!/^\d+$/.test(amt) || !/^\d+$/.test(bal)) return false;
+      try {
+        return BigInt(bal) < BigInt(amt);
+      } catch {
+        return false;
+      }
+    });
     const expiresAt = computed(() => formatDate(proposal.value?.expiresAt));
     const redirectUri = computed(() => proposal.value?.redirectUri ?? null);
     const redirectHost = computed(() => {
@@ -129,7 +147,8 @@ export default {
       state, error, errorMessages,
       isPending, resolvedMessage,
       appName, appDescription, recipientName, recipientType,
-      description, formattedAmount, expiresAt, redirectUri, redirectHost,
+      description, amount, expiresAt, redirectUri, redirectHost,
+      balance, hasBalance, insufficientFunds,
       decide, router,
       resultStatus, isApproved, isDenied, isFailed, failureReason, transactionId,
     };
@@ -230,9 +249,27 @@ export default {
         Only approve if you trust this application and recognise this payment.
       </p>
 
-      <div class="txc-amount-box">
+      <div class="txc-amount-box" :class="{ 'txc-amount-box-bad': insufficientFunds }">
         <span class="txc-amount-label">Amount</span>
-        <span class="txc-amount-value">{{ formattedAmount }} <span class="txc-amount-unit">coins</span></span>
+        <span class="txc-amount-value"><CoinAmount :value="amount" /> <span class="txc-amount-unit">coins</span></span>
+        <span v-if="hasBalance" class="txc-balance-line" :class="{ 'txc-balance-bad': insufficientFunds }">
+          Your balance: <CoinAmount :value="balance" /> coins
+        </span>
+      </div>
+
+      <!-- Insufficient funds notice -->
+      <div v-if="insufficientFunds" class="txc-insufficient">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="txc-insufficient-icon">
+          <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+        </svg>
+        <div>
+          <p class="txc-insufficient-title">Insufficient balance</p>
+          <p class="txc-insufficient-text">
+            <strong>{{ appName }}</strong> requested this payment, but it can't be made &mdash;
+            you don't have enough coins to cover it. If you approve, the application will be
+            told you accepted but the payment will fail.
+          </p>
+        </div>
       </div>
 
       <div class="txc-details">
@@ -257,10 +294,11 @@ export default {
         You'll be returned to <strong>{{ redirectHost }}</strong> after you decide.
       </p>
 
-      <p class="txc-deny-warning">If you didn't initiate this payment, click Deny.</p>
+      <p v-if="insufficientFunds" class="txc-deny-warning">This payment will fail if you approve it.</p>
+      <p v-else class="txc-deny-warning">If you didn't initiate this payment, click Deny.</p>
 
       <div class="txc-actions">
-        <button class="txc-btn txc-btn-allow" :disabled="state === 'working'" @click="decide(true)">
+        <button class="txc-btn txc-btn-allow" :class="{ 'txc-btn-allow-fail': insufficientFunds }" :disabled="state === 'working'" @click="decide(true)">
           <svg v-if="state !== 'working'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
             <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
           </svg>
@@ -268,7 +306,7 @@ export default {
             <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
           </svg>
-          Approve
+          {{ insufficientFunds ? 'Let them know' : 'Approve' }}
         </button>
         <button class="txc-btn txc-btn-deny" :disabled="state === 'working'" @click="decide(false)">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
@@ -396,6 +434,29 @@ export default {
 }
 .txc-amount-value { font-size: 2rem; font-weight: 800; color: var(--text); }
 .txc-amount-unit { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+.txc-amount-box-bad { border-color: var(--danger-border); }
+.txc-balance-line { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-top: 4px; }
+.txc-balance-bad { color: var(--danger); }
+
+/* Insufficient funds notice */
+.txc-insufficient {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-align: left;
+}
+.txc-insufficient-icon { color: var(--danger); flex-shrink: 0; margin-top: 1px; }
+.txc-insufficient-title {
+  font-size: 0.85rem; font-weight: 800; color: var(--danger);
+  margin: 0 0 4px;
+}
+.txc-insufficient-text { font-size: 0.8rem; color: var(--text-dim); line-height: 1.55; margin: 0; }
+.txc-insufficient-text strong { color: var(--text-secondary); }
 
 /* Details */
 .txc-details {
@@ -447,6 +508,8 @@ export default {
 .txc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .txc-btn-allow { background: var(--accent); color: #fff; }
 .txc-btn-allow:hover:not(:disabled) { background: var(--accent-hover); }
+.txc-btn-allow-fail { background: var(--warning); color: #1a1a1a; }
+.txc-btn-allow-fail:hover:not(:disabled) { background: #eab308; }
 .txc-btn-deny { background: var(--danger-strong); color: #fff; }
 .txc-btn-deny:hover:not(:disabled) { background: var(--danger-stronger); }
 </style>

@@ -56,12 +56,15 @@ import {
   adminAddAppCoins,
   adminRemoveAppCoins,
   adminGetTransactions,
+  adminGetEconomyTotal,
 } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
+import { parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
+import CoinAmount from '@/components/CoinAmount.vue';
 
 export default {
-  components: { OfficialBadge },
+  components: { OfficialBadge, CoinAmount },
   setup() {
     const router = useRouter();
     const userStore = inject('userStore');
@@ -94,12 +97,6 @@ export default {
       setTimeout(() => { if (actionMessage.value === msg) actionMessage.value = null; }, 4000);
     }
 
-    function formatCoins(value) {
-      const digits = String(value ?? '0').trim();
-      if (!/^\d+$/.test(digits)) return digits || '0';
-      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
-
     function formatDate(value) {
       if (!value) return '—';
       const d = new Date(value);
@@ -120,15 +117,18 @@ export default {
     async function adjustUserCoins(op) {
       if (!selected.value) return;
       const amount = userCoinsAmount.value.trim();
-      if (!/^\d+$/.test(amount)) {
-        flash('Enter a whole number for coins', 'danger');
+      // Setting a balance to 0 is valid; adding/removing 0 is not.
+      const ok = op === 'set' ? isNonNegativeCoinAmount(amount) : isValidCoinAmount(amount);
+      if (!ok) {
+        flash(op === 'set' ? 'Enter an amount of zero or more' : 'Enter an amount greater than zero', 'danger');
         return;
       }
+      const raw = parseCoinsToRaw(amount);
       const id = selected.value.id;
       let fn;
-      if (op === 'set') fn = () => adminSetUserCoins(id, amount);
-      else if (op === 'add') fn = () => adminAddUserCoins(id, amount);
-      else fn = () => adminRemoveUserCoins(id, amount);
+      if (op === 'set') fn = () => adminSetUserCoins(id, raw);
+      else if (op === 'add') fn = () => adminAddUserCoins(id, raw);
+      else fn = () => adminRemoveUserCoins(id, raw);
       userCoinsBusy.value = true;
       const r = await withBusy(fn, 'Coins updated');
       userCoinsBusy.value = false;
@@ -349,15 +349,18 @@ export default {
     async function adjustAppCoins(op) {
       if (!selectedApp.value) return;
       const amount = appCoinsAmount.value.trim();
-      if (!/^\d+$/.test(amount)) {
-        flash('Enter a whole number for coins', 'danger');
+      // Setting a balance to 0 is valid; adding/removing 0 is not.
+      const ok = op === 'set' ? isNonNegativeCoinAmount(amount) : isValidCoinAmount(amount);
+      if (!ok) {
+        flash(op === 'set' ? 'Enter an amount of zero or more' : 'Enter an amount greater than zero', 'danger');
         return;
       }
+      const raw = parseCoinsToRaw(amount);
       const id = selectedApp.value.id;
       let fn;
-      if (op === 'set') fn = () => adminSetAppCoins(id, amount);
-      else if (op === 'add') fn = () => adminAddAppCoins(id, amount);
-      else fn = () => adminRemoveAppCoins(id, amount);
+      if (op === 'set') fn = () => adminSetAppCoins(id, raw);
+      else if (op === 'add') fn = () => adminAddAppCoins(id, raw);
+      else fn = () => adminRemoveAppCoins(id, raw);
       appCoinsBusy.value = true;
       const r = await withBusy(fn, 'App coins updated');
       appCoinsBusy.value = false;
@@ -1138,6 +1141,20 @@ export default {
       loadTransactions(false);
     }
 
+    // ── Economy total (coins in circulation) ──
+    const economy = ref(null);
+    const economyLoading = ref(false);
+    const economyError = ref(null);
+
+    async function loadEconomy() {
+      economyLoading.value = true;
+      economyError.value = null;
+      const r = await adminGetEconomyTotal();
+      economyLoading.value = false;
+      if (r.success) economy.value = r.total;
+      else economyError.value = r.error ?? 'unknown';
+    }
+
     return {
       isAdmin, stats, statsError, query, limit, searching, results, searchError,
       selected, selectedLoading, selectedError, passkeys, passkeysLoading,
@@ -1145,7 +1162,7 @@ export default {
       loadStats, runSearch, selectUser, closeUser,
       actDisable, actEnable, actDelete, actDisable2fa, actChangePassword,
       actToggleAdmin, actLoginAs, actDeletePasskey, permLabel,
-      formatCoins, formatDate,
+      formatDate,
       userCoins, userCoinsAmount, userCoinsBusy, loadUserCoins, adjustUserCoins,
       appCoins, appCoinsAmount, appCoinsBusy, adjustAppCoins,
       activeTab,
@@ -1179,6 +1196,7 @@ export default {
       // Transactions audit log
       txFilters, txLimit, txOffset, txList, txLoading, txError, txLoaded,
       loadTransactions, clearTxFilters, txNextPage, txPrevPage,
+      economy, economyLoading, economyError, loadEconomy,
     };
   }
 };
@@ -1217,7 +1235,7 @@ export default {
           <button class="nav-link" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">Services</button>
         </li>
         <li class="nav-item">
-          <button class="nav-link" :class="{ active: activeTab === 'transactions' }" @click="activeTab = 'transactions'; if (!txLoaded) loadTransactions()">Transactions</button>
+          <button class="nav-link" :class="{ active: activeTab === 'transactions' }" @click="activeTab = 'transactions'; if (!txLoaded) loadTransactions(); if (!economy) loadEconomy()">Transactions</button>
         </li>
       </ul>
 
@@ -1297,7 +1315,7 @@ export default {
                   <span v-else-if="u.permLevel >= 2" class="badge bg-primary">Admin</span>
                   <span v-else class="text-muted-light">User</span>
                 </td>
-                <td>{{ formatCoins(u.coins) }}</td>
+                <td><CoinAmount :value="u.coins" /></td>
                 <td class="text-end">
                   <button class="btn btn-sm btn-outline-primary" @click="selectUser(u.id)">Manage</button>
                 </td>
@@ -1334,7 +1352,7 @@ export default {
             <div class="info-row"><span class="info-label">TOTP enabled</span><span>{{ selected.totpEnabled ? 'Yes' : 'No' }}</span></div>
             <div class="info-row"><span class="info-label">Language</span><span>{{ selected.language || '—' }}</span></div>
             <div class="info-row"><span class="info-label">Password salted</span><span>{{ selected.hasPasswordSalt ? 'Yes' : 'No (pre-migration)' }}</span></div>
-            <div class="info-row"><span class="info-label">Coins</span><span>{{ formatCoins(userCoins ?? selected.coins) }}</span></div>
+            <div class="info-row"><span class="info-label">Coins</span><span><CoinAmount :value="userCoins ?? selected.coins" /></span></div>
             <div class="info-row"><span class="info-label">Created</span><span>{{ formatDate(selected.dateCreated) }}</span></div>
           </div>
         </div>
@@ -1342,13 +1360,13 @@ export default {
         <h6 class="section-heading">Coins</h6>
         <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
           <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
-            {{ formatCoins(userCoins ?? selected.coins) }} coins
+            <CoinAmount :value="userCoins ?? selected.coins" /> coins
           </span>
           <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserCoins">Refresh</button>
         </div>
         <div class="row g-2 mb-4">
           <div class="col-md-6">
-            <input v-model="userCoinsAmount" type="text" inputmode="numeric" class="form-control dark-input" placeholder="Amount" />
+            <input v-model="userCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
           </div>
           <div class="col-md-6 d-flex gap-2">
             <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustUserCoins('add')">Add</button>
@@ -1470,7 +1488,7 @@ export default {
                   </td>
                   <td><code style="font-size:0.78rem;">{{ a.id }}</code></td>
                   <td><code style="font-size:0.78rem;">{{ a.ownerId }}</code></td>
-                  <td>{{ formatCoins(a.coins) }}</td>
+                  <td><CoinAmount :value="a.coins" /></td>
                   <td class="text-end">
                     <button class="btn btn-sm btn-outline-primary" @click="selectApp(a.id)">Manage</button>
                   </td>
@@ -1526,13 +1544,13 @@ export default {
           <h6 class="section-heading">Coins</h6>
           <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
             <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
-              {{ formatCoins(appCoins ?? selectedApp.coins) }} coins
+              <CoinAmount :value="appCoins ?? selectedApp.coins" /> coins
             </span>
             <span class="text-muted-light" style="font-size:0.8rem;">Created: {{ formatDate(selectedApp.dateCreated) }}</span>
           </div>
           <div class="row g-2 mb-4">
             <div class="col-md-6">
-              <input v-model="appCoinsAmount" type="text" inputmode="numeric" class="form-control dark-input" placeholder="Amount" />
+              <input v-model="appCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
             </div>
             <div class="col-md-6 d-flex gap-2">
               <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustAppCoins('add')">Add</button>
@@ -2087,6 +2105,38 @@ export default {
 
       <!-- TRANSACTIONS TAB -->
       <div v-show="activeTab === 'transactions'">
+        <!-- Economy total (coins in circulation) -->
+        <div class="economy-card mb-3">
+          <div class="economy-head">
+            <span class="economy-title">Coins in circulation</span>
+            <button class="btn btn-sm btn-outline-secondary" :disabled="economyLoading" @click="loadEconomy">Refresh</button>
+          </div>
+
+          <div v-if="economyError" class="alert alert-danger py-2 mb-0 mt-2">Failed to load economy total: {{ economyError }}</div>
+
+          <template v-else>
+            <div class="economy-total">
+              <CoinAmount :value="economy ? economy.totalCoins : '0'" />
+              <span class="economy-total-unit">coins</span>
+            </div>
+
+            <div class="economy-breakdown">
+              <div class="economy-stat">
+                <span class="economy-stat-label">Held by users</span>
+                <span class="economy-stat-value"><CoinAmount :value="economy ? economy.userCoins : '0'" /></span>
+              </div>
+              <div class="economy-stat">
+                <span class="economy-stat-label">Held by apps</span>
+                <span class="economy-stat-value"><CoinAmount :value="economy ? economy.appCoins : '0'" /></span>
+              </div>
+              <div class="economy-stat">
+                <span class="economy-stat-label">Balances</span>
+                <span class="economy-stat-value">{{ economy ? economy.balanceCount : '—' }}</span>
+              </div>
+            </div>
+          </template>
+        </div>
+
         <div class="search-card p-3 mb-3">
           <div class="row g-2 align-items-end">
             <div class="col-12 col-md-3">
@@ -2153,7 +2203,7 @@ export default {
                     </span>
                     <span v-else class="text-muted">deleted</span>
                   </td>
-                  <td class="text-end fw-semibold" style="white-space:nowrap;">{{ formatCoins(tx.amount) }}</td>
+                  <td class="text-end fw-semibold" style="white-space:nowrap;"><CoinAmount :value="tx.amount" /></td>
                   <td>{{ tx.description || '—' }}</td>
                   <td><code style="font-size:0.75rem;">{{ tx.id }}</code></td>
                 </tr>
@@ -2203,6 +2253,63 @@ export default {
   font-size: 1.6rem;
   font-weight: 600;
   color: var(--text);
+}
+.economy-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+}
+.economy-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.economy-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.economy-total {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  margin-top: 6px;
+  word-break: break-all;
+}
+.economy-total-unit {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+.economy-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.economy-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.economy-stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+.economy-stat-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
 }
 .search-card, .user-panel {
   background: var(--surface);
