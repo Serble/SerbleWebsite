@@ -15,6 +15,7 @@ const SCOPE_NAMES = [
   'Account Management',
   'OAuth App Management',
   'Economy',
+  'Economy Management',
 ];
 
 const SCOPE_DESCRIPTIONS = [
@@ -25,7 +26,8 @@ const SCOPE_DESCRIPTIONS = [
   'Allows access to a user\'s list of purchased products and allows them to manage their subscriptions.',
   'Grants the ability to control the user\'s account, including changing their email and username.',
   'Allows management over all of your OAuth applications.',
-  'Allows reading and modifying the account\'s coin balance.',
+  'Allows reading the account\'s coin balance and transaction history.',
+  'Allows modifying the account\'s coin balance without consent, such as transferring coins out.',
 ];
 
 function parseScopeString(scopeString) {

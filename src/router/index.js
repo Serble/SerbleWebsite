@@ -157,6 +157,12 @@ const router = createRouter({
       component: () => import('@/pages/Account/OAuthAuthorizeDispatcher.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/transactions/consent',
+      name: 'TransactionConsent',
+      component: () => import('@/pages/Account/TransactionConsentPage.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 

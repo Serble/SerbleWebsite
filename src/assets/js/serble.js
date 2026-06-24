@@ -1488,3 +1488,65 @@ export async function adminGetTransactions({ user, from, to, limit = 50, offset 
         return { success: false, error: error?.response?.status };
     }
 }
+
+// ── Transaction consent flow ──
+
+// Parse a proposal response, keeping `amount` (ulong) as a precision-safe string.
+function parseProposalResponse(rawText) {
+    let obj = {};
+    try { obj = JSON.parse(rawText); } catch { /* ignore */ }
+    const m = /"amount"\s*:\s*(\d+)/.exec(rawText || '');
+    if (m) obj.amount = m[1];
+    return obj;
+}
+
+// Fetch the proposal info to render the consent screen — GET /transactions/consent/{id}
+export async function getTransactionProposal(proposalId) {
+    try {
+        const response = await axios.get(
+            `${API_URL}/transactions/consent/${encodeURIComponent(proposalId)}`,
+            coinGetConfig()
+        );
+        return { success: true, proposal: parseProposalResponse(response.data) };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error fetching transaction proposal', error);
+        return { success: false, flag: status === 404 ? 'not-found' : 'unknown', error: status };
+    }
+}
+
+// User approves the proposal — POST /transactions/consent/{id}/approve
+export async function approveTransactionProposal(proposalId) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/transactions/consent/${encodeURIComponent(proposalId)}/approve`,
+            null,
+            coinGetConfig()
+        );
+        let data = {};
+        try { data = JSON.parse(response.data); } catch { /* ignore */ }
+        return { success: true, result: data, redirect: data?.redirect ?? null };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error approving transaction proposal', error);
+        return { success: false, flag: status === 404 ? 'not-found' : status === 400 ? 'not-pending' : 'unknown', error: status };
+    }
+}
+
+// User denies the proposal — POST /transactions/consent/{id}/deny
+export async function denyTransactionProposal(proposalId) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/transactions/consent/${encodeURIComponent(proposalId)}/deny`,
+            null,
+            coinGetConfig()
+        );
+        let data = {};
+        try { data = JSON.parse(response.data); } catch { /* ignore */ }
+        return { success: true, result: data, redirect: data?.redirect ?? null };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error denying transaction proposal', error);
+        return { success: false, flag: status === 404 ? 'not-found' : status === 400 ? 'not-pending' : 'unknown', error: status };
+    }
+}

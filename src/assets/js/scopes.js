@@ -10,6 +10,7 @@ export const SCOPES = [
     'manage_account',
     'manage_apps',
     'economy',
+    'manage_economy',
 ];
 
 export const SCOPE_NAMES = [
@@ -21,6 +22,7 @@ export const SCOPE_NAMES = [
     'Account Management',
     'OAuth App Management',
     'Economy',
+    'Economy Management',
 ];
 
 export const SCOPE_DESCRIPTIONS = [
@@ -32,7 +34,8 @@ export const SCOPE_DESCRIPTIONS = [
     'including viewing the last 4 digits of their credit card and viewing purchase history.',
     'Grants the ability to control the user\'s account, including changing their email, and username. Only you can change your password.',
     'Allows management over all of your OAuth application, this does not allow the authorization of apps.',
-    'Allows reading and modifying the account\'s coin balance.',
+    'Allows reading the account\'s coin balance and transaction history.',
+    'Allows modifying the account\'s coin balance without consent, such as transferring coins out.',
 ];
 
 /**
@@ -41,7 +44,7 @@ export const SCOPE_DESCRIPTIONS = [
  */
 export const SENSITIVE_SCOPES = [
     'full_access',
-    'economy',
+    'manage_economy',
 ];
 
 /** True if the given scope ID is considered sensitive/dangerous */
