@@ -79,10 +79,6 @@ export default {
         successTimeout = null;
       }
 
-      if (!username.value.trim()) {
-        errors.value.push('invalidusername');
-      }
-
       const currentUser = user.value;
       const trimmedEmail = email.value.trim();
       if (trimmedEmail && trimmedEmail !== (currentUser?.email ?? '')) {
