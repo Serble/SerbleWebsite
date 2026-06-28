@@ -57,6 +57,8 @@ import {
   adminRemoveAppCoins,
   adminGetTransactions,
   adminGetEconomyTotal,
+  adminGetConfig,
+  adminSetConfig,
 } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
 import { parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
@@ -1155,6 +1157,53 @@ export default {
       else economyError.value = r.error ?? 'unknown';
     }
 
+    // ── Server-wide settings ──
+    const configLoaded = ref(false);
+    const configLoading = ref(false);
+    const configError = ref(null);
+    // Each row: { ...setting, draft: string, busy: bool, message: string|null, messageType }
+    const configRows = ref([]);
+
+    async function loadConfig() {
+      configLoading.value = true;
+      configError.value = null;
+      const r = await adminGetConfig();
+      configLoading.value = false;
+      configLoaded.value = true;
+      if (r.success) {
+        configRows.value = r.settings.map((s) => ({
+          ...s,
+          draft: s.type === 'Boolean' ? s.value === 'true' : s.value,
+          busy: false,
+          message: null,
+          messageType: '',
+        }));
+      } else {
+        configError.value = r.error ?? 'unknown';
+      }
+    }
+
+    function configDirty(row) {
+      const current = row.type === 'Boolean' ? row.value === 'true' : row.value;
+      return row.draft !== current;
+    }
+
+    async function saveConfig(row) {
+      row.busy = true;
+      row.message = null;
+      const r = await adminSetConfig(row.key, row.type === 'Boolean' ? String(row.draft) : row.draft);
+      row.busy = false;
+      if (r.success && r.setting) {
+        row.value = r.setting.value;
+        row.draft = row.type === 'Boolean' ? r.setting.value === 'true' : r.setting.value;
+        row.message = 'Saved';
+        row.messageType = 'success';
+      } else {
+        row.message = r.message || `Failed (${r.error ?? 'unknown'})`;
+        row.messageType = 'error';
+      }
+    }
+
     return {
       isAdmin, stats, statsError, query, limit, searching, results, searchError,
       selected, selectedLoading, selectedError, passkeys, passkeysLoading,
@@ -1197,6 +1246,9 @@ export default {
       txFilters, txLimit, txOffset, txList, txLoading, txError, txLoaded,
       loadTransactions, clearTxFilters, txNextPage, txPrevPage,
       economy, economyLoading, economyError, loadEconomy,
+      // Server-wide settings
+      configRows, configLoading, configError, configLoaded,
+      loadConfig, saveConfig, configDirty,
     };
   }
 };
@@ -1236,6 +1288,9 @@ export default {
         </li>
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'transactions' }" @click="activeTab = 'transactions'; if (!txLoaded) loadTransactions(); if (!economy) loadEconomy()">Transactions</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'; if (!configLoaded) loadConfig()">Settings</button>
         </li>
       </ul>
 
@@ -2222,6 +2277,82 @@ export default {
           </div>
         </template>
       </div>
+
+      <!-- SETTINGS TAB -->
+      <div v-show="activeTab === 'settings'">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Server settings</h5>
+          <button class="btn btn-sm btn-outline-secondary" :disabled="configLoading" @click="loadConfig">Refresh</button>
+        </div>
+
+        <div v-if="configError" class="alert alert-danger py-2">Failed to load settings: {{ configError }}</div>
+        <div v-else-if="configLoading" class="text-muted py-3">Loading…</div>
+        <div v-else-if="configRows.length === 0" class="text-muted py-3">No settings.</div>
+
+        <div v-else class="config-list">
+          <div v-for="row in configRows" :key="row.key" class="config-row">
+            <div class="config-info">
+              <div class="config-label">
+                {{ row.label }}
+                <span v-if="row.public" class="badge bg-secondary ms-1" title="Readable by apps">public</span>
+              </div>
+              <div class="config-desc">{{ row.description }}</div>
+              <code class="config-key">{{ row.key }}</code>
+            </div>
+
+            <div class="config-control">
+              <div class="config-input-wrap">
+                <div v-if="row.type === 'Boolean'" class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" v-model="row.draft" :id="'cfg-' + row.key">
+                </div>
+                <input
+                  v-else-if="row.type === 'Integer'"
+                  v-model="row.draft"
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="form-control form-control-sm dark-input"
+                  @keyup.enter="saveConfig(row)"
+                >
+                <div v-else-if="row.type === 'Coins'" class="config-coins">
+                  <input
+                    v-model="row.draft"
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputmode="decimal"
+                    class="form-control form-control-sm dark-input"
+                    @keyup.enter="saveConfig(row)"
+                  >
+                  <span class="config-unit">coins</span>
+                </div>
+                <textarea
+                  v-else-if="row.type === 'StringList'"
+                  v-model="row.draft"
+                  rows="4"
+                  class="form-control form-control-sm dark-input config-textarea"
+                  placeholder="One per line"
+                ></textarea>
+                <input
+                  v-else
+                  v-model="row.draft"
+                  type="text"
+                  class="form-control form-control-sm dark-input"
+                  @keyup.enter="saveConfig(row)"
+                >
+                <button
+                  class="btn btn-sm btn-primary"
+                  :disabled="row.busy || !configDirty(row)"
+                  @click="saveConfig(row)"
+                >{{ row.busy ? 'Saving…' : 'Save' }}</button>
+              </div>
+              <div v-if="row.message" class="config-msg" :class="row.messageType === 'error' ? 'text-danger' : 'text-success'">
+                {{ row.message }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -2235,6 +2366,74 @@ export default {
 }
 .admin-page :deep(.text-muted) {
   color: #9ca3af !important;
+}
+.config-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.config-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.config-info {
+  min-width: 0;
+  flex: 1 1 320px;
+}
+.config-label {
+  font-weight: 600;
+  color: #e4e4e7;
+}
+.config-desc {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin: 2px 0 4px;
+}
+.config-key {
+  font-size: 0.72rem;
+  color: #6b7280;
+}
+.config-control {
+  flex: 0 0 auto;
+}
+.config-input-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.config-input-wrap .form-control {
+  width: 180px;
+}
+.config-textarea {
+  width: 320px;
+  max-width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  resize: vertical;
+}
+.config-coins {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.config-coins .form-control {
+  width: 130px;
+}
+.config-unit {
+  font-size: 0.82rem;
+  color: #9ca3af;
+}
+.config-msg {
+  font-size: 0.78rem;
+  margin-top: 4px;
+  text-align: right;
 }
 .stat-card {
   background: var(--surface);

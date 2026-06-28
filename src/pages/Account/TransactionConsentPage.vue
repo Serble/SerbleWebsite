@@ -9,6 +9,7 @@ import {
   getBalance,
 } from '@/assets/js/serble.js';
 import CoinAmount from '@/components/CoinAmount.vue';
+import ItemCard from '@/components/ItemCard.vue';
 
 function formatDate(value) {
   if (!value) return '';
@@ -18,7 +19,7 @@ function formatDate(value) {
 }
 
 export default {
-  components: { CoinAmount },
+  components: { CoinAmount, ItemCard },
   setup() {
     ensureLoggedIn();
     const route = useRoute();
@@ -135,6 +136,32 @@ export default {
       try { return new URL(uri).host; } catch { return uri; }
     });
 
+    // ── Item-trade fields ──
+    const offeredCoins = computed(() => proposal.value?.offeredCoins ?? '0');
+    const offeredItems = computed(() => proposal.value?.offeredItems ?? []);
+    const requestedItems = computed(() => proposal.value?.requestedItems ?? []);
+    const isGift = computed(() => proposal.value?.isGift === true);
+
+    // Precision-safe "is this raw coin string > 0" test.
+    function rawPositive(v) {
+      const s = String(v ?? '').trim();
+      if (!/^\d+$/.test(s)) return false;
+      try { return BigInt(s) > 0n; } catch { return false; }
+    }
+    const hasRequestCoins = computed(() => rawPositive(amount.value));
+    const hasOfferCoins = computed(() => rawPositive(offeredCoins.value));
+
+    // Either side carries an item — drives the two-column swap layout.
+    const involvesItems = computed(() =>
+      proposal.value?.involvesItems === true ||
+      offeredItems.value.length > 0 ||
+      requestedItems.value.length > 0
+    );
+
+    // "You give" / "You get" non-emptiness for the swap columns.
+    const youGiveEmpty = computed(() => !hasRequestCoins.value && requestedItems.value.length === 0);
+    const youGetEmpty = computed(() => !hasOfferCoins.value && offeredItems.value.length === 0);
+
     // Result helpers
     const resultStatus = computed(() => result.value?.status ?? '');
     const isApproved = computed(() => resultStatus.value === 'Approved');
@@ -149,6 +176,8 @@ export default {
       appName, appDescription, recipientName, recipientType,
       description, amount, expiresAt, redirectUri, redirectHost,
       balance, hasBalance, insufficientFunds,
+      offeredCoins, offeredItems, requestedItems,
+      isGift, hasRequestCoins, hasOfferCoins, involvesItems, youGiveEmpty, youGetEmpty,
       decide, router,
       resultStatus, isApproved, isDenied, isFailed, failureReason, transactionId,
     };
@@ -206,14 +235,18 @@ export default {
       </div>
 
       <h2 class="txc-result-title">
-        <template v-if="isApproved">Payment approved</template>
-        <template v-else-if="isDenied">Payment declined</template>
-        <template v-else-if="isFailed">Payment failed</template>
+        <template v-if="isApproved">{{ isGift ? 'Gift accepted' : involvesItems ? 'Trade approved' : 'Payment approved' }}</template>
+        <template v-else-if="isDenied">{{ isGift ? 'Gift declined' : involvesItems ? 'Trade declined' : 'Payment declined' }}</template>
+        <template v-else-if="isFailed">{{ involvesItems ? 'Trade failed' : 'Payment failed' }}</template>
         <template v-else>{{ resultStatus }}</template>
       </h2>
 
-      <p v-if="isApproved" class="txc-result-sub">The coins have been transferred successfully.</p>
-      <p v-else-if="isDenied" class="txc-result-sub">You declined this transaction. No coins were moved.</p>
+      <p v-if="isApproved" class="txc-result-sub">
+        {{ involvesItems ? 'The trade completed successfully.' : 'The coins have been transferred successfully.' }}
+      </p>
+      <p v-else-if="isDenied" class="txc-result-sub">
+        {{ involvesItems ? 'You declined this trade. Nothing was moved.' : 'You declined this transaction. No coins were moved.' }}
+      </p>
       <p v-else-if="isFailed" class="txc-result-sub">{{ failureReason || 'The transfer could not be completed.' }}</p>
 
       <div v-if="isApproved && transactionId" class="txc-result-detail">
@@ -244,18 +277,84 @@ export default {
         <p v-if="appDescription" class="txc-app-desc">{{ appDescription }}</p>
       </div>
 
-      <p class="txc-warning-text">
-        <strong>{{ appName }}</strong> is requesting that you pay coins from your account.
-        Only approve if you trust this application and recognise this payment.
-      </p>
+      <!-- Gift: app gives, asks nothing -->
+      <template v-if="isGift">
+        <p class="txc-warning-text">
+          <strong>{{ appName }}</strong> wants to give you the following
+          &mdash; for free, with nothing asked in return.
+        </p>
+        <div class="txc-gift-box">
+          <span class="txc-gift-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+              <path d="M3 2.5a2.5 2.5 0 0 1 5 0 2.5 2.5 0 0 1 5 0v.006c0 .07 0 .27-.038.494H15a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 14.5V7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2.038A3 3 0 0 1 3 2.506zm1.068.5H7v-.5a1.5 1.5 0 1 0-3 0c0 .085.002.274.045.43zM9 3h2.932l.023-.07c.043-.156.045-.345.045-.43a1.5 1.5 0 0 0-3 0zM1 4v2h6V4zm8 0v2h6V4zM2 7v7.5a.5.5 0 0 0 .5.5H7V7zm7 8h4.5a.5.5 0 0 0 .5-.5V7H9z"/>
+            </svg>
+            Gift
+          </span>
+          <div v-if="hasOfferCoins" class="txc-coin-row">
+            <CoinAmount :value="offeredCoins" /> <span class="txc-amount-unit">coins</span>
+          </div>
+          <div v-if="offeredItems.length" class="txc-item-list">
+            <ItemCard v-for="it in offeredItems" :key="it.id" :item="it" />
+          </div>
+        </div>
+      </template>
 
-      <div class="txc-amount-box" :class="{ 'txc-amount-box-bad': insufficientFunds }">
-        <span class="txc-amount-label">Amount</span>
-        <span class="txc-amount-value"><CoinAmount :value="amount" /> <span class="txc-amount-unit">coins</span></span>
-        <span v-if="hasBalance" class="txc-balance-line" :class="{ 'txc-balance-bad': insufficientFunds }">
-          Your balance: <CoinAmount :value="balance" /> coins
-        </span>
-      </div>
+      <!-- Item trade: two-sided swap -->
+      <template v-else-if="involvesItems">
+        <p class="txc-warning-text">
+          <strong>{{ appName }}</strong> is proposing a trade. Review both sides carefully.
+          Only approve if you trust this application and want to make this exchange.
+        </p>
+        <div class="txc-swap">
+          <div class="txc-swap-col">
+            <span class="txc-swap-label txc-swap-give">You give</span>
+            <template v-if="!youGiveEmpty">
+              <div v-if="hasRequestCoins" class="txc-coin-row txc-coin-give">
+                <CoinAmount :value="amount" /> <span class="txc-amount-unit">coins</span>
+              </div>
+              <div v-if="requestedItems.length" class="txc-item-list">
+                <ItemCard v-for="it in requestedItems" :key="it.id" :item="it" />
+              </div>
+            </template>
+            <p v-else class="txc-swap-empty">Nothing</p>
+          </div>
+
+          <div class="txc-swap-arrow" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M1 11.5a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 12H1.5a.5.5 0 0 1-.5-.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5"/>
+            </svg>
+          </div>
+
+          <div class="txc-swap-col">
+            <span class="txc-swap-label txc-swap-get">You get</span>
+            <template v-if="!youGetEmpty">
+              <div v-if="hasOfferCoins" class="txc-coin-row txc-coin-get">
+                <CoinAmount :value="offeredCoins" /> <span class="txc-amount-unit">coins</span>
+              </div>
+              <div v-if="offeredItems.length" class="txc-item-list">
+                <ItemCard v-for="it in offeredItems" :key="it.id" :item="it" />
+              </div>
+            </template>
+            <p v-else class="txc-swap-empty">Nothing</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- Coins-only payment (original flow) -->
+      <template v-else>
+        <p class="txc-warning-text">
+          <strong>{{ appName }}</strong> is requesting that you pay coins from your account.
+          Only approve if you trust this application and recognise this payment.
+        </p>
+
+        <div class="txc-amount-box" :class="{ 'txc-amount-box-bad': insufficientFunds }">
+          <span class="txc-amount-label">Amount</span>
+          <span class="txc-amount-value"><CoinAmount :value="amount" /> <span class="txc-amount-unit">coins</span></span>
+          <span v-if="hasBalance" class="txc-balance-line" :class="{ 'txc-balance-bad': insufficientFunds }">
+            Your balance: <CoinAmount :value="balance" /> coins
+          </span>
+        </div>
+      </template>
 
       <!-- Insufficient funds notice -->
       <div v-if="insufficientFunds" class="txc-insufficient">
@@ -273,8 +372,8 @@ export default {
       </div>
 
       <div class="txc-details">
-        <div class="txc-detail-row">
-          <span class="txc-detail-label">To</span>
+        <div class="txc-detail-row" v-if="hasRequestCoins">
+          <span class="txc-detail-label">Pay to</span>
           <span class="txc-detail-value">
             {{ recipientName }}
             <span v-if="recipientType" class="txc-recipient-tag">{{ recipientType }}</span>
@@ -295,6 +394,8 @@ export default {
       </p>
 
       <p v-if="insufficientFunds" class="txc-deny-warning">This payment will fail if you approve it.</p>
+      <p v-else-if="isGift" class="txc-deny-warning">If you don't want this, click Deny.</p>
+      <p v-else-if="involvesItems" class="txc-deny-warning">If you didn't initiate this trade, click Deny.</p>
       <p v-else class="txc-deny-warning">If you didn't initiate this payment, click Deny.</p>
 
       <div class="txc-actions">
@@ -306,7 +407,10 @@ export default {
             <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
           </svg>
-          {{ insufficientFunds ? 'Let them know' : 'Approve' }}
+          <template v-if="insufficientFunds">Let them know</template>
+          <template v-else-if="isGift">Accept gift</template>
+          <template v-else-if="involvesItems">Approve trade</template>
+          <template v-else>Approve</template>
         </button>
         <button class="txc-btn txc-btn-deny" :disabled="state === 'working'" @click="decide(false)">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
@@ -512,4 +616,95 @@ export default {
 .txc-btn-allow-fail:hover:not(:disabled) { background: #eab308; }
 .txc-btn-deny { background: var(--danger-strong); color: #fff; }
 .txc-btn-deny:hover:not(:disabled) { background: var(--danger-stronger); }
+
+/* ── Item trades ── */
+.txc-coin-row {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.txc-coin-give { color: var(--danger); }
+.txc-coin-get { color: var(--success); }
+
+.txc-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Gift */
+.txc-gift-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  border-radius: 12px;
+  padding: 18px 16px;
+}
+.txc-gift-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--success);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Two-column swap */
+.txc-swap {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 12px;
+}
+.txc-swap-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 12px;
+  min-width: 0;
+}
+.txc-swap-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.txc-swap-give { color: var(--danger); }
+.txc-swap-get { color: var(--success); }
+.txc-swap-empty {
+  font-size: 0.85rem;
+  color: var(--text-faint);
+  margin: 4px 0;
+}
+.txc-swap-arrow {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  color: var(--text-faint);
+}
+
+@media (max-width: 480px) {
+  .txc-swap {
+    grid-template-columns: 1fr;
+  }
+  .txc-swap-arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+}
 </style>

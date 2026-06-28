@@ -128,6 +128,14 @@ export default {
               <CoinIcon :size="13" class="me-2 opacity-50" />
               {{ $t('balance') }}
             </RouterLink>
+            <RouterLink to="/account/inventory" class="nav-dropdown-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zm3.564 1.426L5.596 5 8 5.961 14.154 3.5zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464z"/></svg>
+              {{ $t('inventory') }}
+            </RouterLink>
+            <RouterLink to="/account/trades" class="nav-dropdown-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H9a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3A.5.5 0 0 1 0 3.5m16 9a.5.5 0 0 1-.5.5H7a.5.5 0 0 1 0-1h7.793l-2.147-2.146a.5.5 0 0 1 .708-.708l3 3a.5.5 0 0 1 .146.354"/></svg>
+              Trades
+            </RouterLink>
             <RouterLink to="/account/paymentportal" class="nav-dropdown-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/></svg>
               {{ $t('manage-payments') }}
@@ -173,6 +181,8 @@ export default {
         <RouterLink to="/oauthapps" class="nav-mobile-link" @click="closeMobile">{{ $t('my-applications') }}</RouterLink>
         <RouterLink to="/authorizedapps" class="nav-mobile-link" @click="closeMobile">{{ $t('authorized-applications') }}</RouterLink>
         <RouterLink to="/account/balance" class="nav-mobile-link" @click="closeMobile">{{ $t('balance') }}</RouterLink>
+        <RouterLink to="/account/inventory" class="nav-mobile-link" @click="closeMobile">{{ $t('inventory') }}</RouterLink>
+        <RouterLink to="/account/trades" class="nav-mobile-link" @click="closeMobile">Trades</RouterLink>
         <RouterLink to="/account/paymentportal" class="nav-mobile-link" @click="closeMobile">{{ $t('manage-payments') }}</RouterLink>
         <button class="nav-mobile-link nav-mobile-danger" @click="logout">{{ $t('logout') }}</button>
       </template>

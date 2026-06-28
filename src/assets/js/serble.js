@@ -1510,14 +1510,52 @@ export async function adminGetEconomyTotal() {
     }
 }
 
+// Server-wide config (admin) — list every known setting with its current value.
+export async function adminGetConfig() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/config`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, settings: Array.isArray(response.data) ? response.data : [] };
+    } catch (error) {
+        console.error('Error fetching server config', error);
+        return { success: false, error: error?.response?.status, settings: [] };
+    }
+}
+
+// Update one server-wide setting. `value` is always sent as a string.
+export async function adminSetConfig(key, value) {
+    try {
+        const response = await axios.put(`${API_URL}/admin/config/${encodeURIComponent(key)}`,
+            { value: String(value) }, {
+                headers: { SerbleAuth: `User ${getAuthToken()}` }
+            });
+        return { success: true, setting: response.data };
+    } catch (error) {
+        console.error('Error updating server config', error);
+        const status = error?.response?.status;
+        const message = typeof error?.response?.data === 'string' ? error.response.data : null;
+        return { success: false, error: status, message };
+    }
+}
+
 // ── Transaction consent flow ──
 
-// Parse a proposal response, keeping `amount` (ulong) as a precision-safe string.
+// Parse a proposal response, keeping the fixed-point coin fields (`amount`,
+// `offeredCoins`) as precision-safe strings — they're ulong raw values that can
+// exceed Number.MAX_SAFE_INTEGER, so we pull them straight from the raw text
+// instead of trusting JSON.parse's lossy number handling.
 function parseProposalResponse(rawText) {
     let obj = {};
     try { obj = JSON.parse(rawText); } catch { /* ignore */ }
-    const m = /"amount"\s*:\s*(\d+)/.exec(rawText || '');
-    if (m) obj.amount = m[1];
+    const text = rawText || '';
+    const amt = /"amount"\s*:\s*(\d+)/.exec(text);
+    if (amt) obj.amount = amt[1];
+    const off = /"offeredCoins"\s*:\s*(\d+)/.exec(text);
+    if (off) obj.offeredCoins = off[1];
+    // Normalise item arrays so the UI can rely on them always being arrays.
+    if (!Array.isArray(obj.offeredItems)) obj.offeredItems = [];
+    if (!Array.isArray(obj.requestedItems)) obj.requestedItems = [];
     return obj;
 }
 
@@ -1569,5 +1607,207 @@ export async function denyTransactionProposal(proposalId) {
         const status = error?.response?.status;
         console.error('Error denying transaction proposal', error);
         return { success: false, flag: status === 404 ? 'not-found' : status === 400 ? 'not-pending' : 'unknown', error: status };
+    }
+}
+
+// ── Inventory ──
+
+// List the logged-in user's items (newest first) — GET /inventory
+export async function getInventory(limit = 50, offset = 0, creatorApp = null, search = null) {
+    try {
+        const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+        if (creatorApp) params.set('creatorApp', String(creatorApp));
+        if (search) params.set('search', String(search));
+        const response = await axios.get(`${API_URL}/inventory?${params.toString()}`, coinGetConfig());
+        let items = [];
+        try { items = JSON.parse(response.data); } catch { /* ignore */ }
+        return { success: true, items: Array.isArray(items) ? items : [] };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error fetching inventory', error);
+        return { success: false, flag: 'unknown', error: status };
+    }
+}
+
+// ---- User-to-user trades — /trades ----------------------------------------------------
+// Coin amounts (offeredCoins/requestedCoins) are raw fixed-point ulongs. We build the request
+// body by hand so the raw integers go over the wire without JS-number precision loss.
+function userTradeBody(toUser, offeredCoins, requestedCoins, offeredItemIds, requestedItemIds, description) {
+    const oc = /^\d+$/.test(String(offeredCoins ?? '')) ? String(offeredCoins) : '0';
+    const rc = /^\d+$/.test(String(requestedCoins ?? '')) ? String(requestedCoins) : '0';
+    return `{"toUser":${JSON.stringify(String(toUser ?? ''))},`
+        + `"offeredCoins":${oc},"requestedCoins":${rc},`
+        + `"offeredItemIds":${JSON.stringify(offeredItemIds || [])},`
+        + `"requestedItemIds":${JSON.stringify(requestedItemIds || [])},`
+        + `"description":${JSON.stringify(String(description ?? ''))}}`;
+}
+
+function tradeErrorMessage(error) {
+    const raw = error?.response?.data;
+    return typeof raw === 'string' ? raw.trim() : '';
+}
+
+// Propose a trade to another user. Returns { success, trade } or { success:false, message }.
+export async function createUserTrade(toUser, offeredCoins, requestedCoins, offeredItemIds, requestedItemIds, description) {
+    try {
+        const body = userTradeBody(toUser, offeredCoins, requestedCoins, offeredItemIds, requestedItemIds, description);
+        const response = await axios.post(`${API_URL}/trades`, body, coinReqConfig());
+        let trade = {};
+        try { trade = JSON.parse(response.data); } catch { /* ignore */ }
+        return { success: true, trade };
+    } catch (error) {
+        console.error('Error creating trade', error);
+        return { success: false, error: error?.response?.status, message: tradeErrorMessage(error) };
+    }
+}
+
+// List the user's trades. role = 'incoming' | 'outgoing' | 'all'; status optional.
+export async function getUserTrades(role = 'all', status = null, limit = 100, offset = 0) {
+    try {
+        const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+        if (role && role !== 'all') params.set('role', role);
+        if (status) params.set('status', status);
+        const response = await axios.get(`${API_URL}/trades?${params.toString()}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` },
+        });
+        const trades = Array.isArray(response.data) ? response.data : [];
+        return { success: true, trades };
+    } catch (error) {
+        console.error('Error fetching trades', error);
+        return { success: false, error: error?.response?.status, trades: [] };
+    }
+}
+
+async function tradeAction(id, action) {
+    try {
+        const response = await axios.post(`${API_URL}/trades/${encodeURIComponent(id)}/${action}`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` },
+        });
+        return { success: true, trade: response.data };
+    } catch (error) {
+        console.error(`Error on trade ${action}`, error);
+        return { success: false, error: error?.response?.status, message: tradeErrorMessage(error) };
+    }
+}
+
+export const approveUserTrade = (id) => tradeAction(id, 'approve');
+export const denyUserTrade = (id) => tradeAction(id, 'deny');
+export const cancelUserTrade = (id) => tradeAction(id, 'cancel');
+
+// Resolve many creator-app ids to their public info in one request — POST /app/public/batch.
+// Returns { success, apps } where `apps` is a map keyed by app id with normalised fields
+// { id, name, description, isOfficial, readableId }. Used by the inventory view so every item's
+// creating app can be shown without an N+1 of /app/{id}/public calls.
+export async function getPublicAppsBatch(ids) {
+    const unique = Array.from(new Set((ids || []).filter(Boolean)));
+    if (unique.length === 0) return { success: true, apps: {} };
+    try {
+        const response = await axios.post(`${API_URL}/app/public/batch`, { ids: unique });
+        let data = response.data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch { data = []; }
+        }
+        const apps = {};
+        for (const a of Array.isArray(data) ? data : []) {
+            const id = a.id ?? a.Id;
+            if (!id) continue;
+            apps[id] = {
+                id,
+                name: a.name ?? a.Name ?? '',
+                description: a.description ?? a.Description ?? '',
+                isOfficial: a.isOfficial ?? a.IsOfficial ?? false,
+                readableId: a.readableId ?? a.ReadableId ?? '',
+            };
+        }
+        return { success: true, apps };
+    } catch (error) {
+        console.error('Error fetching public app info batch', error);
+        return { success: false, error: error?.response?.status, apps: {} };
+    }
+}
+
+// Public item profile (anyone) — GET /items/{id}/public
+export async function getPublicItem(id) {
+    try {
+        const response = await axios.get(`${API_URL}/items/${encodeURIComponent(id)}/public`);
+        return { success: true, item: response.data };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error fetching public item', error);
+        return { success: false, flag: status === 404 ? 'not-found' : 'unknown', error: status };
+    }
+}
+
+// Public ownership history (anyone), paginated — GET /items/{id}/history.
+// Returns { success, total, limit, offset, entries } where each entry is
+// { id, kind, fromOwnerType?, fromOwnerId?, toOwnerType, toOwnerId, proposalId?, dateCreated }.
+export async function getItemHistory(id, limit = 25, offset = 0) {
+    try {
+        const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+        const response = await axios.get(`${API_URL}/items/${encodeURIComponent(id)}/history?${params.toString()}`);
+        const d = response.data || {};
+        return {
+            success: true,
+            total: d.total ?? 0,
+            limit: d.limit ?? limit,
+            offset: d.offset ?? offset,
+            entries: Array.isArray(d.entries) ? d.entries : [],
+        };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error fetching item history', error);
+        return { success: false, flag: status === 404 ? 'not-found' : 'unknown', error: status, entries: [] };
+    }
+}
+
+// A single owned item — GET /inventory/{id}
+export async function getInventoryItem(id) {
+    try {
+        const response = await axios.get(`${API_URL}/inventory/${encodeURIComponent(id)}`, coinGetConfig());
+        let item = {};
+        try { item = JSON.parse(response.data); } catch { /* ignore */ }
+        return { success: true, item };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error fetching inventory item', error);
+        return { success: false, flag: status === 404 ? 'not-found' : 'unknown', error: status };
+    }
+}
+
+// Resolve many user ids to their public info (id, username, readableId) in one request — used to
+// name user owners in an item's ownership history without an N+1. Returns { success, users } where
+// `users` is a map keyed by user id.
+export async function getPublicUsersBatch(ids) {
+    const unique = Array.from(new Set((ids || []).filter(Boolean)));
+    if (unique.length === 0) return { success: true, users: {} };
+    try {
+        const response = await axios.post(`${API_URL}/user/public/batch`, { ids: unique });
+        const arr = Array.isArray(response.data) ? response.data : [];
+        const users = {};
+        for (const u of arr) {
+            const id = u.id ?? u.Id;
+            if (!id) continue;
+            users[id] = { id, username: u.username ?? u.Username ?? '', readableId: u.readableId ?? u.ReadableId ?? '' };
+        }
+        return { success: true, users };
+    } catch (error) {
+        console.error('Error fetching public users batch', error);
+        return { success: false, error: error?.response?.status, users: {} };
+    }
+}
+
+// List another user's items (public), by user id or username. Paginated + searchable. Powers the
+// trade UI so a proposer can pick the items they want from the other user's inventory.
+export async function getUserItems(user, limit = 50, offset = 0, search = null) {
+    try {
+        const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+        if (search) params.set('search', String(search));
+        const response = await axios.get(`${API_URL}/user/${encodeURIComponent(user)}/items?${params.toString()}`);
+        const items = Array.isArray(response.data) ? response.data : [];
+        return { success: true, items };
+    } catch (error) {
+        const status = error?.response?.status;
+        console.error('Error fetching user items', error);
+        return { success: false, flag: status === 404 ? 'not-found' : 'unknown', error: status, items: [] };
     }
 }

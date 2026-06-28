@@ -74,6 +74,24 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/account/inventory',
+      name: 'Inventory',
+      component: () => import('@/pages/Account/InventoryPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/account/trades',
+      name: 'Trades',
+      component: () => import('@/pages/Account/TradesPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Public item profile + ownership history (anyone can look up any item).
+      path: '/items/:id',
+      name: 'ItemInfo',
+      component: () => import('@/pages/Account/ItemInfoPage.vue'),
+    },
+    {
       path: '/account/paymentportal',
       name: 'PaymentPortal',
       component: () => import('@/pages/Account/PaymentPortalPage.vue'),
@@ -162,6 +180,22 @@ const router = createRouter({
       name: 'TransactionConsent',
       component: () => import('@/pages/Account/TransactionConsentPage.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      // Embeddable, chromeless item viewer for iframing into apps. Uses the user's own Serble
+      // session (no app permissions needed). Optional ?app=<appId> filters to that app's items.
+      path: '/embed/items',
+      name: 'EmbedItems',
+      component: () => import('@/pages/Embed/ItemViewerPage.vue'),
+      meta: { embed: true },
+    },
+    {
+      // Popup landing page for the embed's "connect account" flow: hands the logged-in session
+      // token back to the embedding iframe via postMessage, then closes.
+      path: '/embed/bridge',
+      name: 'EmbedAuthBridge',
+      component: () => import('@/pages/Embed/AuthBridgePage.vue'),
+      meta: { embed: true, requiresAuth: true },
     },
   ],
 })
