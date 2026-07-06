@@ -2,8 +2,10 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getCheckoutUrlAnon } from '@/assets/js/serble.js';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 export default {
+  components: { LoadingSpinner },
   setup() {
     const route = useRoute();
 
@@ -40,10 +42,7 @@ export default {
 
     <div v-if="state === 'loading' || state === 'redirecting'" class="purchase-card bg-dark border rounded-3 text-center">
       <div class="purchase-icon text-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16" class="spin">
-          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-        </svg>
+        <LoadingSpinner :size="48" />
       </div>
       <h4 class="mb-2">{{ $t('wait-while-login') }}</h4>
       <p class="text-muted mb-4" style="font-size:0.9rem;">{{ $t('redirecting-to-portal') }}</p>
@@ -95,10 +94,4 @@ export default {
   text-decoration: none;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.spin {
-  animation: spin 0.9s linear infinite;
-}
 </style>

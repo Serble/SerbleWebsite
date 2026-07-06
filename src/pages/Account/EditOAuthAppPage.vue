@@ -9,9 +9,10 @@ import {
 } from '@/assets/js/serble.js';
 import CoinIcon from '@/components/CoinIcon.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
+import LoadingBlock from '@/components/LoadingBlock.vue';
 
 export default {
-  components: { CoinIcon, CoinAmount },
+  components: { CoinIcon, CoinAmount, LoadingBlock },
   setup() {
     ensureLoggedIn();
 
@@ -201,13 +202,7 @@ export default {
 </script>
 
 <template>
-  <div v-if="loading" class="state-block">
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16" class="spin text-primary">
-      <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-    </svg>
-    <p>{{ $t('loading') }}</p>
-  </div>
+  <LoadingBlock v-if="loading" :padding="80" />
 
   <div v-else class="form-page">
 
@@ -399,8 +394,6 @@ export default {
   color: var(--text-dim);
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; }
 
 /* ── Header ── */
 .form-header {

@@ -3,8 +3,10 @@ import { loginUser, loginWithPasskey } from "@/assets/js/serble.js";
 import { inject, ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
+import LoadingSpinner from "@/components/LoadingSpinner.vue";
 
 export default {
+  components: { LoadingSpinner },
   setup() {
     const userStore = inject('userStore');
     const route = useRoute();
@@ -147,7 +149,7 @@ export default {
 
       <!-- Submit -->
       <button class="auth-submit" :disabled="working" @click="login">
-        <svg v-if="working" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
+        <LoadingSpinner v-if="working" class="me-2" />
         {{ $t('sign-in') }}
       </button>
 
@@ -164,7 +166,7 @@ export default {
 
       <!-- Passkey login button -->
       <button class="auth-submit auth-passkey-btn" :disabled="passkeyWorking" @click="passkeyLogin">
-        <svg v-if="passkeyWorking" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
+        <LoadingSpinner v-if="passkeyWorking" class="me-2" />
         <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/></svg>
         {{ $t('login-with-passkey') }}
       </button>
@@ -360,6 +362,4 @@ export default {
 
 .auth-switch-link:hover { text-decoration: underline; }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; }
 </style>

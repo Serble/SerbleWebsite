@@ -1,12 +1,14 @@
 <script>
 import { ref, computed, onUnmounted } from 'vue';
 import axios from 'axios';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const MAX_STRIKES = 3;
 const TIMER_START = 30;
 
 export default {
+  components: { LoadingSpinner },
   setup() {
     // Game state
     const words = ref([]);         // { text, correct }[]
@@ -144,10 +146,7 @@ export default {
 
       <!-- Loading / error state -->
       <div v-if="dictLoading" class="wm-status-card">
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16" class="spin text-primary mb-3">
-          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-        </svg>
+        <LoadingSpinner :size="36" class="text-primary mb-3" />
         <p class="text-muted">{{ $t('loading') }}</p>
       </div>
 
@@ -547,13 +546,4 @@ export default {
   font-size: 0.9rem;
 }
 
-/* Spinner */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.spin {
-  animation: spin 0.9s linear infinite;
-  display: block;
-  margin: 0 auto;
-}
 </style>

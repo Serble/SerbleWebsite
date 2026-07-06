@@ -22,6 +22,8 @@ import {
   adminGetAppsByUser,
   adminCycleAppSecret,
   adminSetAppOfficial,
+  adminGetAppTaxTarget,
+  adminSetAppTaxTarget,
   adminListProducts,
   adminGetProduct,
   adminCreateProduct,
@@ -57,17 +59,24 @@ import {
   adminRemoveAppCoins,
   adminGetTransactions,
   adminGetEconomyTotal,
+  adminPreviewTax,
+  adminRunTaxNow,
   adminGetConfig,
   adminSetConfig,
 } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
-import { parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
+import { formatCoins, parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
 
 export default {
   components: { OfficialBadge, CoinAmount },
   setup() {
+    const TAX_PERCENT_KEYS = new Set([
+      'economy.tax.fixed_rate',
+      'economy.tax.max_dynamic_rate',
+    ]);
+
     const router = useRouter();
     const userStore = inject('userStore');
     const currentUser = computed(() => userStore.state.user);
@@ -299,6 +308,10 @@ export default {
     const selectedAppError = ref(null);
     const appEdits = ref({ name: '', description: '', redirectUri: '', ownerId: '' });
     const showSecret = ref(false);
+    const appTaxTarget = ref('0');
+    const appTaxTargetDraft = ref('');
+    const appTaxTargetLoading = ref(false);
+    const appTaxTargetBusy = ref(false);
 
     const userApps = ref(null);
     const userAppsLoading = ref(false);
@@ -338,8 +351,47 @@ export default {
         loadAppOidc(id);
         appCoins.value = String(r.app?.coins ?? '0');
         appCoinsAmount.value = '';
+        if (r.app?.isOfficial) await loadAppTaxTarget(id);
+        else {
+          appTaxTarget.value = '0';
+          appTaxTargetDraft.value = '';
+        }
       } else {
         selectedAppError.value = r.error ?? 'unknown';
+      }
+    }
+
+    async function loadAppTaxTarget(appId = selectedApp.value?.id) {
+      if (!appId) return;
+      appTaxTargetLoading.value = true;
+      const r = await adminGetAppTaxTarget(appId);
+      appTaxTargetLoading.value = false;
+      if (r.success) {
+        appTaxTarget.value = String(r.target?.targetBalance ?? '0');
+        appTaxTargetDraft.value = formatCoins(appTaxTarget.value);
+      } else {
+        appTaxTarget.value = '0';
+        appTaxTargetDraft.value = '';
+      }
+    }
+
+    async function saveAppTaxTarget() {
+      if (!selectedApp.value?.isOfficial) return;
+      const amount = appTaxTargetDraft.value.trim();
+      if (!isNonNegativeCoinAmount(amount)) {
+        flash('Enter an amount of zero or more', 'danger');
+        return;
+      }
+      const raw = parseCoinsToRaw(amount);
+      appTaxTargetBusy.value = true;
+      const r = await withBusy(
+        () => adminSetAppTaxTarget(selectedApp.value.id, raw),
+        'Target balance updated'
+      );
+      appTaxTargetBusy.value = false;
+      if (r?.success) {
+        appTaxTarget.value = String(r.target?.targetBalance ?? '0');
+        appTaxTargetDraft.value = formatCoins(appTaxTarget.value);
       }
     }
 
@@ -378,6 +430,8 @@ export default {
       showSecret.value = false;
       appCoins.value = null;
       appCoinsAmount.value = '';
+      appTaxTarget.value = '0';
+      appTaxTargetDraft.value = '';
       appOidcClient.value = null;
       appOidcClientForm.value = { additionalRedirectUris: [], isPublicClient: false, requirePkce: true };
       appAccess.value = null;
@@ -397,6 +451,11 @@ export default {
           redirectUri: r.app.redirectUri ?? '',
           ownerId: r.app.ownerId ?? '',
         };
+        if (r.app?.isOfficial) await loadAppTaxTarget(r.app.id);
+        else {
+          appTaxTarget.value = '0';
+          appTaxTargetDraft.value = '';
+        }
       }
     }
 
@@ -450,6 +509,12 @@ export default {
         if (userApps.value) {
           const ua = userApps.value.find(x => x.id === r.app.id);
           if (ua) ua.isOfficial = r.app.isOfficial;
+        }
+        if (r.app.isOfficial) {
+          await loadAppTaxTarget(r.app.id);
+        } else {
+          appTaxTarget.value = '0';
+          appTaxTargetDraft.value = '';
         }
       }
     }
@@ -1163,11 +1228,18 @@ export default {
     const configError = ref(null);
     // Each row: { ...setting, draft: string, busy: bool, message: string|null, messageType }
     const configRows = ref([]);
+    const taxPreview = ref(null);
+    const taxPreviewLoading = ref(false);
+    const taxPreviewError = ref(null);
+    const taxRunBusy = ref(false);
+    const taxRunMessage = ref(null);
+    const taxRunMessageType = ref('info');
 
     async function loadConfig() {
       configLoading.value = true;
+      taxPreviewLoading.value = true;
       configError.value = null;
-      const r = await adminGetConfig();
+      const [r, tax] = await Promise.all([adminGetConfig(), adminPreviewTax()]);
       configLoading.value = false;
       configLoaded.value = true;
       if (r.success) {
@@ -1181,11 +1253,29 @@ export default {
       } else {
         configError.value = r.error ?? 'unknown';
       }
+      if (tax.success) {
+        taxPreview.value = tax.preview;
+        taxPreviewError.value = null;
+      } else {
+        taxPreview.value = null;
+        taxPreviewError.value = tax.message || tax.error || 'unknown';
+      }
+      taxPreviewLoading.value = false;
     }
 
     function configDirty(row) {
       const current = row.type === 'Boolean' ? row.value === 'true' : row.value;
       return row.draft !== current;
+    }
+
+    function isPercentSetting(row) {
+      return row?.type === 'Percent' || TAX_PERCENT_KEYS.has(String(row?.key ?? ''));
+    }
+
+    function formatPercentDisplay(value) {
+      const n = Number.parseFloat(String(value ?? '0').trim());
+      if (!Number.isFinite(n)) return String(value ?? '0');
+      return n.toLocaleString(undefined, { maximumFractionDigits: 8, useGrouping: false });
     }
 
     async function saveConfig(row) {
@@ -1198,9 +1288,42 @@ export default {
         row.draft = row.type === 'Boolean' ? r.setting.value === 'true' : r.setting.value;
         row.message = 'Saved';
         row.messageType = 'success';
+        if (String(row.key || '').startsWith('economy.tax.')) {
+          await loadTaxPreview();
+        }
       } else {
         row.message = r.message || `Failed (${r.error ?? 'unknown'})`;
         row.messageType = 'error';
+      }
+    }
+
+    async function loadTaxPreview() {
+      taxPreviewLoading.value = true;
+      taxPreviewError.value = null;
+      taxRunMessage.value = null;
+      const r = await adminPreviewTax();
+      taxPreviewLoading.value = false;
+      if (r.success) {
+        taxPreview.value = r.preview;
+      } else {
+        taxPreview.value = null;
+        taxPreviewError.value = r.message || r.error || 'unknown';
+      }
+    }
+
+    async function runTaxNow() {
+      taxRunBusy.value = true;
+      taxRunMessage.value = null;
+      const r = await adminRunTaxNow();
+      taxRunBusy.value = false;
+      if (r.success) {
+        taxPreview.value = r.result;
+        taxRunMessage.value = 'Tax collection completed.';
+        taxRunMessageType.value = 'success';
+        await Promise.all([loadEconomy(), loadTaxPreview()]);
+      } else {
+        taxRunMessage.value = r.message || `Failed (${r.error ?? 'unknown'})`;
+        taxRunMessageType.value = 'error';
       }
     }
 
@@ -1217,9 +1340,11 @@ export default {
       activeTab,
       appStats, appStatsError, appQuery, appLimit, appSearching, appResults, appSearchError,
       selectedApp, selectedAppLoading, selectedAppError, appEdits, showSecret,
+      appTaxTarget, appTaxTargetDraft, appTaxTargetLoading, appTaxTargetBusy,
       userApps, userAppsLoading,
       loadAppStats, runAppSearch, selectApp, closeApp,
       actSaveApp, actDeleteApp, actCycleSecret, actToggleOfficial, copySecret,
+      loadAppTaxTarget, saveAppTaxTarget,
       loadUserApps, viewAppFromUser,
       products, productsLoading, productsError, productForm, editingProduct, productPanelOpen,
       loadProducts, openNewProduct, editProduct, closeProductPanel,
@@ -1242,13 +1367,15 @@ export default {
       groupMembers, groupMembersLoading, newMemberId, memberDetails,
       loadGroups, openNewGroup, openEditGroup, closeGroupPanel,
       saveGroup, deleteGroup, addGroupMember, removeGroupMember,
-      // Transactions audit log
+      // Economy + transaction audit log
       txFilters, txLimit, txOffset, txList, txLoading, txError, txLoaded,
       loadTransactions, clearTxFilters, txNextPage, txPrevPage,
       economy, economyLoading, economyError, loadEconomy,
       // Server-wide settings
       configRows, configLoading, configError, configLoaded,
-      loadConfig, saveConfig, configDirty,
+      loadConfig, saveConfig, configDirty, isPercentSetting, formatPercentDisplay,
+      taxPreview, taxPreviewLoading, taxPreviewError, loadTaxPreview,
+      taxRunBusy, taxRunMessage, taxRunMessageType, runTaxNow,
     };
   }
 };
@@ -1287,7 +1414,7 @@ export default {
           <button class="nav-link" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">Services</button>
         </li>
         <li class="nav-item">
-          <button class="nav-link" :class="{ active: activeTab === 'transactions' }" @click="activeTab = 'transactions'; if (!txLoaded) loadTransactions(); if (!economy) loadEconomy()">Transactions</button>
+          <button class="nav-link" :class="{ active: activeTab === 'economy' }" @click="activeTab = 'economy'; if (!txLoaded) loadTransactions(); if (!economy) loadEconomy(); if (!taxPreview) loadTaxPreview()">Economy</button>
         </li>
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'; if (!configLoaded) loadConfig()">Settings</button>
@@ -1633,6 +1760,46 @@ export default {
             <span v-if="selectedApp.isOfficial" class="ms-auto">
               <OfficialBadge />
             </span>
+          </div>
+
+          <div v-if="selectedApp.isOfficial" class="mb-4">
+            <label class="form-label mb-1" style="font-size:0.8rem;">Target balance for tax payouts</label>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+              <span class="badge bg-info text-dark" style="font-size:0.85rem;">
+                <template v-if="appTaxTargetLoading">Loading…</template>
+                <template v-else><CoinAmount :value="appTaxTarget" /> coins</template>
+              </span>
+              <span class="text-muted-light" style="font-size:0.8rem;">This app will receive tax payouts until it reaches this balance.</span>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <input
+                  v-model="appTaxTargetDraft"
+                  type="text"
+                  inputmode="decimal"
+                  class="form-control dark-input"
+                  placeholder="Target balance"
+                  :disabled="appTaxTargetLoading || actionBusy"
+                  @keyup.enter="saveAppTaxTarget"
+                />
+              </div>
+              <div class="col-md-6 d-flex gap-2">
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  :disabled="appTaxTargetLoading || appTaxTargetBusy || actionBusy"
+                  @click="saveAppTaxTarget"
+                >
+                  Save target
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  :disabled="appTaxTargetLoading || appTaxTargetBusy || actionBusy"
+                  @click="loadAppTaxTarget()"
+                >
+                  Reload
+                </button>
+              </div>
+            </div>
           </div>
 
           <h6 class="section-heading">Client secret</h6>
@@ -2158,8 +2325,8 @@ export default {
         </div>
       </div>
 
-      <!-- TRANSACTIONS TAB -->
-      <div v-show="activeTab === 'transactions'">
+      <!-- ECONOMY TAB -->
+      <div v-show="activeTab === 'economy'">
         <!-- Economy total (coins in circulation) -->
         <div class="economy-card mb-3">
           <div class="economy-head">
@@ -2190,6 +2357,83 @@ export default {
               </div>
             </div>
           </template>
+        </div>
+
+        <div class="tax-admin-card mb-3">
+          <div class="tax-admin-head">
+            <div>
+              <h6 class="mb-1">Tax preview</h6>
+              <p class="text-muted mb-0">Shows the percentage of each user's current balance that would be taxed, plus the resulting payout amounts, if tax were collected right now.</p>
+            </div>
+            <div class="tax-admin-actions">
+              <button class="btn btn-sm btn-outline-secondary" :disabled="taxPreviewLoading" @click="loadTaxPreview">
+                {{ taxPreviewLoading ? 'Refreshing…' : 'Refresh preview' }}
+              </button>
+              <button
+                class="btn btn-sm btn-primary"
+                :disabled="taxRunBusy || taxPreviewLoading || !taxPreview?.canRun"
+                @click="runTaxNow"
+              >
+                {{ taxRunBusy ? 'Running…' : 'Collect tax now' }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="taxPreviewError" class="alert alert-danger py-2 mt-3 mb-0">Failed to load tax preview: {{ taxPreviewError }}</div>
+          <div v-else-if="taxPreview" class="mt-3">
+            <div v-if="taxRunMessage" class="mb-3" :class="taxRunMessageType === 'error' ? 'text-danger' : 'text-success'">
+              {{ taxRunMessage }}
+            </div>
+            <div v-if="!taxPreview.canRun" class="alert alert-warning py-2 mb-3">
+              Tax cannot run right now<span v-if="taxPreview.blockedReason">: {{ taxPreview.blockedReason }}</span><span v-else>.</span>
+            </div>
+            <div class="tax-preview-grid">
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Mode</div>
+                <div class="tax-preview-value">{{ taxPreview.dynamicRate ? 'Dynamic' : 'Fixed' }}</div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Tax rate now</div>
+                <div class="tax-preview-value">{{ formatPercentDisplay(taxPreview.rate) }}%</div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Fixed tax rate</div>
+                <div class="tax-preview-value">{{ formatPercentDisplay(taxPreview.fixedRate) }}%</div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Max dynamic tax rate</div>
+                <div class="tax-preview-value">{{ formatPercentDisplay(taxPreview.maxDynamicRate) }}%</div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Users taxed</div>
+                <div class="tax-preview-value">{{ taxPreview.usersTaxed }}</div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Official apps needing funds</div>
+                <div class="tax-preview-value">{{ taxPreview.appsNeedingFunds }}</div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Would collect</div>
+                <div class="tax-preview-value"><CoinAmount :value="taxPreview.collected" /></div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">Would distribute</div>
+                <div class="tax-preview-value"><CoinAmount :value="taxPreview.distributed" /></div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">BOSS app id</div>
+                <div class="tax-preview-value tax-preview-id">{{ taxPreview.bossAppId || '—' }}</div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">BOSS start balance</div>
+                <div class="tax-preview-value"><CoinAmount :value="taxPreview.bossStartingBalance" /></div>
+              </div>
+              <div class="tax-preview-item">
+                <div class="tax-preview-label">BOSS end balance</div>
+                <div class="tax-preview-value"><CoinAmount :value="taxPreview.bossEndingBalance" /></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="search-card p-3 mb-3">
@@ -2314,6 +2558,19 @@ export default {
                   class="form-control form-control-sm dark-input"
                   @keyup.enter="saveConfig(row)"
                 >
+                <div v-else-if="isPercentSetting(row)" class="config-coins">
+                  <input
+                    v-model="row.draft"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    inputmode="decimal"
+                    class="form-control form-control-sm dark-input"
+                    @keyup.enter="saveConfig(row)"
+                  >
+                  <span class="config-unit">%</span>
+                </div>
                 <div v-else-if="row.type === 'Coins'" class="config-coins">
                   <input
                     v-model="row.draft"
@@ -2366,6 +2623,50 @@ export default {
 }
 .admin-page :deep(.text-muted) {
   color: #9ca3af !important;
+}
+.tax-admin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.tax-admin-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.tax-admin-actions {
+  display: flex;
+  gap: 8px;
+}
+.tax-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.tax-preview-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.tax-preview-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+.tax-preview-value {
+  font-weight: 600;
+  color: #e4e4e7;
+}
+.tax-preview-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.83rem;
+  word-break: break-all;
 }
 .config-list {
   display: flex;

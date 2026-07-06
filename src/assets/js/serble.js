@@ -916,6 +916,42 @@ export async function adminSetAppOfficial(id, isOfficial) {
     }
 }
 
+function parseAppTaxTargetResponse(rawText) {
+    let obj = {};
+    try { obj = JSON.parse(rawText); } catch { /* ignore */ }
+    const m = /"targetBalance"\s*:\s*(?:"(\d+)"|(\d+))/.exec(rawText || '');
+    if (m) obj.targetBalance = m[1] ?? m[2];
+    return obj;
+}
+
+export async function adminGetAppTaxTarget(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/apps/${encodeURIComponent(id)}/tax-target-balance`, coinGetConfig());
+        return { success: true, target: parseAppTaxTargetResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching app tax target', error);
+        const raw = error?.response?.data;
+        const message = typeof raw === 'string' ? raw.trim() : '';
+        return { success: false, error: error?.response?.status, message };
+    }
+}
+
+export async function adminSetAppTaxTarget(id, targetBalance) {
+    try {
+        const response = await axios.put(
+            `${API_URL}/admin/apps/${encodeURIComponent(id)}/tax-target-balance`,
+            intBody('targetBalance', targetBalance),
+            coinReqConfig()
+        );
+        return { success: true, target: parseAppTaxTargetResponse(response.data) };
+    } catch (error) {
+        console.error('Error setting app tax target', error);
+        const raw = error?.response?.data;
+        const message = typeof raw === 'string' ? raw.trim() : '';
+        return { success: false, error: error?.response?.status, message };
+    }
+}
+
 // ── Admin Product helpers ──
 
 export async function adminListProducts() {
@@ -1507,6 +1543,37 @@ export async function adminGetEconomyTotal() {
     } catch (error) {
         console.error('Error fetching economy total', error);
         return { success: false, error: error?.response?.status };
+    }
+}
+
+function parseTaxPreviewResponse(rawText) {
+    let obj = {};
+    try { obj = JSON.parse(rawText); } catch { /* ignore */ }
+    const text = rawText || '';
+    for (const key of ['rate', 'fixedRate', 'maxDynamicRate', 'collected', 'distributed', 'bossStartingBalance', 'bossEndingBalance']) {
+        const m = new RegExp(`"${key}"\\s*:\\s*(?:"([\\d.]+)"|(\\d+))`).exec(text);
+        if (m) obj[key] = m[1] ?? m[2];
+    }
+    return obj;
+}
+
+export async function adminPreviewTax() {
+    try {
+        const response = await axios.get(`${API_URL}/admin/economy/tax/preview`, coinGetConfig());
+        return { success: true, preview: parseTaxPreviewResponse(response.data) };
+    } catch (error) {
+        console.error('Error fetching tax preview', error);
+        return { success: false, error: error?.response?.status, message: typeof error?.response?.data === 'string' ? error.response.data : null };
+    }
+}
+
+export async function adminRunTaxNow() {
+    try {
+        const response = await axios.post(`${API_URL}/admin/economy/tax/run-now`, {}, coinGetConfig());
+        return { success: true, result: parseTaxPreviewResponse(response.data) };
+    } catch (error) {
+        console.error('Error running tax now', error);
+        return { success: false, error: error?.response?.status, message: typeof error?.response?.data === 'string' ? error.response.data : null };
     }
 }
 

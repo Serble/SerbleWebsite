@@ -10,6 +10,8 @@ import {
 } from '@/assets/js/serble.js';
 import CoinAmount from '@/components/CoinAmount.vue';
 import ItemCard from '@/components/ItemCard.vue';
+import LoadingCard from '@/components/LoadingCard.vue';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 function formatDate(value) {
   if (!value) return '';
@@ -19,7 +21,7 @@ function formatDate(value) {
 }
 
 export default {
-  components: { CoinAmount, ItemCard },
+  components: { CoinAmount, ItemCard, LoadingCard, LoadingSpinner },
   setup() {
     ensureLoggedIn();
     const route = useRoute();
@@ -189,13 +191,10 @@ export default {
   <div class="txc-page">
 
     <!-- Loading / redirecting -->
-    <div v-if="state === 'loading' || state === 'redirecting'" class="txc-card">
-      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16" class="spin text-primary mb-3">
-        <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-      </svg>
-      <p class="text-muted">{{ state === 'redirecting' ? 'Redirecting…' : 'Loading…' }}</p>
-    </div>
+    <LoadingCard
+      v-if="state === 'loading' || state === 'redirecting'"
+      :text="state === 'redirecting' ? 'Redirecting…' : 'Loading…'"
+    />
 
     <!-- Error -->
     <div v-else-if="state === 'error'" class="txc-card txc-card-error">
@@ -403,10 +402,7 @@ export default {
           <svg v-if="state !== 'working'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
             <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
           </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2">
-            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-          </svg>
+          <LoadingSpinner v-else class="me-2" />
           <template v-if="insufficientFunds">Let them know</template>
           <template v-else-if="isGift">Accept gift</template>
           <template v-else-if="involvesItems">Approve trade</template>
@@ -453,8 +449,6 @@ export default {
   border-color: var(--danger-border);
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; }
 
 /* Error / result icons */
 .txc-error-icon { color: var(--danger); display: flex; justify-content: center; }

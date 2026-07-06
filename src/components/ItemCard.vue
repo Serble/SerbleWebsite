@@ -1,5 +1,6 @@
 <script>
 import { computed } from 'vue';
+import OfficialBadge from '@/components/OfficialBadge.vue';
 
 // A single tradeable / inventory item tile. Purely presentational.
 //  - default: icon + name + (optional) description — used on the trade consent screen.
@@ -7,18 +8,23 @@ import { computed } from 'vue';
 //    item's info page for the full detail + ownership history.
 export default {
   name: 'ItemCard',
+  components: { OfficialBadge },
   props: {
     // { id, name, description?, iconUrl? }
     item: { type: Object, required: true },
     // Strip to the bare minimum (icon + name, single line).
     minimal: { type: Boolean, default: false },
+    // Render a verified badge when the item's creator app is marked official.
+    showCreatorOfficialBadge: { type: Boolean, default: false },
   },
   setup(props) {
     const name = computed(() => props.item?.name ?? 'Unknown item');
     const description = computed(() => props.item?.description ?? '');
     const iconUrl = computed(() => props.item?.iconUrl ?? null);
     const initial = computed(() => name.value.charAt(0).toUpperCase() || '?');
-    return { name, description, iconUrl, initial };
+    const creatorAppIsOfficial = computed(() => !!props.item?.creatorAppIsOfficial);
+    const showOfficialBadge = computed(() => props.showCreatorOfficialBadge && creatorAppIsOfficial.value);
+    return { name, description, iconUrl, initial, showOfficialBadge };
   },
 };
 </script>
@@ -30,7 +36,10 @@ export default {
       <span v-else class="item-icon-placeholder">{{ initial }}</span>
     </div>
     <div class="item-body">
-      <p class="item-name">{{ name }}</p>
+      <div class="item-name-row">
+        <p class="item-name">{{ name }}</p>
+        <OfficialBadge v-if="showOfficialBadge" icon-only />
+      </div>
       <p v-if="!minimal && description" class="item-desc">{{ description }}</p>
     </div>
   </div>
@@ -88,8 +97,16 @@ export default {
   flex: 1 1 auto;
 }
 
+.item-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .item-name {
   margin: 0;
+  min-width: 0;
   font-weight: 600;
   color: var(--text);
   line-height: 1.25;

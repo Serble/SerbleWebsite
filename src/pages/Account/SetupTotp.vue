@@ -3,8 +3,10 @@ import { ref, inject, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getTotpQrCode, checkTotpCode, editUser } from '@/assets/js/serble.js';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 export default {
+  components: { LoadingSpinner },
   setup() {
     const user    = ensureLoggedIn();
     const router  = useRouter();
@@ -98,10 +100,7 @@ export default {
             <p class="text-muted" style="font-size:0.82rem;">Failed to load QR code.</p>
           </div>
           <div v-else class="qr-loading">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16" class="spin text-primary">
-              <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-            </svg>
+            <LoadingSpinner :size="32" class="text-primary" />
           </div>
         </div>
 
@@ -160,10 +159,7 @@ export default {
           :disabled="!code.trim() || working"
           @click="submit"
         >
-          <svg v-if="working" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-2">
-            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-          </svg>
+          <LoadingSpinner v-if="working" class="me-2" />
           <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
             <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
           </svg>
@@ -373,7 +369,4 @@ export default {
 
 .cancel-link:hover { color: var(--text-muted); }
 
-/* Spinner */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; }
 </style>

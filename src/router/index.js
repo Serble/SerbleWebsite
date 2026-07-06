@@ -176,6 +176,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      // Preview/test route: renders the shared loading screen permanently.
+      path: '/loading-preview',
+      name: 'LoadingPreview',
+      component: () => import('@/pages/LoadingPreviewPage.vue'),
+    },
+    {
       path: '/transactions/consent',
       name: 'TransactionConsent',
       component: () => import('@/pages/Account/TransactionConsentPage.vue'),

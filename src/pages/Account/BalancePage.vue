@@ -5,6 +5,8 @@ import { getBalance, transferCoins, getTransactions } from '@/assets/js/serble.j
 import { parseCoinsToRaw, isValidCoinAmount } from '@/assets/js/coins.js';
 import CoinIcon from '@/components/CoinIcon.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import RefreshButton from '@/components/RefreshButton.vue';
 
 function formatDate(value) {
   if (!value) return '';
@@ -14,7 +16,7 @@ function formatDate(value) {
 }
 
 export default {
-  components: { CoinIcon, CoinAmount },
+  components: { CoinIcon, CoinAmount, LoadingSpinner, RefreshButton },
   setup() {
     ensureLoggedIn();
 
@@ -146,12 +148,7 @@ export default {
   <div class="balance-page">
     <div class="balance-header">
       <h3 class="balance-title">{{ $t('your-balance') }}</h3>
-      <button class="refresh-btn" :disabled="loading" @click="load" :title="$t('reload')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" :class="{ spin: loading }">
-          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-        </svg>
-      </button>
+      <RefreshButton :loading="loading" @click="load" :title="$t('reload')" />
     </div>
 
     <div class="balance-card">
@@ -210,10 +207,7 @@ export default {
       <p v-if="sendSuccess" class="form-message form-success">{{ sendSuccess }}</p>
 
       <button class="send-btn" :disabled="sending" @click="send">
-        <svg v-if="sending" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-1">
-          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-        </svg>
+        <LoadingSpinner v-if="sending" class="me-1" />
         <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
           <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z"/>
         </svg>
@@ -225,12 +219,7 @@ export default {
     <div class="panel">
       <div class="panel-head">
         <h4 class="panel-title">{{ $t('transaction-history') }}</h4>
-        <button class="refresh-btn small" :disabled="txLoading" @click="loadTransactions" :title="$t('reload')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" :class="{ spin: txLoading }">
-            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-          </svg>
-        </button>
+        <RefreshButton small :loading="txLoading" @click="loadTransactions" :title="$t('reload')" />
       </div>
 
       <div v-if="txLoading" class="tx-state">{{ $t('loading') }}</div>
@@ -267,10 +256,7 @@ export default {
         :disabled="txLoadingMore"
         @click="loadMoreTransactions"
       >
-        <svg v-if="txLoadingMore" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="spin me-1">
-          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-        </svg>
+        <LoadingSpinner v-if="txLoadingMore" class="me-1" />
         {{ $t('load-more') }}
       </button>
     </div>
@@ -297,30 +283,6 @@ export default {
   color: var(--text);
   margin: 0;
 }
-
-.refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  color: var(--text-muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: var(--border);
-  color: var(--text);
-}
-
-.refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; }
 
 .balance-card {
   background: var(--surface);
@@ -457,11 +419,6 @@ export default {
 
 .send-btn:hover:not(:disabled) { opacity: 0.9; }
 .send-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.refresh-btn.small {
-  width: 32px;
-  height: 32px;
-}
 
 /* ── Transaction list ── */
 .tx-state {

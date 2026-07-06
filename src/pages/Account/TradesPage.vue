@@ -7,6 +7,7 @@ import {
 import { parseCoinsToRaw } from '@/assets/js/coins.js';
 import CoinAmount from '@/components/CoinAmount.vue';
 import ItemCard from '@/components/ItemCard.vue';
+import RefreshButton from '@/components/RefreshButton.vue';
 
 // Status → display label + style. The API uses Approved/Denied; users think
 // "complete"/"rejected".
@@ -29,7 +30,7 @@ function formatDate(value) {
 
 export default {
   name: 'TradesPage',
-  components: { CoinAmount, ItemCard },
+  components: { CoinAmount, ItemCard, RefreshButton },
   setup() {
     ensureLoggedIn();
 
@@ -398,7 +399,7 @@ export default {
       </button>
       <button class="tab" :class="{ active: tab === 'outgoing' }" @click="tab = 'outgoing'">Sent</button>
       <button class="tab" :class="{ active: tab === 'all' }" @click="tab = 'all'">All</button>
-      <button class="refresh" :disabled="loading" @click="loadTrades" title="Refresh">⟳</button>
+      <RefreshButton small class="trades-refresh" :loading="loading" @click="loadTrades" title="Refresh" />
     </div>
 
     <div v-if="loading" class="state">Loading…</div>
@@ -521,7 +522,7 @@ export default {
   display: inline-block; margin-left: 6px; background: var(--accent); color: #fff;
   border-radius: 999px; font-size: 0.72rem; padding: 1px 7px; font-weight: 700;
 }
-.refresh { margin-left: auto; background: transparent; border: 0; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; }
+.trades-refresh { margin-left: auto; }
 
 .state { padding: 36px; text-align: center; color: var(--text-muted); }
 

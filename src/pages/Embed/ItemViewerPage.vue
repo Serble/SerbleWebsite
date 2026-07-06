@@ -6,6 +6,7 @@ import { setLocalStorage } from '@/assets/js/utils.js';
 import { userStore, authReadyPromise } from '@/assets/js/user.js';
 import ItemCard from '@/components/ItemCard.vue';
 import ItemDetails from '@/components/ItemDetails.vue';
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 // An embeddable, self-contained item viewer. It runs on the user's own Serble session, so an app
 // can iframe it without holding any OAuth scopes — Serble (not the app) reads the inventory.
@@ -17,7 +18,7 @@ import ItemDetails from '@/components/ItemDetails.vue';
 //   title=...     custom heading
 export default {
   name: 'EmbedItemViewer',
-  components: { ItemCard, ItemDetails },
+  components: { ItemCard, ItemDetails, LoadingSpinner },
   setup() {
     const route = useRoute();
     const origin = window.location.origin;
@@ -189,10 +190,7 @@ export default {
       <div class="head">
         <h2 class="title">{{ heading }}</h2>
         <button class="icon-btn" :disabled="loading" @click="load" title="Refresh">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" :class="{ spin: loading }">
-            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-          </svg>
+          <LoadingSpinner :size="14" :spin="loading" />
         </button>
       </div>
 
@@ -247,14 +245,12 @@ export default {
 .title { font-size: 1.05rem; font-weight: 700; margin: 0; }
 
 .icon-btn {
-  background: transparent; border: 1px solid var(--e-border); border-radius: 8px;
+  background: var(--e-surface); border: 1px solid var(--e-border); border-radius: 8px;
   color: var(--e-muted); width: 30px; height: 30px; display: flex; align-items: center;
-  justify-content: center; cursor: pointer;
+  justify-content: center; cursor: pointer; transition: background 0.15s, color 0.15s;
 }
-.icon-btn:hover:not(:disabled) { color: var(--e-text); }
+.icon-btn:hover:not(:disabled) { color: var(--e-text); background: var(--e-border); }
 .icon-btn:disabled { opacity: .5; cursor: default; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin .9s linear infinite; }
 
 .search {
   width: 100%; box-sizing: border-box; padding: 8px 10px; margin: 0 0 12px;

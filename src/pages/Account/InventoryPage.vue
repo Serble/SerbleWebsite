@@ -4,9 +4,10 @@ import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getInventory } from '@/assets/js/serble.js';
 import ItemCard from '@/components/ItemCard.vue';
 import ItemDetails from '@/components/ItemDetails.vue';
+import RefreshButton from '@/components/RefreshButton.vue';
 
 export default {
-  components: { ItemCard, ItemDetails },
+  components: { ItemCard, ItemDetails, RefreshButton },
   setup() {
     ensureLoggedIn();
 
@@ -78,12 +79,7 @@ export default {
   <div class="inv-page">
     <div class="inv-header">
       <h3 class="inv-title">{{ $t('inventory') }}</h3>
-      <button class="inv-refresh" :disabled="loading" @click="load" :title="$t('reload')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" :class="{ spin: loading }">
-          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-        </svg>
-      </button>
+      <RefreshButton :loading="loading" @click="load" :title="$t('reload')" />
     </div>
 
     <p class="inv-subtitle">{{ $t('inventory-subtitle') }}</p>
@@ -116,7 +112,7 @@ export default {
               :class="{ active: selectedId === it.id }"
               @click="openItem(it.id)"
             >
-              <ItemCard :item="it" :minimal="true" />
+              <ItemCard :item="it" :minimal="true" :show-creator-official-badge="true" />
             </button>
           </div>
           <div v-if="hasMore" class="inv-more">
@@ -251,24 +247,6 @@ export default {
   font-size: 0.95rem;
 }
 .inv-search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-.inv-refresh {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-muted);
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.inv-refresh:hover:not(:disabled) { color: var(--text); border-color: var(--border-strong); }
-.inv-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; }
 
 .inv-state {
   padding: 40px;
