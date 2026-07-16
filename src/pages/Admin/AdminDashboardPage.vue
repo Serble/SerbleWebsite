@@ -1,5 +1,5 @@
 <script>
-import { ref, computed, onMounted, inject } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   adminGetUserStats,
@@ -64,8 +64,9 @@ import {
   adminGetConfig,
   adminSetConfig,
 } from '@/assets/js/serble.js';
-import { setLocalStorage } from '@/assets/js/utils.js';
+import { getLocalStorage, setLocalStorage } from '@/assets/js/utils.js';
 import { formatCoins, parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
+import { FEATURES } from '@/assets/js/featureFlags.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
 
@@ -76,11 +77,52 @@ export default {
       'economy.tax.fixed_rate',
       'economy.tax.max_dynamic_rate',
     ]);
+    const USER_TABLE_SETTINGS_KEY = 'admin-user-table-settings';
+    const USER_TABLE_COLUMNS = [
+      { key: 'username', label: 'Username', defaultVisible: true, defaultWidth: 180, minWidth: 120, maxWidth: 360 },
+      { key: 'email', label: 'Email', defaultVisible: true, defaultWidth: 260, minWidth: 160, maxWidth: 460 },
+      { key: 'id', label: 'ID', defaultVisible: true, defaultWidth: 260, minWidth: 180, maxWidth: 520 },
+      { key: 'role', label: 'Role', defaultVisible: true, defaultWidth: 120, minWidth: 90, maxWidth: 220 },
+      { key: 'coins', label: 'Coins', defaultVisible: true, defaultWidth: 150, minWidth: 110, maxWidth: 260, requiresEconomy: true },
+      { key: 'dateCreated', label: 'Date created', defaultVisible: true, defaultWidth: 190, minWidth: 140, maxWidth: 300 },
+      { key: 'lastLogin', label: 'Last login', defaultVisible: true, defaultWidth: 190, minWidth: 140, maxWidth: 300 },
+    ];
+
+    function createDefaultUserTableSettings() {
+      return Object.fromEntries(USER_TABLE_COLUMNS.map((column) => [
+        column.key,
+        { visible: column.defaultVisible, width: column.defaultWidth },
+      ]));
+    }
+
+    function loadUserTableSettings() {
+      const defaults = createDefaultUserTableSettings();
+      const raw = getLocalStorage(USER_TABLE_SETTINGS_KEY);
+      if (!raw) return defaults;
+      try {
+        const parsed = JSON.parse(raw);
+        for (const column of USER_TABLE_COLUMNS) {
+          const saved = parsed?.[column.key] || {};
+          defaults[column.key] = {
+            visible: typeof saved.visible === 'boolean' ? saved.visible : defaults[column.key].visible,
+            width: Number.isFinite(Number(saved.width))
+              ? Math.min(column.maxWidth, Math.max(column.minWidth, Number(saved.width)))
+              : defaults[column.key].width,
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to load admin user table settings from localStorage', error);
+        return defaults;
+      }
+      return defaults;
+    }
 
     const router = useRouter();
     const userStore = inject('userStore');
+    const featureStore = inject('featureStore');
     const currentUser = computed(() => userStore.state.user);
     const isAdmin = computed(() => (currentUser.value?.permLevel ?? 0) >= 2);
+    const economyEnabled = computed(() => featureStore?.isEnabled(FEATURES.ECONOMY) === true);
 
     const stats = ref(null);
     const statsError = ref(null);
@@ -90,10 +132,123 @@ export default {
     const searching = ref(false);
     const results = ref([]);
     const searchError = ref(null);
+    const userTableSettingsOpen = ref(false);
+    const userTableSettings = ref(loadUserTableSettings());
+    const resizingUserTableColumn = ref(null);
+    let stopUserTableResize = null;
+    const availableUserTableColumns = computed(() => USER_TABLE_COLUMNS
+      .filter((column) => !column.requiresEconomy || economyEnabled.value)
+      .map((column) => ({
+        ...column,
+        visible: userTableSettings.value[column.key]?.visible !== false,
+        width: userTableSettings.value[column.key]?.width ?? column.defaultWidth,
+      })));
+    const visibleUserTableColumns = computed(() => {
+      const visible = availableUserTableColumns.value.filter((column) => column.visible);
+      if (visible.length > 0) return visible;
+      const fallback = availableUserTableColumns.value[0];
+      return fallback ? [{ ...fallback, visible: true }] : [];
+    });
+    const userTableColspan = computed(() => visibleUserTableColumns.value.length + 1);
+    const userTableTotalWidth = computed(() => visibleUserTableColumns.value
+      .reduce((total, column) => total + column.width, 110));
+
+    function userTableColumnVisible(key) {
+      return visibleUserTableColumns.value.some((column) => column.key === key);
+    }
+
+    function userTableColumnWidth(key) {
+      return visibleUserTableColumns.value.find((column) => column.key === key)?.width;
+    }
+
+    function userTableColumnWidthPercent(key) {
+      const width = userTableColumnWidth(key);
+      return width ? `${(width / userTableTotalWidth.value) * 100}%` : undefined;
+    }
+
+    const userTableActionsWidthPercent = computed(() => `${(110 / userTableTotalWidth.value) * 100}%`);
+
+    function saveUserTableSettings() {
+      setLocalStorage(USER_TABLE_SETTINGS_KEY, JSON.stringify(userTableSettings.value));
+    }
+
+    function setUserTableColumnVisible(key, visible) {
+      const column = USER_TABLE_COLUMNS.find((c) => c.key === key);
+      if (!column) return;
+      const visibleCount = availableUserTableColumns.value.filter((c) => c.visible).length;
+      if (!visible && visibleCount <= 1) return;
+      userTableSettings.value = {
+        ...userTableSettings.value,
+        [key]: {
+          visible,
+          width: userTableSettings.value[key]?.width ?? column.defaultWidth,
+        },
+      };
+      saveUserTableSettings();
+    }
+
+    function beginUserTableColumnResize(key, event) {
+      const column = USER_TABLE_COLUMNS.find((c) => c.key === key);
+      const table = event.currentTarget.closest('table');
+      if (!column || !table) return;
+
+      stopUserTableResize?.();
+      event.preventDefault();
+      event.stopPropagation();
+
+      const startX = event.clientX;
+      const startWidth = userTableSettings.value[key]?.width ?? column.defaultWidth;
+      const scale = userTableTotalWidth.value / Math.max(table.getBoundingClientRect().width, 1);
+      const previousCursor = document.body.style.cursor;
+      const previousUserSelect = document.body.style.userSelect;
+      resizingUserTableColumn.value = key;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const handleMove = (moveEvent) => {
+        const nextWidth = Math.min(
+          column.maxWidth,
+          Math.max(column.minWidth, startWidth + ((moveEvent.clientX - startX) * scale)),
+        );
+        userTableSettings.value = {
+          ...userTableSettings.value,
+          [key]: {
+            visible: userTableSettings.value[key]?.visible !== false,
+            width: Math.round(nextWidth),
+          },
+        };
+      };
+
+      const finishResize = () => {
+        window.removeEventListener('pointermove', handleMove);
+        window.removeEventListener('pointerup', finishResize);
+        window.removeEventListener('pointercancel', finishResize);
+        document.body.style.cursor = previousCursor;
+        document.body.style.userSelect = previousUserSelect;
+        resizingUserTableColumn.value = null;
+        stopUserTableResize = null;
+        saveUserTableSettings();
+      };
+
+      stopUserTableResize = finishResize;
+      window.addEventListener('pointermove', handleMove);
+      window.addEventListener('pointerup', finishResize);
+      window.addEventListener('pointercancel', finishResize);
+    }
+
+    function resetUserTableSettings() {
+      userTableSettings.value = createDefaultUserTableSettings();
+      saveUserTableSettings();
+    }
+
+    onBeforeUnmount(() => stopUserTableResize?.());
 
     const selected = ref(null);
+    const selectedRowId = ref(null);
     const selectedLoading = ref(false);
+    const selectedLoadingId = ref(null);
     const selectedError = ref(null);
+    const selectedErrorId = ref(null);
     const passkeys = ref(null);
     const passkeysLoading = ref(false);
 
@@ -120,13 +275,13 @@ export default {
     const userCoinsBusy = ref(false);
 
     async function loadUserCoins() {
-      if (!selected.value) return;
+      if (!selected.value || !economyEnabled.value) return;
       const r = await adminGetUserCoins(selected.value.id);
       if (r.success) userCoins.value = String(r.balance?.coins ?? '0');
     }
 
     async function adjustUserCoins(op) {
-      if (!selected.value) return;
+      if (!selected.value || !economyEnabled.value) return;
       const amount = userCoinsAmount.value.trim();
       // Setting a balance to 0 is valid; adding/removing 0 is not.
       const ok = op === 'set' ? isNonNegativeCoinAmount(amount) : isValidCoinAmount(amount);
@@ -168,12 +323,17 @@ export default {
     }
 
     async function selectUser(id) {
+      selectedRowId.value = id;
       selectedLoading.value = true;
+      selectedLoadingId.value = id;
       selectedError.value = null;
+      selectedErrorId.value = null;
       selected.value = null;
       passkeys.value = null;
       const r = await adminGetUser(id);
+      if (selectedLoadingId.value !== id) return;
       selectedLoading.value = false;
+      selectedLoadingId.value = null;
       if (r.success) {
         selected.value = r.user;
         userCoins.value = String(r.user?.coins ?? '0');
@@ -181,6 +341,7 @@ export default {
         loadPasskeys(id);
       } else {
         selectedError.value = r.error ?? 'unknown';
+        selectedErrorId.value = id;
       }
     }
 
@@ -194,6 +355,11 @@ export default {
 
     function closeUser() {
       selected.value = null;
+      selectedRowId.value = null;
+      selectedLoading.value = false;
+      selectedLoadingId.value = null;
+      selectedError.value = null;
+      selectedErrorId.value = null;
       passkeys.value = null;
       passwordInput.value = '';
       userCoins.value = null;
@@ -349,9 +515,11 @@ export default {
           ownerId: r.app.ownerId ?? '',
         };
         loadAppOidc(id);
-        appCoins.value = String(r.app?.coins ?? '0');
-        appCoinsAmount.value = '';
-        if (r.app?.isOfficial) await loadAppTaxTarget(id);
+        if (economyEnabled.value) {
+          appCoins.value = String(r.app?.coins ?? '0');
+          appCoinsAmount.value = '';
+        }
+        if (r.app?.isOfficial && economyEnabled.value) await loadAppTaxTarget(id);
         else {
           appTaxTarget.value = '0';
           appTaxTargetDraft.value = '';
@@ -362,7 +530,7 @@ export default {
     }
 
     async function loadAppTaxTarget(appId = selectedApp.value?.id) {
-      if (!appId) return;
+      if (!appId || !economyEnabled.value) return;
       appTaxTargetLoading.value = true;
       const r = await adminGetAppTaxTarget(appId);
       appTaxTargetLoading.value = false;
@@ -376,7 +544,7 @@ export default {
     }
 
     async function saveAppTaxTarget() {
-      if (!selectedApp.value?.isOfficial) return;
+      if (!selectedApp.value?.isOfficial || !economyEnabled.value) return;
       const amount = appTaxTargetDraft.value.trim();
       if (!isNonNegativeCoinAmount(amount)) {
         flash('Enter an amount of zero or more', 'danger');
@@ -401,7 +569,7 @@ export default {
     const appCoinsBusy = ref(false);
 
     async function adjustAppCoins(op) {
-      if (!selectedApp.value) return;
+      if (!selectedApp.value || !economyEnabled.value) return;
       const amount = appCoinsAmount.value.trim();
       // Setting a balance to 0 is valid; adding/removing 0 is not.
       const ok = op === 'set' ? isNonNegativeCoinAmount(amount) : isValidCoinAmount(amount);
@@ -1173,6 +1341,7 @@ export default {
     const txLoaded = ref(false);
 
     async function loadTransactions(resetOffset = true) {
+      if (!economyEnabled.value) return;
       if (resetOffset) txOffset.value = 0;
       txLoading.value = true;
       txError.value = null;
@@ -1214,6 +1383,7 @@ export default {
     const economyError = ref(null);
 
     async function loadEconomy() {
+      if (!economyEnabled.value) return;
       economyLoading.value = true;
       economyError.value = null;
       const r = await adminGetEconomyTotal();
@@ -1228,6 +1398,42 @@ export default {
     const configError = ref(null);
     // Each row: { ...setting, draft: string, busy: bool, message: string|null, messageType }
     const configRows = ref([]);
+    const configSearch = ref('');
+    const collapsedConfigGroups = ref(new Set());
+    const configVisibleRows = computed(() => configRows.value.filter((row) => {
+      const key = String(row.key || '');
+      if (economyEnabled.value) return true;
+      return key.startsWith('features.economy.');
+    }));
+    const configFilteredRows = computed(() => {
+      const q = configSearch.value.trim().toLowerCase();
+      if (!q) return configVisibleRows.value;
+      return configVisibleRows.value.filter((row) => [
+        row.group,
+        row.label,
+        row.description,
+        row.key,
+        row.type,
+      ].some((field) => String(field || '').toLowerCase().includes(q)));
+    });
+    const configGroups = computed(() => {
+      const groups = new Map();
+      for (const row of configFilteredRows.value) {
+        const name = row.group || 'General';
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(row);
+      }
+      return Array.from(groups, ([name, rows]) => ({ name, rows }));
+    });
+    function isConfigGroupCollapsed(name) {
+      return collapsedConfigGroups.value.has(name);
+    }
+    function toggleConfigGroup(name) {
+      const next = new Set(collapsedConfigGroups.value);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      collapsedConfigGroups.value = next;
+    }
     const taxPreview = ref(null);
     const taxPreviewLoading = ref(false);
     const taxPreviewError = ref(null);
@@ -1237,9 +1443,11 @@ export default {
 
     async function loadConfig() {
       configLoading.value = true;
-      taxPreviewLoading.value = true;
       configError.value = null;
-      const [r, tax] = await Promise.all([adminGetConfig(), adminPreviewTax()]);
+      const [r, tax] = await Promise.all([
+        adminGetConfig(),
+        economyEnabled.value ? adminPreviewTax() : Promise.resolve({ success: false, error: null })
+      ]);
       configLoading.value = false;
       configLoaded.value = true;
       if (r.success) {
@@ -1253,7 +1461,10 @@ export default {
       } else {
         configError.value = r.error ?? 'unknown';
       }
-      if (tax.success) {
+      if (!economyEnabled.value) {
+        taxPreview.value = null;
+        taxPreviewError.value = null;
+      } else if (tax.success) {
         taxPreview.value = tax.preview;
         taxPreviewError.value = null;
       } else {
@@ -1288,6 +1499,9 @@ export default {
         row.draft = row.type === 'Boolean' ? r.setting.value === 'true' : r.setting.value;
         row.message = 'Saved';
         row.messageType = 'success';
+        if (String(row.key || '').startsWith('features.')) {
+          await featureStore?.refresh?.();
+        }
         if (String(row.key || '').startsWith('economy.tax.')) {
           await loadTaxPreview();
         }
@@ -1298,6 +1512,7 @@ export default {
     }
 
     async function loadTaxPreview() {
+      if (!economyEnabled.value) return;
       taxPreviewLoading.value = true;
       taxPreviewError.value = null;
       taxRunMessage.value = null;
@@ -1312,6 +1527,7 @@ export default {
     }
 
     async function runTaxNow() {
+      if (!economyEnabled.value) return;
       taxRunBusy.value = true;
       taxRunMessage.value = null;
       const r = await adminRunTaxNow();
@@ -1328,8 +1544,13 @@ export default {
     }
 
     return {
-      isAdmin, stats, statsError, query, limit, searching, results, searchError,
-      selected, selectedLoading, selectedError, passkeys, passkeysLoading,
+      isAdmin, economyEnabled, stats, statsError, query, limit, searching, results, searchError,
+      userTableSettingsOpen, availableUserTableColumns, visibleUserTableColumns, userTableColspan,
+      userTableColumnVisible, userTableColumnWidthPercent, userTableActionsWidthPercent,
+      resizingUserTableColumn, beginUserTableColumnResize,
+      setUserTableColumnVisible, resetUserTableSettings,
+      selected, selectedRowId, selectedLoading, selectedError, passkeys, passkeysLoading,
+      selectedLoadingId, selectedErrorId,
       passwordInput, actionBusy, actionMessage, actionMessageType,
       loadStats, runSearch, selectUser, closeUser,
       actDisable, actEnable, actDelete, actDisable2fa, actChangePassword,
@@ -1372,7 +1593,9 @@ export default {
       loadTransactions, clearTxFilters, txNextPage, txPrevPage,
       economy, economyLoading, economyError, loadEconomy,
       // Server-wide settings
-      configRows, configLoading, configError, configLoaded,
+      configRows, configSearch, configVisibleRows, configFilteredRows, configGroups,
+      isConfigGroupCollapsed, toggleConfigGroup,
+      configLoading, configError, configLoaded,
       loadConfig, saveConfig, configDirty, isPercentSetting, formatPercentDisplay,
       taxPreview, taxPreviewLoading, taxPreviewError, loadTaxPreview,
       taxRunBusy, taxRunMessage, taxRunMessageType, runTaxNow,
@@ -1413,7 +1636,7 @@ export default {
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">Services</button>
         </li>
-        <li class="nav-item">
+        <li v-if="economyEnabled" class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'economy' }" @click="activeTab = 'economy'; if (!txLoaded) loadTransactions(); if (!economy) loadEconomy(); if (!taxPreview) loadTaxPreview()">Economy</button>
         </li>
         <li class="nav-item">
@@ -1422,7 +1645,7 @@ export default {
       </ul>
 
       <!-- USERS TAB -->
-      <div v-show="activeTab === 'users'">
+      <div v-show="activeTab === 'users'" class="users-tab">
       <div class="d-flex justify-content-end mb-2">
         <button class="btn btn-sm btn-outline-secondary" @click="loadStats">Refresh stats</button>
       </div>
@@ -1451,7 +1674,7 @@ export default {
         </div>
       </div>
 
-      <div class="search-card mb-4">
+      <div class="search-card mb-4 user-search-card">
         <h5 class="mb-3">Find user</h5>
         <form class="row g-2 align-items-end" @submit.prevent="runSearch">
           <div class="col-md-7">
@@ -1470,143 +1693,214 @@ export default {
         </form>
 
         <div v-if="searchError" class="alert alert-danger py-2 mt-3 mb-0">Search failed: {{ searchError }}</div>
+      </div>
 
-        <div v-if="results.length" class="table-responsive mt-3">
-          <table class="table table-hover align-middle mb-0">
+      <div class="search-card mb-4 user-results-card">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <h5 class="mb-0">Users</h5>
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted d-none d-md-inline" style="font-size:0.8rem;">Drag header edges to resize</span>
+            <div class="user-column-menu-wrap">
+              <button class="btn btn-sm btn-outline-secondary" type="button" @click="userTableSettingsOpen = !userTableSettingsOpen">
+                Columns
+              </button>
+              <div v-if="userTableSettingsOpen" class="user-column-menu">
+                <div class="user-column-menu-title">Show columns</div>
+                <label v-for="column in availableUserTableColumns" :key="column.key" class="user-column-menu-item">
+                  <input
+                    class="form-check-input mt-0"
+                    type="checkbox"
+                    :checked="column.visible"
+                    :disabled="column.visible && visibleUserTableColumns.length <= 1"
+                    @change="setUserTableColumnVisible(column.key, $event.target.checked)"
+                  />
+                  <span>{{ column.label }}</span>
+                </label>
+                <div class="user-column-menu-footer">
+                  <button class="btn btn-sm btn-link p-0" type="button" @click="resetUserTableSettings">Reset columns</button>
+                  <button class="btn btn-sm btn-link p-0" type="button" @click="userTableSettingsOpen = false">Done</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="results.length" class="user-table-container mt-3">
+          <table class="table table-hover align-middle mb-0 user-results-table">
+            <colgroup>
+              <col v-if="userTableColumnVisible('username')" :style="{ width: userTableColumnWidthPercent('username') }" />
+              <col v-if="userTableColumnVisible('email')" :style="{ width: userTableColumnWidthPercent('email') }" />
+              <col v-if="userTableColumnVisible('id')" :style="{ width: userTableColumnWidthPercent('id') }" />
+              <col v-if="userTableColumnVisible('role')" :style="{ width: userTableColumnWidthPercent('role') }" />
+              <col v-if="userTableColumnVisible('coins')" :style="{ width: userTableColumnWidthPercent('coins') }" />
+              <col v-if="userTableColumnVisible('dateCreated')" :style="{ width: userTableColumnWidthPercent('dateCreated') }" />
+              <col v-if="userTableColumnVisible('lastLogin')" :style="{ width: userTableColumnWidthPercent('lastLogin') }" />
+              <col :style="{ width: userTableActionsWidthPercent }" />
+            </colgroup>
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>ID</th>
-                <th>Role</th>
-                <th>Coins</th>
+                <th
+                  v-for="column in visibleUserTableColumns"
+                  :key="column.key"
+                  class="resizable-user-column"
+                  :class="{ resizing: resizingUserTableColumn === column.key }"
+                >
+                  <span>{{ column.label }}</span>
+                  <span
+                    class="user-column-resize-handle"
+                    role="separator"
+                    :aria-label="`Resize ${column.label} column`"
+                    @pointerdown="beginUserTableColumnResize(column.key, $event)"
+                  ></span>
+                </th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="u in results" :key="u.id">
-                <td>{{ u.username }}</td>
-                <td>
-                  {{ u.email || '—' }}
-                  <span v-if="u.email && u.verifiedEmail" class="badge bg-success ms-1">✓</span>
-                  <span v-else-if="u.email" class="badge bg-warning text-dark ms-1">unverified</span>
-                </td>
-                <td><code style="font-size:0.78rem;">{{ u.id }}</code></td>
-                <td>
-                  <span v-if="u.permLevel === 0" class="badge bg-danger">Disabled</span>
-                  <span v-else-if="u.permLevel >= 2" class="badge bg-primary">Admin</span>
-                  <span v-else class="text-muted-light">User</span>
-                </td>
-                <td><CoinAmount :value="u.coins" /></td>
-                <td class="text-end">
-                  <button class="btn btn-sm btn-outline-primary" @click="selectUser(u.id)">Manage</button>
-                </td>
-              </tr>
+              <template v-for="u in results" :key="u.id">
+                <tr
+                  class="user-result-row"
+                  :class="{ 'selected-result-row': selectedRowId === u.id || selectedLoadingId === u.id || selectedErrorId === u.id }"
+                  @click="selectUser(u.id)"
+                >
+                  <td v-if="userTableColumnVisible('username')" class="user-table-cell">{{ u.username }}</td>
+                  <td v-if="userTableColumnVisible('email')" class="user-table-cell">
+                    {{ u.email || '—' }}
+                    <span v-if="u.email && u.verifiedEmail" class="badge bg-success ms-1">✓</span>
+                    <span v-else-if="u.email" class="badge bg-warning text-dark ms-1">unverified</span>
+                  </td>
+                  <td v-if="userTableColumnVisible('id')" class="user-table-cell">
+                    <code style="font-size:0.78rem;">{{ u.id }}</code>
+                  </td>
+                  <td v-if="userTableColumnVisible('role')" class="user-table-cell">
+                    <span v-if="u.permLevel === 0" class="badge bg-danger">Disabled</span>
+                    <span v-else-if="u.permLevel >= 2" class="badge bg-primary">Admin</span>
+                    <span v-else class="text-muted-light">User</span>
+                  </td>
+                  <td v-if="userTableColumnVisible('coins')" class="user-table-cell"><CoinAmount :value="u.coins" /></td>
+                  <td v-if="userTableColumnVisible('dateCreated')" class="user-table-cell">{{ formatDate(u.dateCreated) }}</td>
+                  <td v-if="userTableColumnVisible('lastLogin')" class="user-table-cell">{{ formatDate(u.lastLogin) }}</td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary" :disabled="selectedLoadingId === u.id" @click.stop="selectUser(u.id)">
+                      {{ selectedRowId === u.id && selected ? 'Refresh' : selectedLoadingId === u.id ? 'Loading…' : 'Manage' }}
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="selectedLoadingId === u.id" class="inline-user-row">
+                  <td :colspan="userTableColspan">
+                    <div class="user-selected-state text-center text-muted py-4">Loading user…</div>
+                  </td>
+                </tr>
+                <tr v-else-if="selectedErrorId === u.id" class="inline-user-row">
+                  <td :colspan="userTableColspan">
+                    <div class="user-selected-state alert alert-danger mb-0">Failed to load user: {{ selectedError }}</div>
+                  </td>
+                </tr>
+                <tr v-else-if="selectedRowId === u.id && selected" class="inline-user-row">
+                  <td :colspan="userTableColspan">
+                    <div class="user-panel inline-user-panel">
+                      <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+                        <div>
+                          <h4 class="mb-0">{{ selected.username }}</h4>
+                          <div class="text-muted" style="font-size:0.85rem;"><code>{{ selected.id }}</code></div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" @click="closeUser">Close</button>
+                      </div>
+
+                      <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
+
+                      <div class="user-info-grid mb-4">
+                        <div class="info-row"><span class="info-label">Email</span><span>{{ selected.email || '—' }}</span></div>
+                        <div class="info-row"><span class="info-label">Email verified</span><span>{{ selected.verifiedEmail ? 'Yes' : 'No' }}</span></div>
+                        <div class="info-row"><span class="info-label">Role</span><span>{{ permLabel(selected.permLevel) }} ({{ selected.permLevel }})</span></div>
+                        <div class="info-row"><span class="info-label">TOTP enabled</span><span>{{ selected.totpEnabled ? 'Yes' : 'No' }}</span></div>
+                        <div class="info-row"><span class="info-label">Language</span><span>{{ selected.language || '—' }}</span></div>
+                        <div class="info-row"><span class="info-label">Password salted</span><span>{{ selected.hasPasswordSalt ? 'Yes' : 'No (pre-migration)' }}</span></div>
+                        <div v-if="economyEnabled" class="info-row"><span class="info-label">Coins</span><span><CoinAmount :value="userCoins ?? selected.coins" /></span></div>
+                        <div class="info-row"><span class="info-label">Created</span><span>{{ formatDate(selected.dateCreated) }}</span></div>
+                        <div class="info-row"><span class="info-label">Last login</span><span>{{ formatDate(selected.lastLogin) }}</span></div>
+                      </div>
+
+                      <template v-if="economyEnabled">
+                        <h6 class="section-heading">Coins</h6>
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                          <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
+                            <CoinAmount :value="userCoins ?? selected.coins" /> coins
+                          </span>
+                          <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserCoins">Refresh</button>
+                        </div>
+                        <div class="row g-2 mb-4">
+                          <div class="col-md-6">
+                            <input v-model="userCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
+                          </div>
+                          <div class="col-md-6 d-flex gap-2">
+                            <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustUserCoins('add')">Add</button>
+                            <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustUserCoins('remove')">Remove</button>
+                            <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustUserCoins('set')">Set</button>
+                          </div>
+                        </div>
+                      </template>
+
+                      <h6 class="section-heading">Actions</h6>
+                      <div class="d-flex flex-wrap gap-2 mb-4">
+                        <button class="btn btn-sm btn-warning" :disabled="actionBusy" @click="actDisable">Disable account</button>
+                        <button class="btn btn-sm btn-success" :disabled="actionBusy" @click="actEnable">Enable account</button>
+                        <button class="btn btn-sm btn-outline-warning" :disabled="actionBusy || !selected.totpEnabled" @click="actDisable2fa">Disable 2FA</button>
+                        <button class="btn btn-sm btn-outline-primary" :disabled="actionBusy" @click="actToggleAdmin">
+                          {{ (selected.permLevel ?? 0) >= 2 ? 'Revoke admin' : 'Grant admin' }}
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" :disabled="actionBusy" @click="actLoginAs">Login as user</button>
+                        <button class="btn btn-sm btn-danger ms-auto" :disabled="actionBusy" @click="actDelete">Delete user</button>
+                      </div>
+
+                      <h6 class="section-heading">Change password</h6>
+                      <form class="row g-2 mb-4" @submit.prevent="actChangePassword">
+                        <div class="col-md-9">
+                          <input v-model="passwordInput" type="text" class="form-control dark-input" placeholder="New password" autocomplete="off" />
+                        </div>
+                        <div class="col-md-3">
+                          <button type="submit" class="btn btn-outline-warning w-100" :disabled="actionBusy">Set password</button>
+                        </div>
+                      </form>
+
+                      <h6 class="section-heading">Passkeys</h6>
+                      <div v-if="passkeysLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+                      <div v-else-if="!passkeys || passkeys.length === 0" class="text-muted mb-3" style="font-size:0.9rem;">No passkeys.</div>
+                      <ul v-else class="list-group list-group-flush mb-3">
+                        <li v-for="pk in passkeys" :key="pk.name ?? pk" class="list-group-item d-flex justify-content-between align-items-center px-0">
+                          <span>{{ pk.name ?? pk }}</span>
+                          <button class="btn btn-sm btn-outline-danger" :disabled="actionBusy" @click="actDeletePasskey(pk.name ?? pk)">Delete</button>
+                        </li>
+                      </ul>
+
+                      <h6 class="section-heading d-flex justify-content-between align-items-center">
+                        <span>OAuth Apps</span>
+                        <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserApps">
+                          {{ userApps === null ? 'Load apps' : 'Refresh' }}
+                        </button>
+                      </h6>
+                      <div v-if="userAppsLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+                      <div v-else-if="userApps === null" class="text-muted" style="font-size:0.9rem;">Click "Load apps" to view this user's OAuth applications.</div>
+                      <div v-else-if="userApps.length === 0" class="text-muted" style="font-size:0.9rem;">This user has no apps.</div>
+                      <ul v-else class="list-group list-group-flush mb-3">
+                        <li v-for="a in userApps" :key="a.id" class="list-group-item d-flex justify-content-between align-items-center px-0">
+                          <div>
+                            <div>{{ a.name }}</div>
+                            <code style="font-size:0.75rem;">{{ a.id }}</code>
+                          </div>
+                          <button class="btn btn-sm btn-outline-primary" @click="viewAppFromUser(a.id)">Manage</button>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
         <div v-else-if="!searching && !searchError" class="text-muted mt-3" style="font-size:0.9rem;">
           No results yet. Run a search above.
         </div>
-      </div>
-
-      <div v-if="selectedLoading" class="text-center text-muted py-4">Loading user…</div>
-      <div v-if="selectedError" class="alert alert-danger">Failed to load user: {{ selectedError }}</div>
-
-      <div v-if="selected" class="user-panel">
-        <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
-          <div>
-            <h4 class="mb-0">{{ selected.username }}</h4>
-            <div class="text-muted" style="font-size:0.85rem;"><code>{{ selected.id }}</code></div>
-          </div>
-          <button class="btn btn-sm btn-outline-secondary" @click="closeUser">Close</button>
-        </div>
-
-        <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
-
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <div class="info-row"><span class="info-label">Email</span><span>{{ selected.email || '—' }}</span></div>
-            <div class="info-row"><span class="info-label">Email verified</span><span>{{ selected.verifiedEmail ? 'Yes' : 'No' }}</span></div>
-            <div class="info-row"><span class="info-label">Role</span><span>{{ permLabel(selected.permLevel) }} ({{ selected.permLevel }})</span></div>
-          </div>
-          <div class="col-md-6">
-            <div class="info-row"><span class="info-label">TOTP enabled</span><span>{{ selected.totpEnabled ? 'Yes' : 'No' }}</span></div>
-            <div class="info-row"><span class="info-label">Language</span><span>{{ selected.language || '—' }}</span></div>
-            <div class="info-row"><span class="info-label">Password salted</span><span>{{ selected.hasPasswordSalt ? 'Yes' : 'No (pre-migration)' }}</span></div>
-            <div class="info-row"><span class="info-label">Coins</span><span><CoinAmount :value="userCoins ?? selected.coins" /></span></div>
-            <div class="info-row"><span class="info-label">Created</span><span>{{ formatDate(selected.dateCreated) }}</span></div>
-          </div>
-        </div>
-
-        <h6 class="section-heading">Coins</h6>
-        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-          <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
-            <CoinAmount :value="userCoins ?? selected.coins" /> coins
-          </span>
-          <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserCoins">Refresh</button>
-        </div>
-        <div class="row g-2 mb-4">
-          <div class="col-md-6">
-            <input v-model="userCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
-          </div>
-          <div class="col-md-6 d-flex gap-2">
-            <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustUserCoins('add')">Add</button>
-            <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustUserCoins('remove')">Remove</button>
-            <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustUserCoins('set')">Set</button>
-          </div>
-        </div>
-
-        <h6 class="section-heading">Actions</h6>
-        <div class="d-flex flex-wrap gap-2 mb-4">
-          <button class="btn btn-sm btn-warning" :disabled="actionBusy" @click="actDisable">Disable account</button>
-          <button class="btn btn-sm btn-success" :disabled="actionBusy" @click="actEnable">Enable account</button>
-          <button class="btn btn-sm btn-outline-warning" :disabled="actionBusy || !selected.totpEnabled" @click="actDisable2fa">Disable 2FA</button>
-          <button class="btn btn-sm btn-outline-primary" :disabled="actionBusy" @click="actToggleAdmin">
-            {{ (selected.permLevel ?? 0) >= 2 ? 'Revoke admin' : 'Grant admin' }}
-          </button>
-          <button class="btn btn-sm btn-outline-info" :disabled="actionBusy" @click="actLoginAs">Login as user</button>
-          <button class="btn btn-sm btn-danger ms-auto" :disabled="actionBusy" @click="actDelete">Delete user</button>
-        </div>
-
-        <h6 class="section-heading">Change password</h6>
-        <form class="row g-2 mb-4" @submit.prevent="actChangePassword">
-          <div class="col-md-9">
-            <input v-model="passwordInput" type="text" class="form-control dark-input" placeholder="New password" autocomplete="off" />
-          </div>
-          <div class="col-md-3">
-            <button type="submit" class="btn btn-outline-warning w-100" :disabled="actionBusy">Set password</button>
-          </div>
-        </form>
-
-        <h6 class="section-heading">Passkeys</h6>
-        <div v-if="passkeysLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
-        <div v-else-if="!passkeys || passkeys.length === 0" class="text-muted mb-3" style="font-size:0.9rem;">No passkeys.</div>
-        <ul v-else class="list-group list-group-flush mb-3">
-          <li v-for="pk in passkeys" :key="pk.name ?? pk" class="list-group-item d-flex justify-content-between align-items-center px-0">
-            <span>{{ pk.name ?? pk }}</span>
-            <button class="btn btn-sm btn-outline-danger" :disabled="actionBusy" @click="actDeletePasskey(pk.name ?? pk)">Delete</button>
-          </li>
-        </ul>
-
-        <h6 class="section-heading d-flex justify-content-between align-items-center">
-          <span>OAuth Apps</span>
-          <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserApps">
-            {{ userApps === null ? 'Load apps' : 'Refresh' }}
-          </button>
-        </h6>
-        <div v-if="userAppsLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
-        <div v-else-if="userApps === null" class="text-muted" style="font-size:0.9rem;">Click "Load apps" to view this user's OAuth applications.</div>
-        <div v-else-if="userApps.length === 0" class="text-muted" style="font-size:0.9rem;">This user has no apps.</div>
-        <ul v-else class="list-group list-group-flush mb-3">
-          <li v-for="a in userApps" :key="a.id" class="list-group-item d-flex justify-content-between align-items-center px-0">
-            <div>
-              <div>{{ a.name }}</div>
-              <code style="font-size:0.75rem;">{{ a.id }}</code>
-            </div>
-            <button class="btn btn-sm btn-outline-primary" @click="viewAppFromUser(a.id)">Manage</button>
-          </li>
-        </ul>
       </div>
       </div>
 
@@ -1655,7 +1949,7 @@ export default {
                   <th>Name</th>
                   <th>ID</th>
                   <th>Owner ID</th>
-                  <th>Coins</th>
+                  <th v-if="economyEnabled">Coins</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1670,7 +1964,7 @@ export default {
                   </td>
                   <td><code style="font-size:0.78rem;">{{ a.id }}</code></td>
                   <td><code style="font-size:0.78rem;">{{ a.ownerId }}</code></td>
-                  <td><CoinAmount :value="a.coins" /></td>
+                  <td v-if="economyEnabled"><CoinAmount :value="a.coins" /></td>
                   <td class="text-end">
                     <button class="btn btn-sm btn-outline-primary" @click="selectApp(a.id)">Manage</button>
                   </td>
@@ -1723,23 +2017,25 @@ export default {
             </div>
           </form>
 
-          <h6 class="section-heading">Coins</h6>
-          <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
-            <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
-              <CoinAmount :value="appCoins ?? selectedApp.coins" /> coins
-            </span>
-            <span class="text-muted-light" style="font-size:0.8rem;">Created: {{ formatDate(selectedApp.dateCreated) }}</span>
-          </div>
-          <div class="row g-2 mb-4">
-            <div class="col-md-6">
-              <input v-model="appCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
+          <template v-if="economyEnabled">
+            <h6 class="section-heading">Coins</h6>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+              <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
+                <CoinAmount :value="appCoins ?? selectedApp.coins" /> coins
+              </span>
+              <span class="text-muted-light" style="font-size:0.8rem;">Created: {{ formatDate(selectedApp.dateCreated) }}</span>
             </div>
-            <div class="col-md-6 d-flex gap-2">
-              <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustAppCoins('add')">Add</button>
-              <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustAppCoins('remove')">Remove</button>
-              <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustAppCoins('set')">Set</button>
+            <div class="row g-2 mb-4">
+              <div class="col-md-6">
+                <input v-model="appCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
+              </div>
+              <div class="col-md-6 d-flex gap-2">
+                <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustAppCoins('add')">Add</button>
+                <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustAppCoins('remove')">Remove</button>
+                <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustAppCoins('set')">Set</button>
+              </div>
             </div>
-          </div>
+          </template>
 
           <h6 class="section-heading">Official app</h6>
           <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
@@ -1762,7 +2058,7 @@ export default {
             </span>
           </div>
 
-          <div v-if="selectedApp.isOfficial" class="mb-4">
+          <div v-if="economyEnabled && selectedApp.isOfficial" class="mb-4">
             <label class="form-label mb-1" style="font-size:0.8rem;">Target balance for tax payouts</label>
             <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
               <span class="badge bg-info text-dark" style="font-size:0.85rem;">
@@ -2326,7 +2622,7 @@ export default {
       </div>
 
       <!-- ECONOMY TAB -->
-      <div v-show="activeTab === 'economy'">
+      <div v-if="economyEnabled" v-show="activeTab === 'economy'">
         <!-- Economy total (coins in circulation) -->
         <div class="economy-card mb-3">
           <div class="economy-head">
@@ -2529,85 +2825,121 @@ export default {
           <button class="btn btn-sm btn-outline-secondary" :disabled="configLoading" @click="loadConfig">Refresh</button>
         </div>
 
+        <div class="search-card p-3 mb-3">
+          <label class="form-label mb-1" style="font-size:0.8rem;">Search settings</label>
+          <input
+            v-model="configSearch"
+            type="search"
+            class="form-control dark-input"
+            placeholder="Search by group, label, key, type, or description"
+          />
+        </div>
+
         <div v-if="configError" class="alert alert-danger py-2">Failed to load settings: {{ configError }}</div>
         <div v-else-if="configLoading" class="text-muted py-3">Loading…</div>
-        <div v-else-if="configRows.length === 0" class="text-muted py-3">No settings.</div>
+        <div v-else-if="configGroups.length === 0" class="text-muted py-3">No matching settings.</div>
 
         <div v-else class="config-list">
-          <div v-for="row in configRows" :key="row.key" class="config-row">
-            <div class="config-info">
-              <div class="config-label">
-                {{ row.label }}
-                <span v-if="row.public" class="badge bg-secondary ms-1" title="Readable by apps">public</span>
-              </div>
-              <div class="config-desc">{{ row.description }}</div>
-              <code class="config-key">{{ row.key }}</code>
-            </div>
+          <section v-for="group in configGroups" :key="group.name" class="config-group">
+            <button
+              type="button"
+              class="config-group-head"
+              :aria-expanded="!isConfigGroupCollapsed(group.name)"
+              @click="toggleConfigGroup(group.name)"
+            >
+              <span class="config-group-title-wrap">
+                <span class="config-group-chevron" :class="{ collapsed: isConfigGroupCollapsed(group.name) }">⌄</span>
+                <span class="config-group-title">{{ group.name }}</span>
+              </span>
+              <span class="config-group-count">{{ group.rows.length }} setting{{ group.rows.length === 1 ? '' : 's' }}</span>
+            </button>
 
-            <div class="config-control">
-              <div class="config-input-wrap">
-                <div v-if="row.type === 'Boolean'" class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" v-model="row.draft" :id="'cfg-' + row.key">
+            <div v-show="!isConfigGroupCollapsed(group.name)" class="config-group-rows">
+              <div v-for="row in group.rows" :key="row.key" class="config-row">
+                <div class="config-info">
+                  <div class="config-label">
+                    {{ row.label }}
+                    <span v-if="row.public" class="badge bg-secondary ms-1" title="Readable by apps">public</span>
+                  </div>
+                  <div class="config-desc">{{ row.description }}</div>
+                  <code class="config-key">{{ row.key }}</code>
                 </div>
-                <input
-                  v-else-if="row.type === 'Integer'"
-                  v-model="row.draft"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="form-control form-control-sm dark-input"
-                  @keyup.enter="saveConfig(row)"
-                >
-                <div v-else-if="isPercentSetting(row)" class="config-coins">
-                  <input
-                    v-model="row.draft"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="any"
-                    inputmode="decimal"
-                    class="form-control form-control-sm dark-input"
-                    @keyup.enter="saveConfig(row)"
-                  >
-                  <span class="config-unit">%</span>
+
+                <div class="config-control">
+                  <div class="config-input-wrap">
+                    <div v-if="row.type === 'Boolean'" class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" v-model="row.draft" :id="'cfg-' + row.key">
+                    </div>
+                    <select
+                      v-else-if="row.type === 'FeatureFlagMode'"
+                      v-model="row.draft"
+                      class="form-control form-control-sm dark-input"
+                    >
+                      <option value="enabled">enabled</option>
+                      <option value="disabled">disabled</option>
+                      <option value="groups">groups</option>
+                    </select>
+                    <input
+                      v-else-if="row.type === 'Integer'"
+                      v-model="row.draft"
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="form-control form-control-sm dark-input"
+                      @keyup.enter="saveConfig(row)"
+                    >
+                    <div v-else-if="isPercentSetting(row)" class="config-coins">
+                      <input
+                        v-model="row.draft"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="any"
+                        inputmode="decimal"
+                        class="form-control form-control-sm dark-input"
+                        @keyup.enter="saveConfig(row)"
+                      >
+                      <span class="config-unit">%</span>
+                    </div>
+                    <div v-else-if="row.type === 'Coins'" class="config-coins">
+                      <input
+                        v-model="row.draft"
+                        type="number"
+                        min="0"
+                        step="any"
+                        inputmode="decimal"
+                        class="form-control form-control-sm dark-input"
+                        @keyup.enter="saveConfig(row)"
+                      >
+                      <span class="config-unit">coins</span>
+                    </div>
+                    <textarea
+                      v-else-if="row.type === 'StringList'"
+                      v-model="row.draft"
+                      rows="4"
+                      class="form-control form-control-sm dark-input config-textarea"
+                      placeholder="One per line"
+                    ></textarea>
+                    <input
+                      v-else
+                      v-model="row.draft"
+                      type="text"
+                      class="form-control form-control-sm dark-input"
+                      @keyup.enter="saveConfig(row)"
+                    >
+                    <button
+                      class="btn btn-sm btn-primary"
+                      :disabled="row.busy || !configDirty(row)"
+                      @click="saveConfig(row)"
+                    >{{ row.busy ? 'Saving…' : 'Save' }}</button>
+                  </div>
+                  <div v-if="row.message" class="config-msg" :class="row.messageType === 'error' ? 'text-danger' : 'text-success'">
+                    {{ row.message }}
+                  </div>
                 </div>
-                <div v-else-if="row.type === 'Coins'" class="config-coins">
-                  <input
-                    v-model="row.draft"
-                    type="number"
-                    min="0"
-                    step="any"
-                    inputmode="decimal"
-                    class="form-control form-control-sm dark-input"
-                    @keyup.enter="saveConfig(row)"
-                  >
-                  <span class="config-unit">coins</span>
-                </div>
-                <textarea
-                  v-else-if="row.type === 'StringList'"
-                  v-model="row.draft"
-                  rows="4"
-                  class="form-control form-control-sm dark-input config-textarea"
-                  placeholder="One per line"
-                ></textarea>
-                <input
-                  v-else
-                  v-model="row.draft"
-                  type="text"
-                  class="form-control form-control-sm dark-input"
-                  @keyup.enter="saveConfig(row)"
-                >
-                <button
-                  class="btn btn-sm btn-primary"
-                  :disabled="row.busy || !configDirty(row)"
-                  @click="saveConfig(row)"
-                >{{ row.busy ? 'Saving…' : 'Save' }}</button>
-              </div>
-              <div v-if="row.message" class="config-msg" :class="row.messageType === 'error' ? 'text-danger' : 'text-success'">
-                {{ row.message }}
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </template>
@@ -2671,7 +3003,63 @@ export default {
 .config-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+}
+.config-group {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.config-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.035);
+  border-bottom: 1px solid var(--border);
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.config-group-head:hover {
+  background: rgba(255, 255, 255, 0.055);
+}
+.config-group-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.config-group-chevron {
+  display: inline-block;
+  color: #9ca3af;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+.config-group-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+.config-group-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f4f4f5;
+}
+.config-group-count {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+.config-group-rows {
+  display: flex;
+  flex-direction: column;
 }
 .config-row {
   display: flex;
@@ -2680,9 +3068,11 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border-bottom: 1px solid var(--border);
   padding: 14px 16px;
+}
+.config-row:last-child {
+  border-bottom: 0;
 }
 .config-info {
   min-width: 0;
@@ -2868,6 +3258,120 @@ export default {
 .admin-page :deep(.table code) {
   color: var(--text-secondary);
 }
+.user-column-menu-wrap {
+  position: relative;
+}
+.user-column-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+.user-column-menu-title {
+  padding: 4px 8px 8px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.user-column-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.user-column-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.user-column-menu-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 8px 8px 2px;
+  border-top: 1px solid var(--border);
+}
+.resizable-user-column {
+  position: relative;
+}
+.resizable-user-column > span:first-child {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 9px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+}
+.user-column-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  right: 4px;
+  bottom: 20%;
+  width: 1px;
+  background: transparent;
+}
+.resizable-user-column:hover .user-column-resize-handle::after,
+.resizable-user-column.resizing .user-column-resize-handle::after {
+  background: #6ea8fe;
+}
+.user-results-table {
+  table-layout: fixed;
+  width: 100%;
+  max-width: 100%;
+}
+.user-table-container {
+  width: 100%;
+  overflow-x: hidden;
+}
+.user-results-table th,
+.user-results-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-result-row {
+  cursor: pointer;
+}
+.user-table-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.selected-result-row > td {
+  background: rgba(110, 168, 254, 0.08);
+}
+.inline-user-row > td {
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0 12px 16px;
+}
+.inline-user-panel {
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.user-selected-state {
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  background: var(--surface);
+}
 
 .text-muted-light {
   color: var(--text-muted);
@@ -2882,6 +3386,24 @@ export default {
   color: #e4e4e7;
 }
 .info-row:last-child { border-bottom: none; }
+.user-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+.user-info-grid .info-row {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 74px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.user-info-grid .info-row:last-child {
+  border-bottom: 1px solid var(--border);
+}
 .info-label {
   color: var(--text-muted);
   font-size: 0.8rem;

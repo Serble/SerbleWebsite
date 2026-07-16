@@ -30,6 +30,23 @@ export function getAuthToken() {
     return getLocalStorage("access_token");
 }
 
+export async function isFeatureEnabled(feature) {
+    try {
+        const token = getAuthToken();
+        const headers = token ? { SerbleAuth: `User ${token}` } : {};
+        const response = await axios.get(`${API_URL}/features/${encodeURIComponent(feature)}/enabled`, { headers });
+        return { success: true, enabled: response.data?.enabled === true };
+    } catch (error) {
+        console.error('Error checking feature flag', error);
+        return { success: false, enabled: false, error: error?.response?.status };
+    }
+}
+
+function optionalUserAuthConfig(extra = {}) {
+    const token = getAuthToken();
+    return token ? { ...extra, headers: { ...(extra.headers || {}), SerbleAuth: `User ${token}` } } : extra;
+}
+
 export async function getUser(token) {
     try {
         const response = await axios.get(`${API_URL}/account`, {
@@ -1796,7 +1813,7 @@ export async function getPublicAppsBatch(ids) {
 // Public item profile (anyone) — GET /items/{id}/public
 export async function getPublicItem(id) {
     try {
-        const response = await axios.get(`${API_URL}/items/${encodeURIComponent(id)}/public`);
+        const response = await axios.get(`${API_URL}/items/${encodeURIComponent(id)}/public`, optionalUserAuthConfig());
         return { success: true, item: response.data };
     } catch (error) {
         const status = error?.response?.status;
@@ -1811,7 +1828,7 @@ export async function getPublicItem(id) {
 export async function getItemHistory(id, limit = 25, offset = 0) {
     try {
         const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-        const response = await axios.get(`${API_URL}/items/${encodeURIComponent(id)}/history?${params.toString()}`);
+        const response = await axios.get(`${API_URL}/items/${encodeURIComponent(id)}/history?${params.toString()}`, optionalUserAuthConfig());
         const d = response.data || {};
         return {
             success: true,
@@ -1869,7 +1886,7 @@ export async function getUserItems(user, limit = 50, offset = 0, search = null) 
     try {
         const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
         if (search) params.set('search', String(search));
-        const response = await axios.get(`${API_URL}/user/${encodeURIComponent(user)}/items?${params.toString()}`);
+        const response = await axios.get(`${API_URL}/user/${encodeURIComponent(user)}/items?${params.toString()}`, optionalUserAuthConfig());
         const items = Array.isArray(response.data) ? response.data : [];
         return { success: true, items };
     } catch (error) {

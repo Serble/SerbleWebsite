@@ -2,15 +2,18 @@
 import { inject, computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import CoinIcon from '@/components/CoinIcon.vue';
+import { FEATURES } from '@/assets/js/featureFlags.js';
 
 export default {
   components: { CoinIcon },
   setup() {
     const userStore = inject('userStore');
+    const featureStore = inject('featureStore');
     const route = useRoute();
 
     const user = computed(() => userStore.state.user);
     const isAdmin = computed(() => (user.value?.permLevel ?? 0) > 1);
+    const economyEnabled = computed(() => featureStore?.isEnabled(FEATURES.ECONOMY) === true);
     const mobileOpen = ref(false);
 
     function toggleMobile() {
@@ -25,7 +28,7 @@ export default {
       return route.path === path;
     }
 
-    return { user, isAdmin, userStore, mobileOpen, toggleMobile, closeMobile, isActive };
+    return { user, isAdmin, economyEnabled, userStore, mobileOpen, toggleMobile, closeMobile, isActive };
   },
   methods: {
     logout() {
@@ -124,15 +127,15 @@ export default {
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533.18.085.293.118.293.118s.114-.033.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524z"/></svg>
               {{ $t('authorized-applications') }}
             </RouterLink>
-            <RouterLink to="/account/balance" class="nav-dropdown-item">
+            <RouterLink v-if="economyEnabled" to="/account/balance" class="nav-dropdown-item">
               <CoinIcon :size="13" class="me-2 opacity-50" />
               {{ $t('balance') }}
             </RouterLink>
-            <RouterLink to="/account/inventory" class="nav-dropdown-item">
+            <RouterLink v-if="economyEnabled" to="/account/inventory" class="nav-dropdown-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zm3.564 1.426L5.596 5 8 5.961 14.154 3.5zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464z"/></svg>
               {{ $t('inventory') }}
             </RouterLink>
-            <RouterLink to="/account/trades" class="nav-dropdown-item">
+            <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-dropdown-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H9a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3A.5.5 0 0 1 0 3.5m16 9a.5.5 0 0 1-.5.5H7a.5.5 0 0 1 0-1h7.793l-2.147-2.146a.5.5 0 0 1 .708-.708l3 3a.5.5 0 0 1 .146.354"/></svg>
               Trades
             </RouterLink>
@@ -180,9 +183,9 @@ export default {
         <RouterLink to="/account" class="nav-mobile-link" @click="closeMobile">{{ $t('account') }}</RouterLink>
         <RouterLink to="/oauthapps" class="nav-mobile-link" @click="closeMobile">{{ $t('my-applications') }}</RouterLink>
         <RouterLink to="/authorizedapps" class="nav-mobile-link" @click="closeMobile">{{ $t('authorized-applications') }}</RouterLink>
-        <RouterLink to="/account/balance" class="nav-mobile-link" @click="closeMobile">{{ $t('balance') }}</RouterLink>
-        <RouterLink to="/account/inventory" class="nav-mobile-link" @click="closeMobile">{{ $t('inventory') }}</RouterLink>
-        <RouterLink to="/account/trades" class="nav-mobile-link" @click="closeMobile">Trades</RouterLink>
+        <RouterLink v-if="economyEnabled" to="/account/balance" class="nav-mobile-link" @click="closeMobile">{{ $t('balance') }}</RouterLink>
+        <RouterLink v-if="economyEnabled" to="/account/inventory" class="nav-mobile-link" @click="closeMobile">{{ $t('inventory') }}</RouterLink>
+        <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-mobile-link" @click="closeMobile">Trades</RouterLink>
         <RouterLink to="/account/paymentportal" class="nav-mobile-link" @click="closeMobile">{{ $t('manage-payments') }}</RouterLink>
         <button class="nav-mobile-link nav-mobile-danger" @click="logout">{{ $t('logout') }}</button>
       </template>

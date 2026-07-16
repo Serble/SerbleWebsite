@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '@/pages/HomePage.vue'
 import NotFound from "@/pages/NotFound.vue";
 import { authReadyPromise, userStore } from '@/assets/js/user.js';
+import { featureStore } from '@/assets/js/featureFlags.js';
+
+const ECONOMY_FEATURE = 'economy';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -71,25 +74,26 @@ const router = createRouter({
       path: '/account/balance',
       name: 'Balance',
       component: () => import('@/pages/Account/BalancePage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, feature: ECONOMY_FEATURE },
     },
     {
       path: '/account/inventory',
       name: 'Inventory',
       component: () => import('@/pages/Account/InventoryPage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, feature: ECONOMY_FEATURE },
     },
     {
       path: '/account/trades',
       name: 'Trades',
       component: () => import('@/pages/Account/TradesPage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, feature: ECONOMY_FEATURE },
     },
     {
       // Public item profile + ownership history (anyone can look up any item).
       path: '/items/:id',
       name: 'ItemInfo',
       component: () => import('@/pages/Account/ItemInfoPage.vue'),
+      meta: { feature: ECONOMY_FEATURE },
     },
     {
       path: '/account/paymentportal',
@@ -185,7 +189,7 @@ const router = createRouter({
       path: '/transactions/consent',
       name: 'TransactionConsent',
       component: () => import('@/pages/Account/TransactionConsentPage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, feature: ECONOMY_FEATURE },
     },
     {
       // Embeddable, chromeless item viewer for iframing into apps. Uses the user's own Serble
@@ -193,7 +197,7 @@ const router = createRouter({
       path: '/embed/items',
       name: 'EmbedItems',
       component: () => import('@/pages/Embed/ItemViewerPage.vue'),
-      meta: { embed: true },
+      meta: { embed: true, feature: ECONOMY_FEATURE },
     },
     {
       // Popup landing page for the embed's "connect account" flow: hands the logged-in session
@@ -207,6 +211,13 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  if (to.meta.feature) {
+    await authReadyPromise;
+    if (!featureStore.isEnabled(to.meta.feature)) {
+      return { name: 'NotFound' };
+    }
+  }
+
   if (to.meta.requiresAuth) {
     await authReadyPromise;
     if (!userStore.state.user) {

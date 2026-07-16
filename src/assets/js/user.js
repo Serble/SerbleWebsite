@@ -1,5 +1,6 @@
 import { reactive, readonly } from 'vue';
 import {checkLogin, logout} from "@/assets/js/serble.js";
+import { featureStore } from '@/assets/js/featureFlags.js';
 
 const state = reactive({
     user: null
@@ -21,6 +22,7 @@ export const userStore = {
             state.user = user;
             console.log(user);
         }
+        await featureStore.refresh();
         _resolveAuthReady();
     },
     updateUser(user) {
@@ -29,6 +31,7 @@ export const userStore = {
     logout() {
         state.user = null;
         logout();
+        featureStore.refresh();
     }
 };
 

@@ -67,6 +67,12 @@ export default {
     const permStr = user.permLevel === 2 ? "Admin" : "Normal";
     const premiumStr = "Free";  // Default
 
+    function formatDate(value) {
+      if (!value) return 'Never';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     let successTimeout = null;
@@ -262,6 +268,7 @@ export default {
       startRename,
       cancelRename,
       submitRename,
+      formatDate,
     };
   }
 };
@@ -483,6 +490,14 @@ export default {
         <div class="info-row">
           <span class="info-label">{{ $t('premium-level') }}</span>
           <span class="info-value">{{ $t(premiumStr) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Account created</span>
+          <span class="info-value">{{ formatDate(user.dateCreated) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Last login</span>
+          <span class="info-value">{{ formatDate(user.lastLogin) }}</span>
         </div>
       </div>
     </div>

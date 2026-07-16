@@ -1,7 +1,8 @@
 <script>
-import { ref, onMounted } from 'vue';
+import { computed, inject, ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
+import { FEATURES } from '@/assets/js/featureFlags.js';
 import {
   getOAuthApp, editOAuthApp,
   getAppKeys, createAppKey, deleteAppKey,
@@ -18,6 +19,8 @@ export default {
 
     const router = useRouter();
     const route = useRoute();
+    const featureStore = inject('featureStore');
+    const economyEnabled = computed(() => featureStore?.isEnabled(FEATURES.ECONOMY) === true);
 
     const appId = ref('');
     const name = ref('');
@@ -65,7 +68,7 @@ export default {
       loading.value = false;
 
       loadKeys();
-      loadBalance();
+      if (economyEnabled.value) loadBalance();
     });
 
     function addUri() {
@@ -196,6 +199,7 @@ export default {
       loadKeys, createKey, removeKey, copyKey, dismissRevealedKey,
       balanceCoins, balanceLoading, balanceError,
       loadBalance,
+      economyEnabled,
     };
   }
 };
@@ -294,7 +298,7 @@ export default {
     </div>
 
     <!-- ── API keys ── -->
-    <div class="panel">
+    <div v-if="economyEnabled" class="panel">
       <div class="panel-head">
         <div>
           <h4 class="panel-title">{{ $t('api-keys') }}</h4>

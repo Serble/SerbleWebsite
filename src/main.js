@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n';
 import { getCookie } from "@/assets/js/utils.js";
 import { getSupportedLocale } from '@/assets/js/languages.js';
 import useUserStore from "@/assets/js/user.js";
+import { featureStore } from '@/assets/js/featureFlags.js';
 
 import default_lang from './assets/locales/default.json';
 import afr from './assets/locales/afr.json';
@@ -60,5 +61,6 @@ const userStore = useUserStore();
 userStore.initializeAuth();  // Can be awaited
 
 app.provide('userStore', userStore);
+app.provide('featureStore', featureStore);
 
 app.mount('#app');
