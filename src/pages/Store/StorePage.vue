@@ -30,7 +30,7 @@ export default {
         </div>
         <ul class="plan-features">
           <li><span class="check">✓</span> Link Shortener</li>
-          <li><span class="check">✓</span> File Hosting Up To 50 MB</li>
+          <li><span class="check">✓</span> File Hosting</li>
           <li><span class="check">✓</span> Chat API</li>
           <li><span class="check">✓</span> Email Support</li>
           <li><span class="check muted">–</span> &nbsp;</li>
@@ -48,7 +48,7 @@ export default {
         </div>
         <ul class="plan-features">
           <li><span class="check">✓</span> Everything from Free</li>
-          <li><span class="check">✓</span> File Hosting Up To 100 MB</li>
+          <li><span class="check">✓</span> Increased File Hosting Upload Limit</li>
           <li><span class="check muted">–</span> More coming soon</li>
           <li><span class="check muted">–</span> &nbsp;</li>
           <li><span class="check muted">–</span> &nbsp;</li>
@@ -89,9 +89,9 @@ export default {
           </thead>
           <tbody>
             <tr>
-              <td class="feature-name">File Hosting Upload Limit</td>
-              <td>50 MB</td>
-              <td class="td-featured">100 MB</td>
+              <td class="feature-name">Increased File Hosting Upload Limit</td>
+              <td class="muted-cell">—</td>
+              <td class="td-featured"><span class="tick">✓</span></td>
               <td class="muted-cell">—</td>
             </tr>
             <tr>

@@ -1,7 +1,9 @@
 <script>
 import { getCatalogServices } from '@/assets/js/serble.js';
+import ArrowUpRight from '@/components/ArrowUpRight.vue';
 
 export default {
+  components: { ArrowUpRight },
   data() {
     return {
       services: [],
@@ -14,10 +16,18 @@ export default {
     sortedServices() {
       return [...this.services].sort((a, b) => (b.new ? 1 : 0) - (a.new ? 1 : 0));
     },
-    welcomeText() {
-      return this.$t('welcome-to-serble')
-        .replace('[', '')
-        .replace(']', '');
+    welcomeParts() {
+      const text = this.$t('welcome-to-serble');
+      const start = text.indexOf('[');
+      const end = text.indexOf(']');
+      if (start === -1 || end === -1 || end < start) {
+        return { before: text, link: '', after: '' };
+      }
+      return {
+        before: text.slice(0, start),
+        link: text.slice(start + 1, end),
+        after: text.slice(end + 1),
+      };
     },
     lookingForMc() {
       return this.$t('looking-for-mc-server')
@@ -104,7 +114,7 @@ export default {
           <img src="/images/icon.png" alt="Serble" class="home-header-icon" />
           <div class="home-header-copy">
             <h1 class="home-header-title">{{ $t('serble') }}</h1>
-            <p class="home-header-sub">{{ welcomeText }}</p>
+            <p class="home-header-sub">{{ welcomeParts.before }}<RouterLink v-if="welcomeParts.link" to="/contact">{{ welcomeParts.link }}</RouterLink>{{ welcomeParts.after }}</p>
             <p class="home-header-note" v-html="lookingForMc"></p>
           </div>
         </section>
@@ -133,7 +143,7 @@ export default {
               :style="{ color: tile.iconColor }"
               v-html="renderAccountIcon(tile.icon)"
             ></svg>
-            <span class="account-card-arrow">↗</span>
+            <ArrowUpRight class="account-card-arrow" />
           </div>
           <h3 class="account-card-title">{{ tile.label }}</h3>
           <p class="account-card-desc">{{ tile.description }}</p>
@@ -181,7 +191,7 @@ export default {
               <path d="M8.5 11.5h3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
               <path d="M8.5 15h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
             </svg>
-            <span class="external-card-arrow">↗</span>
+            <ArrowUpRight class="external-card-arrow" />
           </div>
           <h3 class="external-card-title">
             {{ service.name }}
@@ -333,8 +343,17 @@ export default {
 
 .account-card-arrow,
 .external-card-arrow {
-  font-size: 1rem;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
   color: var(--text-faint);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.account-card:hover .account-card-arrow,
+.external-card:hover .external-card-arrow {
+  color: var(--text-secondary);
+  transform: translate(2px, -2px);
 }
 
 .account-card-title,
