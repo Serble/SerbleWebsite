@@ -1,6 +1,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import {
   getOidcAuthorizeSession,
   approveOidcAuthorizeSession,
@@ -11,20 +12,16 @@ import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingCard from '@/components/LoadingCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
-// Friendly descriptions for the standard OIDC scopes.
-const SCOPE_DESCRIPTIONS = {
-  openid: 'Sign you in to this application',
-  profile: 'Access your basic profile (username, name)',
-  email: 'See your email address',
-  groups: 'See which groups you are a member of',
-  offline_access: 'Stay signed in when you are away',
-};
+// The standard OIDC scopes we can describe in plain language. Anything else the
+// server asks for is listed by its raw name with no description.
+const DESCRIBED_SCOPES = ['openid', 'profile', 'email', 'groups', 'offline_access'];
 
 export default {
   components: { OfficialBadge, LoadingCard, LoadingSpinner },
   setup() {
     const route = useRoute();
     const router = useRouter();
+    const { t } = useI18n();
 
     // state: 'loading' | 'ready' | 'working' | 'redirecting' | 'error'
     const state = ref('loading');
@@ -34,12 +31,13 @@ export default {
 
     const sessionId = computed(() => route.query.session ?? '');
 
+    // Locale keys per error code; an unrecognised code falls back to 'unknown'.
     const errorMessages = {
-      'no-session':       'No consent session id was provided in the URL.',
-      'expired':          'This consent request has expired or is invalid. Please retry signing in from the application.',
-      'unauthenticated':  'Your session expired. Please sign in again.',
-      'forbidden':        'You are not allowed to use this application.',
-      'unknown':          'An unexpected error occurred. Please try again.',
+      'no-session':       'oidc-err-no-session',
+      'expired':          'oidc-err-expired',
+      'unauthenticated':  'oidc-err-unauthenticated',
+      'forbidden':        'oidc-err-forbidden',
+      'unknown':          'oidc-err-unknown',
     };
 
     function setError(code, detail = '') {
@@ -48,12 +46,12 @@ export default {
     }
 
     function describeScope(scope) {
-      return SCOPE_DESCRIPTIONS[scope] ?? '';
+      return DESCRIBED_SCOPES.includes(scope) ? t(`oidc-scope-${scope}`) : '';
     }
 
     function followRedirect(url) {
       if (!url) {
-        setError('unknown', 'Server did not return a redirect URL.');
+        setError('unknown', t('oidc-detail-no-redirect'));
         return;
       }
       state.value = 'redirecting';
@@ -138,9 +136,10 @@ export default {
   <div class="oidc-page">
 
     <!-- Loading -->
+    <!-- LoadingCard falls back to the translated "loading" caption when text is null. -->
     <LoadingCard
       v-if="state === 'loading' || state === 'redirecting'"
-      :text="state === 'redirecting' ? 'Redirecting…' : 'Loading…'"
+      :text="state === 'redirecting' ? $t('redirecting') : null"
     />
 
     <!-- Error -->
@@ -152,21 +151,21 @@ export default {
         </svg>
       </div>
 
-      <h2 class="oidc-error-title">Sign-in unavailable</h2>
-      <p class="oidc-error-sub">{{ errorMessages[error.code] ?? errorMessages.unknown }}</p>
+      <h2 class="oidc-error-title">{{ $t('sign-in-unavailable') }}</h2>
+      <p class="oidc-error-sub">{{ $t(errorMessages[error.code] ?? errorMessages.unknown) }}</p>
 
       <div class="oidc-error-detail">
         <div class="error-detail-row">
-          <span class="error-detail-label">Error code</span>
+          <span class="error-detail-label">{{ $t('error-code') }}</span>
           <code class="error-detail-value error-code-badge">{{ error.code || 'unknown' }}</code>
         </div>
         <div class="error-detail-row" v-if="error.detail">
-          <span class="error-detail-label">Detail</span>
+          <span class="error-detail-label">{{ $t('detail') }}</span>
           <pre class="error-detail-value error-detail-pre">{{ error.detail }}</pre>
         </div>
       </div>
 
-      <RouterLink to="/" class="oidc-back-link">← Back to home</RouterLink>
+      <RouterLink to="/" class="oidc-back-link">← {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Consent UI -->
@@ -178,13 +177,12 @@ export default {
         <p v-if="appDescription" class="oidc-app-desc">{{ appDescription }}</p>
       </div>
 
-      <p class="oidc-warning-text">
-        <strong>{{ appName }}</strong> wants to sign you in with your Serble account.
-        Only approve if you trust this application.
-      </p>
+      <i18n-t keypath="oidc-warning" tag="p" class="oidc-warning-text" scope="global">
+        <template #app><strong>{{ appName }}</strong></template>
+      </i18n-t>
 
       <div class="oidc-scopes">
-        <p class="scopes-heading">This will let it</p>
+        <p class="scopes-heading">{{ $t('oidc-scopes-heading') }}</p>
         <ul v-if="scopes.length" class="scope-list">
           <li v-for="s in scopes" :key="s" class="scope-item">
             <div class="scope-dot"></div>
@@ -194,10 +192,10 @@ export default {
             </div>
           </li>
         </ul>
-        <p v-else class="no-scopes">No specific permissions requested.</p>
+        <p v-else class="no-scopes">{{ $t('no-permissions-requested') }}</p>
       </div>
 
-      <p class="oidc-deny-warning">If you didn't initiate this sign-in, click Deny.</p>
+      <p class="oidc-deny-warning">{{ $t('oidc-deny-hint') }}</p>
 
       <div class="oidc-actions">
         <button
@@ -209,7 +207,7 @@ export default {
             <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
           </svg>
           <LoadingSpinner v-else class="me-2" />
-          Approve
+          {{ $t('approve') }}
         </button>
         <button
           class="oidc-btn oidc-btn-deny"
@@ -219,7 +217,7 @@ export default {
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
             <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
           </svg>
-          Deny
+          {{ $t('deny') }}
         </button>
       </div>
     </div>

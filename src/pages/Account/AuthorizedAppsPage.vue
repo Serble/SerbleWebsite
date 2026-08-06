@@ -2,40 +2,17 @@
 import { ref, onMounted, inject, computed, watch } from 'vue';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getPublicAppInfo, deauthorizeApp } from '@/assets/js/serble.js';
-import { isSensitiveScopeName } from '@/assets/js/scopes.js';
+import { SCOPES, isSensitiveScope } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingBlock from '@/components/LoadingBlock.vue';
 
-// Scope metadata matching the API's ScopeHandler
-const SCOPE_NAMES = [
-  'Full Account Access',
-  'File Host',
-  'Account Information',
-  'Control Of Authorized Applications',
-  'Payment Information',
-  'Account Management',
-  'OAuth App Management',
-  'Economy',
-  'Economy Management',
-];
-
-const SCOPE_DESCRIPTIONS = [
-  'Allows full access to the account.',
-  'Allows access to the file host.',
-  'Allows access to the account\'s information (e.g. Username, Email).',
-  'Allows control over authorized applications.',
-  'Allows access to a user\'s list of purchased products and allows them to manage their subscriptions.',
-  'Grants the ability to control the user\'s account, including changing their email and username.',
-  'Allows management over all of your OAuth applications.',
-  'Allows reading the account\'s coin balance and transaction history.',
-  'Allows modifying the account\'s coin balance without consent, such as transferring coins out.',
-];
-
+// The scope string is one bit per scope, in the order the API's ScopeHandler declares them —
+// SCOPES is that list, so it stays the single source of truth for what each position means.
+// Names and descriptions come from the locale files, keyed by scope id.
 function parseScopeString(scopeString) {
   if (!scopeString) return [];
-  return scopeString
-    .split('')
-    .map((bit, i) => bit === '1' ? { name: SCOPE_NAMES[i], description: SCOPE_DESCRIPTIONS[i], sensitive: isSensitiveScopeName(SCOPE_NAMES[i]) } : null)
+  return SCOPES
+    .map((id, i) => scopeString[i] === '1' ? { id, sensitive: isSensitiveScope(id) } : null)
     .filter(Boolean);
 }
 
@@ -121,7 +98,7 @@ export default {
     <!-- Page header -->
     <div class="authorized-header">
       <h3 class="authorized-title">{{ $t('authorized-applications') }}</h3>
-      <p class="authorized-subtitle">Applications you've granted access to your Serble account.</p>
+      <p class="authorized-subtitle">{{ $t('authorized-apps-subtitle') }}</p>
     </div>
 
     <!-- Loading state -->
@@ -134,7 +111,7 @@ export default {
         <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
       </svg>
       <p class="empty-title">{{ $t('no-authorized-apps') }}</p>
-      <p class="empty-sub">When you authorize an application, it will appear here.</p>
+      <p class="empty-sub">{{ $t('authorized-apps-empty-sub') }}</p>
     </div>
 
     <!-- App cards -->
@@ -179,14 +156,14 @@ export default {
             <p class="scopes-heading">{{ $t('scopes') }}</p>
             <p v-if="entry.parsedScopes.length === 0" class="no-scopes">{{ $t('none') }}</p>
             <ul v-else class="scope-list">
-              <li v-for="scope in entry.parsedScopes" :key="scope.name" class="scope-item" :class="{ 'scope-item-sensitive': scope.sensitive }">
+              <li v-for="scope in entry.parsedScopes" :key="scope.id" class="scope-item" :class="{ 'scope-item-sensitive': scope.sensitive }">
                 <div class="scope-dot"></div>
                 <div class="scope-text">
                   <span class="scope-name">
-                    {{ scope.name }}
+                    {{ $t(`scope-${scope.id}`) }}
                     <span v-if="scope.sensitive" class="scope-sensitive-tag">{{ $t('sensitive') }}</span>
                   </span>
-                  <span class="scope-desc">{{ scope.description }}</span>
+                  <span class="scope-desc">{{ $t(`scope-${scope.id}-desc`) }}</span>
                 </div>
               </li>
             </ul>

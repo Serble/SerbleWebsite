@@ -37,8 +37,10 @@ export default {
     async function submit() {
       error.value = '';
 
-      if (!name.value.trim() || redirectUris.value.length === 0) {
-        error.value = 'null-fields';
+      // The name is the only thing an app can't be created without — a description and redirect
+      // URIs can both be added later from the manage page.
+      if (!name.value.trim()) {
+        error.value = 'app-name-required';
         return;
       }
 
@@ -73,7 +75,7 @@ export default {
       </RouterLink>
       <div>
         <h3 class="form-title">{{ $t('new-oauth-application') }}</h3>
-        <p class="form-subtitle">Fill in the details for your new application.</p>
+        <p class="form-subtitle">{{ $t('new-app-subtitle') }}</p>
       </div>
     </div>
 
@@ -99,7 +101,7 @@ export default {
       <!-- Description -->
       <div class="form-section">
         <label class="section-label" for="desc">{{ $t('description') }}</label>
-        <p class="section-hint">Optional. Shown to users when they authorize your app.</p>
+        <p class="section-hint">{{ $t('description-hint') }}</p>
         <textarea
           class="dark-input"
           id="desc"
@@ -113,7 +115,7 @@ export default {
       <!-- Redirect URIs -->
       <div class="form-section">
         <label class="section-label">{{ $t('redirect-uris') }}</label>
-        <p class="section-hint">Add one or more URIs that users can be redirected to after authorization. Press Enter or click Add.</p>
+        <p class="section-hint">{{ $t('redirect-uris-hint') }}</p>
 
         <div v-if="redirectUris.length > 0" class="uri-list">
           <div v-for="(uri, index) in redirectUris" :key="index" class="uri-item">

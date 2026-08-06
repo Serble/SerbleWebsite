@@ -49,6 +49,15 @@ export function formatCoins(raw) {
     return frac ? `${whole}.${frac}` : whole;
 }
 
+// Like formatCoins but without thousands separators, e.g. "1234.5". Use when the
+// text goes back into an input that parseCoinsToRaw has to read again — it rejects
+// commas.
+export function formatCoinsPlain(raw) {
+    const { whole, frac } = splitCoinParts(raw);
+    const plainWhole = whole.replace(/,/g, '');
+    return frac ? `${plainWhole}.${frac}` : plainWhole;
+}
+
 // Parse a user-entered decimal coin amount (e.g. "12.5") into a raw fixed-point
 // integer string. Returns null when the input is not a valid non-negative
 // number. The fractional part is rounded to the nearest representable unit.

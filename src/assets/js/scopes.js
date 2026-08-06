@@ -14,32 +14,10 @@ export const SCOPES = [
     'manage_economy',
 ];
 
-export const SCOPE_NAMES = [
-    'Full Account Access',
-    'File Host',
-    'Account Information',
-    'Control Of Authorized Applications',
-    'Payment Information',
-    'Account Management',
-    'OAuth App Management',
-    'Vault Access',
-    'Economy',
-    'Economy Management',
-];
-
-export const SCOPE_DESCRIPTIONS = [
-    'Allows full access to the account.',
-    'Allows access the file host.',
-    'Allows access to the account\'s information (Eg. Username, Email).',
-    'Allows control over authorized applications.',
-    'Allows access to a user\'s list of purchased products and allows them to manage their subscriptions, ' +
-    'including viewing the last 4 digits of their credit card and viewing purchase history.',
-    'Grants the ability to control the user\'s account, including changing their email, and username. Only you can change your password.',
-    'Allows management over all of your OAuth application, this does not allow the authorization of apps.',
-    'Allows access to the user\'s vault, including read and write access.',
-    'Allows reading the account\'s coin balance and transaction history.',
-    'Allows modifying the account\'s coin balance without consent, such as transferring coins out.',
-];
+// Display names and descriptions live in the locale files, keyed by scope id:
+// `scope-<id>` and `scope-<id>-desc`. They used to be duplicated here as English
+// arrays, which drifted out of step with SCOPES and mislabelled every scope after
+// the one that went missing — keep them out of this module.
 
 /**
  * Scopes that grant powerful or dangerous access and should be highlighted
@@ -55,12 +33,6 @@ export function isSensitiveScope(scopeId) {
     return SENSITIVE_SCOPES.includes(scopeId);
 }
 
-/** True if the given scope display name maps to a sensitive scope */
-export function isSensitiveScopeName(name) {
-    const idx = SCOPE_NAMES.indexOf(name);
-    return idx >= 0 && SENSITIVE_SCOPES.includes(SCOPES[idx]);
-}
-
 /** Convert an array of scope IDs → the 1/0 string the API expects */
 export function scopeIdsToString(scopeIds) {
     return SCOPES.map(s => scopeIds.includes(s) ? '1' : '0').join('');
@@ -69,17 +41,6 @@ export function scopeIdsToString(scopeIds) {
 /** Filter out any scope ID strings that don't exist in our list */
 export function filterInvalidScopes(scopeIds) {
     return scopeIds.filter(s => SCOPES.includes(s));
-}
-
-/** Convert an array of valid scope IDs → their display names */
-export function scopeIdsToNames(scopeIds) {
-    return SCOPE_NAMES.filter((_, i) => scopeIds.includes(SCOPES[i]));
-}
-
-/** Get the description for a scope display name */
-export function getDescriptionFromName(name) {
-    const idx = SCOPE_NAMES.indexOf(name);
-    return idx >= 0 ? SCOPE_DESCRIPTIONS[idx] : '';
 }
 
 /** Convert a 1/0 scope string → array of scope IDs */

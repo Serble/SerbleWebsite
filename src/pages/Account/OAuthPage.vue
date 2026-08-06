@@ -1,9 +1,10 @@
 <script>
 import { ref, computed, onMounted, inject } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getPublicAppInfo, authorizeApp } from '@/assets/js/serble.js';
-import { filterInvalidScopes, scopeIdsToNames, scopeIdsToString, getDescriptionFromName, isSensitiveScopeName } from '@/assets/js/scopes.js';
+import { filterInvalidScopes, scopeIdsToString, isSensitiveScope } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingCard from '@/components/LoadingCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -20,11 +21,12 @@ export default {
     const route  = useRoute();
     const router = useRouter();
     const userStore = inject('userStore');
+    const { t } = useI18n();
 
     // state: 'loading' | 'ready' | 'working' | 'error'
     const state    = ref('loading');
     const app      = ref(null);        // PublicOAuthApp
-    const scopeNames = ref([]);        // display names of requested valid scopes
+    const scopeIds = ref([]);          // ids of the requested valid scopes
     const error    = ref({ code: '', detail: '', params: null });
 
     function setError(code, detail = '', params = null) {
@@ -40,12 +42,14 @@ export default {
       return true;
     }
 
+    // Locale keys for each error code. A code with no entry here (a server that
+    // knows an error this build doesn't) simply shows no explanation line.
     const errorMessages = {
-      'missing-params':         'One or more required query parameters are missing.',
-      'app-not-found':          'No application with the given client_id was found.',
-      'redirect-uri-mismatch':  'The redirect_uri does not match any of the URIs registered for this application.',
-      'bad-app':                'The application ID was rejected by the server.',
-      'unknown':                'An unexpected error occurred.',
+      'missing-params':         'oauth-err-missing-params',
+      'app-not-found':          'oauth-err-app-not-found',
+      'redirect-uri-mismatch':  'oauth-err-redirect-uri-mismatch',
+      'bad-app':                'oauth-err-bad-app',
+      'unknown':                'oauth-err-unknown',
     };
 
     onMounted(async () => {
@@ -54,7 +58,7 @@ export default {
       // 1. Check all required params are present
       const missing = REQUIRED_PARAMS.filter(p => !q[p]);
       if (missing.length) {
-        setError('missing-params', `Missing: ${missing.join(', ')}`, q);
+        setError('missing-params', t('oauth-detail-missing', { params: missing.join(', ') }), q);
         return;
       }
 
@@ -73,7 +77,7 @@ export default {
       // 3. Resolve scopes
       const requestedIds = q.scope.split(' ');
       const validIds     = filterInvalidScopes(requestedIds);
-      scopeNames.value   = scopeIdsToNames(validIds);
+      scopeIds.value     = validIds;
 
       // 4. Check if already authorized — auto-allow only if no new scopes are requested.
       //    The authorized-app entry's appId is the OAuth client_id, so match on that
@@ -103,7 +107,7 @@ export default {
       try {
         redirectUri = new URL(q.redirect_uri);
       } catch {
-        setError('redirect-uri-mismatch', `"${q.redirect_uri}" is not a valid URL.`, q);
+        setError('redirect-uri-mismatch', t('oauth-detail-bad-uri', { uri: q.redirect_uri }), q);
         return;
       }
 
@@ -112,7 +116,7 @@ export default {
       if (!validUris.includes(q.redirect_uri)) {
         setError(
           'redirect-uri-mismatch',
-          `Provided: "${q.redirect_uri}"\nAllowed: ${validUris.join(', ')}`,
+          t('oauth-detail-uri-mismatch', { provided: q.redirect_uri, allowed: validUris.join(', ') }),
           q
         );
         return;
@@ -144,12 +148,12 @@ export default {
 
     const appName = computed(() => app.value?.name ?? app.value?.Name ?? '');
     const appIsOfficial = computed(() => app.value?.isOfficial ?? app.value?.IsOfficial ?? false);
-    const hasSensitiveScopes = computed(() => scopeNames.value.some(isSensitiveScopeName));
+    const hasSensitiveScopes = computed(() => scopeIds.value.some(isSensitiveScope));
     // Only warn / require acknowledgement for non-official apps.
     const showSensitive = computed(() => hasSensitiveScopes.value && !appIsOfficial.value);
     const acknowledged = ref(false);
 
-    return { state, app, appName, appIsOfficial, scopeNames, error, errorMessages, doAuthorize, getDescriptionFromName, isSensitiveScopeName, hasSensitiveScopes, showSensitive, acknowledged };
+    return { state, app, appName, appIsOfficial, scopeIds, error, errorMessages, doAuthorize, isSensitiveScope, hasSensitiveScopes, showSensitive, acknowledged };
   }
 };
 </script>
@@ -176,22 +180,22 @@ export default {
       <!-- Error detail card -->
       <div class="oauth-error-detail">
         <div class="error-detail-row">
-          <span class="error-detail-label">Error code</span>
+          <span class="error-detail-label">{{ $t('error-code') }}</span>
           <code class="error-detail-value error-code-badge">{{ error.code || 'unknown' }}</code>
         </div>
         <div class="error-detail-row" v-if="error.detail">
-          <span class="error-detail-label">Detail</span>
+          <span class="error-detail-label">{{ $t('detail') }}</span>
           <pre class="error-detail-value error-detail-pre">{{ error.detail }}</pre>
         </div>
         <div v-if="errorMessages[error.code]" class="error-detail-row">
-          <span class="error-detail-label">Explanation</span>
-          <span class="error-detail-value">{{ errorMessages[error.code] }}</span>
+          <span class="error-detail-label">{{ $t('explanation') }}</span>
+          <span class="error-detail-value">{{ $t(errorMessages[error.code]) }}</span>
         </div>
       </div>
 
       <!-- Query params dump -->
       <div v-if="error.params && Object.keys(error.params).length" class="oauth-params-dump">
-        <p class="params-heading">Request parameters</p>
+        <p class="params-heading">{{ $t('request-parameters') }}</p>
         <div class="params-grid">
           <template v-for="(val, key) in error.params" :key="key">
             <code class="param-key">{{ key }}</code>
@@ -200,7 +204,7 @@ export default {
         </div>
       </div>
 
-      <RouterLink to="/" class="oauth-back-link">← Back to home</RouterLink>
+      <RouterLink to="/" class="oauth-back-link">← {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Ready: show authorize UI -->
@@ -214,27 +218,27 @@ export default {
       </div>
 
       <p class="oauth-warning-text">
-        {{ $t('oauth-warning').replace('{app}', appName) }}
+        {{ $t('oauth-warning', { app: appName }) }}
       </p>
 
       <!-- Scope list -->
       <div class="oauth-scopes">
         <p class="scopes-heading">{{ $t('scopes') }}</p>
 
-        <ul v-if="scopeNames.length" class="scope-list">
+        <ul v-if="scopeIds.length" class="scope-list">
           <li
-            v-for="name in scopeNames"
-            :key="name"
+            v-for="id in scopeIds"
+            :key="id"
             class="scope-item"
-            :class="{ 'scope-item-sensitive': showSensitive && isSensitiveScopeName(name) }"
+            :class="{ 'scope-item-sensitive': showSensitive && isSensitiveScope(id) }"
           >
             <div class="scope-dot"></div>
             <div class="scope-text">
               <span class="scope-name">
-                {{ name }}
-                <span v-if="showSensitive && isSensitiveScopeName(name)" class="scope-sensitive-tag">{{ $t('sensitive') }}</span>
+                {{ $t(`scope-${id}`) }}
+                <span v-if="showSensitive && isSensitiveScope(id)" class="scope-sensitive-tag">{{ $t('sensitive') }}</span>
               </span>
-              <span class="scope-desc">{{ getDescriptionFromName(name) }}</span>
+              <span class="scope-desc">{{ $t(`scope-${id}-desc`) }}</span>
             </div>
           </li>
         </ul>

@@ -59,10 +59,15 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/oauthapps/edit',
-      name: 'EditOAuthApp',
-      component: () => import('@/pages/Account/EditOAuthAppPage.vue'),
+      path: '/oauthapps/manage',
+      name: 'ManageOAuthApp',
+      component: () => import('@/pages/Account/ManageOAuthAppPage.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      // The edit page became a tab of the manage page — keep old links (and bookmarks) working.
+      path: '/oauthapps/edit',
+      redirect: to => ({ path: '/oauthapps/manage', query: { ...to.query, tab: 'settings' } }),
     },
     {
       path: '/authorizedapps',

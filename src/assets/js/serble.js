@@ -191,12 +191,32 @@ export function logout() {
 
 // ── OAuth App helpers ──
 
+// The owner-facing /app endpoints hand back the raw app model (PascalCase), while the public and
+// admin ones use camelCase. Normalise once here so pages never have to guess which casing they got.
+// `redirectUris` is the split form of the semicolon-separated `redirectUri` the API stores.
+function normaliseOwnedApp(a) {
+    if (!a) return null;
+    const redirectUri = a.RedirectUri ?? a.redirectUri ?? '';
+    return {
+        id: a.Id ?? a.id ?? '',
+        ownerId: a.OwnerId ?? a.ownerId ?? '',
+        name: a.Name ?? a.name ?? '',
+        description: a.Description ?? a.description ?? '',
+        clientSecret: a.ClientSecret ?? a.clientSecret ?? '',
+        redirectUri,
+        redirectUris: redirectUri.split(';').map(u => u.trim()).filter(Boolean),
+        isOfficial: a.IsOfficial ?? a.isOfficial ?? false,
+        dateCreated: a.DateCreated ?? a.dateCreated ?? null,
+    };
+}
+
 export async function getUserApps() {
     try {
         const response = await axios.get(`${API_URL}/app`, {
             headers: { SerbleAuth: `User ${getAuthToken()}` }
         });
-        return { success: true, apps: response.data };
+        const apps = Array.isArray(response.data) ? response.data : [];
+        return { success: true, apps: apps.map(normaliseOwnedApp) };
     } catch (error) {
         console.error('Error fetching apps', error);
         return { success: false, error: error?.response?.status };
@@ -208,7 +228,7 @@ export async function getOAuthApp(appId) {
         const response = await axios.get(`${API_URL}/app/${appId}`, {
             headers: { SerbleAuth: `User ${getAuthToken()}` }
         });
-        return { success: true, app: response.data };
+        return { success: true, app: normaliseOwnedApp(response.data) };
     } catch (error) {
         console.error('Error fetching app', error);
         return { success: false, error: error?.response?.status };
@@ -1449,6 +1469,170 @@ export async function getAppBalance(appId) {
     }
 }
 
+// Owner ↔ app coin movement. The API resolves the user side from the app's owner, so there's no
+// recipient to send: the caller only picks a direction and an amount.
+function appTransferBody(amount, description) {
+    const digits = String(amount ?? '').trim();
+    const safe = /^\d+$/.test(digits) ? digits : '0';
+    const d = JSON.stringify(String(description ?? ''));
+    return `{"amount":${safe},"description":${d}}`;
+}
+
+// Keep both post-transfer balances as precision-safe strings.
+function parseAppTransferResponse(rawText) {
+    let obj = {};
+    try { obj = JSON.parse(rawText); } catch { /* ignore */ }
+    const app = /"appCoins"\s*:\s*(\d+)/.exec(rawText || '');
+    if (app) obj.appCoins = app[1];
+    const user = /"userCoins"\s*:\s*(\d+)/.exec(rawText || '');
+    if (user) obj.userCoins = user[1];
+    return obj;
+}
+
+async function appTransfer(appId, direction, amount, description) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/app/${encodeURIComponent(appId)}/balance/${direction}`,
+            appTransferBody(amount, description),
+            coinReqConfig()
+        );
+        return { success: true, data: parseAppTransferResponse(response.data) };
+    } catch (error) {
+        console.error(`Error during app balance ${direction}`, error);
+        const raw = error?.response?.data;
+        const message = typeof raw === 'string' ? raw.trim() : '';
+        return { success: false, error: error?.response?.status, message };
+    }
+}
+
+// Your balance → the app's — POST /app/{appid}/balance/deposit
+export function depositToApp(appId, amount, description) {
+    return appTransfer(appId, 'deposit', amount, description);
+}
+
+// The app's balance → yours — POST /app/{appid}/balance/withdraw
+export function withdrawFromApp(appId, amount, description) {
+    return appTransfer(appId, 'withdraw', amount, description);
+}
+
+// ── App webhooks (owner) — /app/{appid}/webhooks ──
+//
+// The API also exposes these under /app/me/webhooks for an app authenticating with its own API
+// key. The site can't use that surface (it holds a user token, not a key), so it goes through the
+// owner-scoped twin instead. Both act on the same records.
+
+// Webhook endpoints answer validation failures with a plain-text 400 (bad URL, quota reached,
+// unknown event type). Those messages are written to be read by the owner, so surface them.
+function webhookError(error) {
+    const status = error?.response?.status;
+    const body = error?.response?.data;
+    return { success: false, error: status, message: typeof body === 'string' && body ? body : null };
+}
+
+function userAuthConfig() {
+    return { headers: { SerbleAuth: `User ${getAuthToken()}` } };
+}
+
+export async function getWebhookEventTypes(appId) {
+    try {
+        const response = await axios.get(
+            `${API_URL}/app/${encodeURIComponent(appId)}/webhooks/event-types`, userAuthConfig());
+        return { success: true, eventTypes: (response.data ?? []).map(e => e.eventType) };
+    } catch (error) {
+        console.error('Error fetching webhook event types', error);
+        return { success: false, error: error?.response?.status, eventTypes: [] };
+    }
+}
+
+export async function getAppWebhooks(appId) {
+    try {
+        const response = await axios.get(
+            `${API_URL}/app/${encodeURIComponent(appId)}/webhooks`, userAuthConfig());
+        return { success: true, webhooks: Array.isArray(response.data) ? response.data : [] };
+    } catch (error) {
+        console.error('Error fetching app webhooks', error);
+        return { success: false, error: error?.response?.status, webhooks: [] };
+    }
+}
+
+// The `secret` on the response is the only time it is ever returned.
+export async function createAppWebhook(appId, url, eventTypes) {
+    try {
+        const response = await axios.post(`${API_URL}/app/${encodeURIComponent(appId)}/webhooks`,
+            { url, eventTypes }, userAuthConfig());
+        return { success: true, webhook: response.data };
+    } catch (error) {
+        console.error('Error creating webhook', error);
+        return webhookError(error);
+    }
+}
+
+// `updates` may carry any of { url, eventTypes, enabled }; omitted fields are left alone.
+export async function updateAppWebhook(appId, webhookId, updates) {
+    try {
+        const response = await axios.patch(
+            `${API_URL}/app/${encodeURIComponent(appId)}/webhooks/${encodeURIComponent(webhookId)}`,
+            updates, userAuthConfig());
+        return { success: true, webhook: response.data };
+    } catch (error) {
+        console.error('Error updating webhook', error);
+        return webhookError(error);
+    }
+}
+
+export async function deleteAppWebhook(appId, webhookId) {
+    try {
+        await axios.delete(
+            `${API_URL}/app/${encodeURIComponent(appId)}/webhooks/${encodeURIComponent(webhookId)}`,
+            userAuthConfig());
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting webhook', error);
+        return webhookError(error);
+    }
+}
+
+export async function rotateAppWebhookSecret(appId, webhookId) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/app/${encodeURIComponent(appId)}/webhooks/${encodeURIComponent(webhookId)}/rotate-secret`,
+            {}, userAuthConfig());
+        return { success: true, webhook: response.data };
+    } catch (error) {
+        console.error('Error rotating webhook secret', error);
+        return webhookError(error);
+    }
+}
+
+export async function testAppWebhook(appId, webhookId) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/app/${encodeURIComponent(appId)}/webhooks/${encodeURIComponent(webhookId)}/test`,
+            {}, userAuthConfig());
+        return { success: true, deliveryId: response.data?.deliveryId ?? null };
+    } catch (error) {
+        console.error('Error sending test webhook', error);
+        return webhookError(error);
+    }
+}
+
+// A null `webhookId` means every delivery for the app, across all of its subscriptions.
+export async function getAppWebhookDeliveries(appId, webhookId = null, skip = 0, take = 25) {
+    const base = `${API_URL}/app/${encodeURIComponent(appId)}/webhooks`;
+    const path = webhookId ? `${base}/${encodeURIComponent(webhookId)}/deliveries` : `${base}/deliveries`;
+    try {
+        const response = await axios.get(`${path}?skip=${skip}&take=${take}`, userAuthConfig());
+        return {
+            success: true,
+            deliveries: response.data?.deliveries ?? [],
+            totalCount: response.data?.totalCount ?? 0,
+        };
+    } catch (error) {
+        console.error('Error fetching webhook deliveries', error);
+        return { success: false, error: error?.response?.status, deliveries: [], totalCount: 0 };
+    }
+}
+
 // Admin: user coins — /admin/users/{id}/coins
 export async function adminGetUserCoins(id) {
     try {
@@ -1617,6 +1801,64 @@ export async function adminSetConfig(key, value) {
         return { success: true, setting: response.data };
     } catch (error) {
         console.error('Error updating server config', error);
+        const status = error?.response?.status;
+        const message = typeof error?.response?.data === 'string' ? error.response.data : null;
+        return { success: false, error: status, message };
+    }
+}
+
+// ── Admin: app webhooks — /admin/webhooks ──
+
+// Every subscription on the server, optionally narrowed to one app. Secrets are never included.
+export async function adminGetWebhooks({ appId = null, skip = 0, take = 50 } = {}) {
+    const params = new URLSearchParams({ skip: String(skip), take: String(take) });
+    if (appId) params.set('appId', appId);
+    try {
+        const response = await axios.get(`${API_URL}/admin/webhooks?${params.toString()}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return {
+            success: true,
+            webhooks: response.data?.webhooks ?? [],
+            totalCount: response.data?.totalCount ?? 0,
+        };
+    } catch (error) {
+        console.error('Error fetching webhooks', error);
+        return { success: false, error: error?.response?.status, webhooks: [], totalCount: 0 };
+    }
+}
+
+// The delivery outbox. `status` is Pending|InFlight|Delivered|DeadLettered; `cycleId` ties a page
+// of deliveries back to one tax run.
+export async function adminGetWebhookDeliveries({ appId = null, status = null, cycleId = null, skip = 0, take = 50 } = {}) {
+    const params = new URLSearchParams({ skip: String(skip), take: String(take) });
+    if (appId) params.set('appId', appId);
+    if (status) params.set('status', status);
+    if (cycleId !== null && cycleId !== '') params.set('cycleId', String(cycleId));
+    try {
+        const response = await axios.get(`${API_URL}/admin/webhooks/deliveries?${params.toString()}`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return {
+            success: true,
+            deliveries: response.data?.deliveries ?? [],
+            totalCount: response.data?.totalCount ?? 0,
+        };
+    } catch (error) {
+        console.error('Error fetching webhook deliveries', error);
+        return { success: false, error: error?.response?.status, deliveries: [], totalCount: 0 };
+    }
+}
+
+// Requeues a delivery for immediate sending with a fresh attempt budget. The receiver sees the same
+// event id, so an app that dedupes correctly is unaffected by a redelivery.
+export async function adminRedeliverWebhook(deliveryId) {
+    try {
+        await axios.post(`${API_URL}/admin/webhooks/deliveries/${encodeURIComponent(deliveryId)}/redeliver`,
+            {}, { headers: { SerbleAuth: `User ${getAuthToken()}` } });
+        return { success: true };
+    } catch (error) {
+        console.error('Error redelivering webhook', error);
         const status = error?.response?.status;
         const message = typeof error?.response?.data === 'string' ? error.response.data : null;
         return { success: false, error: status, message };

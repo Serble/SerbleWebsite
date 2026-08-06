@@ -63,9 +63,12 @@ import {
   adminRunTaxNow,
   adminGetConfig,
   adminSetConfig,
+  adminGetWebhooks,
+  adminGetWebhookDeliveries,
+  adminRedeliverWebhook,
 } from '@/assets/js/serble.js';
 import { getLocalStorage, setLocalStorage } from '@/assets/js/utils.js';
-import { formatCoins, parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
+import { formatCoins, formatCoinsPlain, parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
 import { FEATURES } from '@/assets/js/featureFlags.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
@@ -536,7 +539,7 @@ export default {
       appTaxTargetLoading.value = false;
       if (r.success) {
         appTaxTarget.value = String(r.target?.targetBalance ?? '0');
-        appTaxTargetDraft.value = formatCoins(appTaxTarget.value);
+        appTaxTargetDraft.value = formatCoinsPlain(appTaxTarget.value);
       } else {
         appTaxTarget.value = '0';
         appTaxTargetDraft.value = '';
@@ -559,7 +562,7 @@ export default {
       appTaxTargetBusy.value = false;
       if (r?.success) {
         appTaxTarget.value = String(r.target?.targetBalance ?? '0');
-        appTaxTargetDraft.value = formatCoins(appTaxTarget.value);
+        appTaxTargetDraft.value = formatCoinsPlain(appTaxTarget.value);
       }
     }
 
@@ -1543,6 +1546,119 @@ export default {
       }
     }
 
+    // ── Webhooks: subscriptions + the delivery outbox ──
+    //
+    // Two independent views. Subscriptions answer "who is listening"; deliveries answer "what
+    // actually got sent, and what came back" — the only server-side place a failing integration is
+    // diagnosable. Filtering deliveries by cycleId joins this to the tax run history.
+
+    const WEBHOOK_STATUSES = ['Pending', 'InFlight', 'Delivered', 'DeadLettered'];
+
+    const whAppFilter = ref('');
+    const whList = ref([]);
+    const whTotal = ref(0);
+    const whLoading = ref(false);
+    const whError = ref(null);
+    const whLoaded = ref(false);
+    const whMessage = ref(null);
+    const whMessageType = ref('success');
+
+    const delFilters = ref({ appId: '', status: '', cycleId: '' });
+    const delList = ref([]);
+    const delTotal = ref(0);
+    const delLimit = ref(50);
+    const delOffset = ref(0);
+    const delLoading = ref(false);
+    const delError = ref(null);
+    const delLoaded = ref(false);
+    const delOpenPayload = ref(null);
+    const delRedeliverBusy = ref(null);
+
+    async function loadWebhooks() {
+      whLoading.value = true;
+      whError.value = null;
+      const r = await adminGetWebhooks({ appId: whAppFilter.value.trim() || null, skip: 0, take: 200 });
+      whLoading.value = false;
+      whLoaded.value = true;
+      if (!r.success) {
+        whError.value = r.error ?? 'unknown';
+        whList.value = [];
+        return;
+      }
+      whList.value = r.webhooks;
+      whTotal.value = r.totalCount;
+    }
+
+    async function loadWebhookDeliveries(offset = 0) {
+      delLoading.value = true;
+      delError.value = null;
+      const r = await adminGetWebhookDeliveries({
+        appId: delFilters.value.appId.trim() || null,
+        status: delFilters.value.status || null,
+        cycleId: delFilters.value.cycleId.trim() || null,
+        skip: offset,
+        take: delLimit.value,
+      });
+      delLoading.value = false;
+      delLoaded.value = true;
+      if (!r.success) {
+        delError.value = r.error ?? 'unknown';
+        delList.value = [];
+        return;
+      }
+      delList.value = r.deliveries;
+      delTotal.value = r.totalCount;
+      delOffset.value = offset;
+      delOpenPayload.value = null;
+    }
+
+    function clearDeliveryFilters() {
+      delFilters.value = { appId: '', status: '', cycleId: '' };
+      loadWebhookDeliveries(0);
+    }
+
+    function toggleDeliveryPayload(id) {
+      delOpenPayload.value = delOpenPayload.value === id ? null : id;
+    }
+
+    // Requeued deliveries keep their original event id, so an app that dedupes correctly is
+    // unaffected by receiving one it has already processed.
+    async function redeliverWebhook(id) {
+      delRedeliverBusy.value = id;
+      const r = await adminRedeliverWebhook(id);
+      delRedeliverBusy.value = null;
+      if (r.success) {
+        whMessage.value = 'Delivery requeued — it will be sent within a few seconds.';
+        whMessageType.value = 'success';
+        await loadWebhookDeliveries(delOffset.value);
+      } else {
+        whMessage.value = r.message || `Failed to requeue (${r.error ?? 'unknown'})`;
+        whMessageType.value = 'error';
+      }
+    }
+
+    function prettyJson(raw) {
+      try {
+        return JSON.stringify(JSON.parse(raw), null, 2);
+      } catch {
+        return raw;
+      }
+    }
+
+    function deliveryStatusClass(status) {
+      if (status === 'Delivered') return 'text-success';
+      if (status === 'DeadLettered') return 'text-danger';
+      return 'text-warning';
+    }
+
+    function viewWebhooksForApp(appId) {
+      activeTab.value = 'webhooks';
+      whAppFilter.value = appId;
+      delFilters.value = { appId, status: '', cycleId: '' };
+      loadWebhooks();
+      loadWebhookDeliveries(0);
+    }
+
     return {
       isAdmin, economyEnabled, stats, statsError, query, limit, searching, results, searchError,
       userTableSettingsOpen, availableUserTableColumns, visibleUserTableColumns, userTableColspan,
@@ -1599,6 +1715,14 @@ export default {
       loadConfig, saveConfig, configDirty, isPercentSetting, formatPercentDisplay,
       taxPreview, taxPreviewLoading, taxPreviewError, loadTaxPreview,
       taxRunBusy, taxRunMessage, taxRunMessageType, runTaxNow,
+      // Webhooks
+      WEBHOOK_STATUSES,
+      whAppFilter, whList, whTotal, whLoading, whError, whLoaded, whMessage, whMessageType,
+      loadWebhooks, viewWebhooksForApp,
+      delFilters, delList, delTotal, delLimit, delOffset, delLoading, delError, delLoaded,
+      delOpenPayload, delRedeliverBusy,
+      loadWebhookDeliveries, clearDeliveryFilters, toggleDeliveryPayload, redeliverWebhook,
+      prettyJson, deliveryStatusClass,
     };
   }
 };
@@ -1638,6 +1762,9 @@ export default {
         </li>
         <li v-if="economyEnabled" class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'economy' }" @click="activeTab = 'economy'; if (!txLoaded) loadTransactions(); if (!economy) loadEconomy(); if (!taxPreview) loadTaxPreview()">Economy</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" :class="{ active: activeTab === 'webhooks' }" @click="activeTab = 'webhooks'; if (!whLoaded) loadWebhooks(); if (!delLoaded) loadWebhookDeliveries(0)">Webhooks</button>
         </li>
         <li class="nav-item">
           <button class="nav-link" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'; if (!configLoaded) loadConfig()">Settings</button>
@@ -2107,6 +2234,14 @@ export default {
             </button>
             <button class="btn btn-sm btn-outline-secondary" :disabled="!selectedApp.clientSecret" @click="copySecret">Copy</button>
             <button class="btn btn-sm btn-warning ms-auto" :disabled="actionBusy" @click="actCycleSecret">Cycle secret</button>
+          </div>
+
+          <h6 class="section-heading">Webhooks</h6>
+          <div class="d-flex align-items-center gap-2 mb-4">
+            <button class="btn btn-sm btn-outline-secondary" @click="viewWebhooksForApp(selectedApp.id)">
+              View subscriptions &amp; deliveries
+            </button>
+            <span class="text-muted" style="font-size:0.8rem;">Opens the Webhooks tab filtered to this app.</span>
           </div>
 
           <h6 class="section-heading">Danger zone</h6>
@@ -2818,6 +2953,188 @@ export default {
         </template>
       </div>
 
+      <!-- WEBHOOKS TAB -->
+      <div v-show="activeTab === 'webhooks'">
+        <div v-if="whMessage" class="alert py-2" :class="whMessageType === 'error' ? 'alert-danger' : 'alert-success'">
+          {{ whMessage }}
+        </div>
+
+        <!-- Subscriptions -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="mb-0">Webhook subscriptions</h5>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">Every endpoint registered by an app. Signing secrets are never returned.</p>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" :disabled="whLoading" @click="loadWebhooks">Refresh</button>
+        </div>
+
+        <div class="search-card p-3 mb-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-9">
+              <label class="form-label mb-1" style="font-size:0.8rem;">App ID</label>
+              <input v-model="whAppFilter" class="form-control form-control-sm dark-input" placeholder="leave blank for all apps" @keyup.enter="loadWebhooks">
+            </div>
+            <div class="col-12 col-md-3 d-flex gap-2">
+              <button class="btn btn-sm btn-primary w-100" :disabled="whLoading" @click="loadWebhooks">Search</button>
+              <button class="btn btn-sm btn-outline-secondary" :disabled="whLoading" @click="whAppFilter = ''; loadWebhooks()" title="Clear filter">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="whError" class="alert alert-danger py-2">Failed to load webhooks: {{ whError }}</div>
+        <div v-else-if="whLoading" class="text-muted py-3">Loading…</div>
+        <div v-else-if="whList.length === 0 && whLoaded" class="text-muted py-3">No webhooks registered.</div>
+
+        <div v-else-if="whList.length" class="table-responsive mb-2">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>App</th>
+                <th>URL</th>
+                <th>Events</th>
+                <th>State</th>
+                <th>Last success</th>
+                <th>Last failure</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="w in whList" :key="w.id">
+                <td><code style="font-size:0.75rem;">{{ w.appId }}</code></td>
+                <td style="word-break:break-all; max-width:280px;">{{ w.url }}</td>
+                <td>
+                  <span v-for="e in w.eventTypes" :key="e" class="badge bg-secondary me-1">{{ e }}</span>
+                </td>
+                <td style="white-space:nowrap;">
+                  <span :class="w.enabled ? 'text-success' : 'text-muted'">{{ w.enabled ? 'enabled' : 'disabled' }}</span>
+                  <span v-if="w.consecutiveFailures > 0" class="text-danger ms-2">{{ w.consecutiveFailures }} fail(s)</span>
+                  <div v-if="w.disabledReason" class="text-danger" style="font-size:0.75rem;">{{ w.disabledReason }}</div>
+                  <div v-else-if="w.lastError" class="text-muted" style="font-size:0.75rem;">{{ w.lastError }}</div>
+                </td>
+                <td style="white-space:nowrap;">{{ formatDate(w.lastSuccessUtc) }}</td>
+                <td style="white-space:nowrap;">{{ formatDate(w.lastFailureUtc) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p v-if="whList.length" class="text-muted" style="font-size:0.85rem;">
+          Showing {{ whList.length }} of {{ whTotal }} subscription(s).
+        </p>
+
+        <!-- Delivery outbox -->
+        <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+          <div>
+            <h5 class="mb-0">Delivery outbox</h5>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">
+              Filter by <code>DeadLettered</code> to find integrations that gave up, or by cycle ID to see everything one tax run emitted.
+            </p>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading" @click="loadWebhookDeliveries(delOffset)">Refresh</button>
+        </div>
+
+        <div class="search-card p-3 mb-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+              <label class="form-label mb-1" style="font-size:0.8rem;">App ID</label>
+              <input v-model="delFilters.appId" class="form-control form-control-sm dark-input" placeholder="any" @keyup.enter="loadWebhookDeliveries(0)">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Status</label>
+              <select v-model="delFilters.status" class="form-control form-control-sm dark-input" @change="loadWebhookDeliveries(0)">
+                <option value="">any</option>
+                <option v-for="s in WEBHOOK_STATUSES" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Cycle ID</label>
+              <input v-model="delFilters.cycleId" class="form-control form-control-sm dark-input" placeholder="any" @keyup.enter="loadWebhookDeliveries(0)">
+            </div>
+            <div class="col-6 col-md-1">
+              <label class="form-label mb-1" style="font-size:0.8rem;">Limit</label>
+              <select v-model.number="delLimit" class="form-control form-control-sm dark-input" @change="loadWebhookDeliveries(0)">
+                <option :value="25">25</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+                <option :value="200">200</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2 d-flex gap-2">
+              <button class="btn btn-sm btn-primary w-100" :disabled="delLoading" @click="loadWebhookDeliveries(0)">Search</button>
+              <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading" @click="clearDeliveryFilters" title="Clear filters">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="delError" class="alert alert-danger py-2">Failed to load deliveries: {{ delError }}</div>
+        <div v-else-if="delLoading" class="text-muted py-3">Loading…</div>
+        <div v-else-if="delList.length === 0 && delLoaded" class="text-muted py-3">No deliveries found.</div>
+
+        <template v-else-if="delList.length">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Created</th>
+                  <th>Event</th>
+                  <th>App</th>
+                  <th>Status</th>
+                  <th>Attempts</th>
+                  <th>Response</th>
+                  <th>Cycle</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="d in delList" :key="d.id">
+                  <tr>
+                    <td style="white-space:nowrap;">{{ formatDate(d.createdUtc) }}</td>
+                    <td><code style="font-size:0.75rem;">{{ d.eventType }}</code></td>
+                    <td><code style="font-size:0.75rem;">{{ d.appId }}</code></td>
+                    <td style="white-space:nowrap;">
+                      <span :class="deliveryStatusClass(d.status)">{{ d.status }}</span>
+                      <div v-if="d.status !== 'Delivered'" class="text-muted" style="font-size:0.75rem;">
+                        next {{ formatDate(d.nextAttemptUtc) }}
+                      </div>
+                    </td>
+                    <td>{{ d.attempts }}</td>
+                    <td style="white-space:nowrap;">
+                      <span v-if="d.lastResponseCode">HTTP {{ d.lastResponseCode }}</span>
+                      <span v-else class="text-muted">—</span>
+                      <div v-if="d.lastError" class="text-danger" style="font-size:0.75rem; max-width:260px; word-break:break-word;">{{ d.lastError }}</div>
+                    </td>
+                    <td>{{ d.cycleId ?? '—' }}</td>
+                    <td class="text-end" style="white-space:nowrap;">
+                      <button class="btn btn-sm btn-outline-secondary me-1" @click="toggleDeliveryPayload(d.id)">
+                        {{ delOpenPayload === d.id ? 'Hide' : 'Payload' }}
+                      </button>
+                      <button class="btn btn-sm btn-outline-primary" :disabled="delRedeliverBusy === d.id" @click="redeliverWebhook(d.id)">
+                        {{ delRedeliverBusy === d.id ? '…' : 'Redeliver' }}
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="delOpenPayload === d.id">
+                    <td colspan="8">
+                      <div class="text-muted mb-1" style="font-size:0.75rem;">Event ID <code>{{ d.id }}</code> · webhook <code>{{ d.webhookId }}</code></div>
+                      <pre class="delivery-payload mb-0">{{ prettyJson(d.payload) }}</pre>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <span class="text-muted" style="font-size:0.85rem;">
+              Showing {{ delOffset + 1 }}–{{ delOffset + delList.length }} of {{ delTotal }}
+            </span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading || delOffset === 0" @click="loadWebhookDeliveries(Math.max(0, delOffset - delLimit))">Previous</button>
+              <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading || delOffset + delList.length >= delTotal" @click="loadWebhookDeliveries(delOffset + delLimit)">Next</button>
+            </div>
+          </div>
+        </template>
+      </div>
+
       <!-- SETTINGS TAB -->
       <div v-show="activeTab === 'settings'">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -3453,6 +3770,19 @@ code { color: var(--text-secondary); }
   color: var(--text-secondary);
   word-break: break-all;
   max-width: 100%;
+}
+
+/* Webhook delivery payload — the exact bytes that were signed and sent, so it is shown verbatim. */
+.delivery-payload {
+  background: rgb(28, 28, 28);
+  border: 1px solid #444;
+  border-radius: 5px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre;
 }
 
 /* Product cards */

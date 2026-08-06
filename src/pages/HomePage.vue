@@ -263,6 +263,19 @@ export default {
   margin: 0 0 14px;
 }
 
+.home-header-sub :deep(a) {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-decoration-color: rgba(148, 163, 184, 0.4);
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.home-header-sub :deep(a:hover) {
+  color: var(--text);
+  text-decoration-color: var(--text-secondary);
+}
+
 .home-header-note {
   font-size: 0.85rem;
   color: #6b7280;
