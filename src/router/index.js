@@ -154,6 +154,12 @@ const router = createRouter({
       component: () => import('@/pages/DiscordRedirectPage.vue'),
     },
     {
+      // Public asset page: the coin artwork with hotlinkable URLs and embed snippets.
+      path: '/coin',
+      name: 'CoinAsset',
+      component: () => import('@/pages/CoinAssetPage.vue'),
+    },
+    {
       path: '/contact',
       name: 'Contact',
       component: () => import('@/pages/ContactPage.vue'),
