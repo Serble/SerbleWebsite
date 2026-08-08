@@ -72,6 +72,7 @@ import { formatCoins, formatCoinsPlain, parseCoinsToRaw, isValidCoinAmount, isNo
 import { FEATURES } from '@/assets/js/featureFlags.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
+import { confirmDialog } from '@/assets/js/dialog.js';
 
 export default {
   components: { OfficialBadge, CoinAmount },
@@ -394,7 +395,12 @@ export default {
 
     async function actDisable() {
       if (!selected.value) return;
-      if (!confirm(`Disable ${selected.value.username}?`)) return;
+      if (!await confirmDialog({
+        title: 'Disable account',
+        message: `Disable ${selected.value.username}?`,
+        confirmLabel: 'Disable',
+        danger: true,
+      })) return;
       await withBusy(() => adminDisableUser(selected.value.id), 'User disabled');
       await refreshSelected();
     }
@@ -408,7 +414,12 @@ export default {
     async function actDelete() {
       if (!selected.value) return;
       const u = selected.value;
-      if (!confirm(`Permanently delete ${u.username} (${u.id})? This cannot be undone.`)) return;
+      if (!await confirmDialog({
+        title: 'Delete account',
+        message: `Permanently delete ${u.username} (${u.id})? This cannot be undone.`,
+        confirmLabel: 'Delete',
+        danger: true,
+      })) return;
       const r = await withBusy(() => adminDeleteUser(u.id), 'User deleted');
       if (r?.success) {
         results.value = results.value.filter(x => x.id !== u.id);
@@ -418,7 +429,12 @@ export default {
 
     async function actDisable2fa() {
       if (!selected.value) return;
-      if (!confirm(`Disable 2FA for ${selected.value.username}?`)) return;
+      if (!await confirmDialog({
+        title: 'Disable two-factor authentication',
+        message: `Disable 2FA for ${selected.value.username}?`,
+        confirmLabel: 'Disable',
+        danger: true,
+      })) return;
       await withBusy(() => adminDisable2fa(selected.value.id), '2FA disabled');
       await refreshSelected();
     }
@@ -429,7 +445,12 @@ export default {
         flash('Enter a new password', 'danger');
         return;
       }
-      if (!confirm(`Change password for ${selected.value.username}?`)) return;
+      if (!await confirmDialog({
+        title: 'Change password',
+        message: `Change password for ${selected.value.username}?`,
+        confirmLabel: 'Change password',
+        danger: false,
+      })) return;
       const r = await withBusy(() => adminChangePassword(selected.value.id, passwordInput.value), 'Password changed');
       if (r?.success) passwordInput.value = '';
     }
@@ -437,7 +458,12 @@ export default {
     async function actToggleAdmin() {
       if (!selected.value) return;
       const makeAdmin = (selected.value.permLevel ?? 0) < 2;
-      if (!confirm(`${makeAdmin ? 'Grant' : 'Revoke'} admin for ${selected.value.username}?`)) return;
+      if (!await confirmDialog({
+        title: 'Change admin access',
+        message: `${makeAdmin ? 'Grant' : 'Revoke'} admin for ${selected.value.username}?`,
+        confirmLabel: 'Continue',
+        danger: true,
+      })) return;
       await withBusy(() => adminSetAdmin(selected.value.id, makeAdmin),
         makeAdmin ? 'Admin granted' : 'Admin revoked');
       await refreshSelected();
@@ -445,7 +471,12 @@ export default {
 
     async function actLoginAs() {
       if (!selected.value) return;
-      if (!confirm(`Login as ${selected.value.username}? You will be logged out of your current session.`)) return;
+      if (!await confirmDialog({
+        title: 'Sign in as user',
+        message: `Login as ${selected.value.username}? You will be logged out of your current session.`,
+        confirmLabel: 'Continue',
+        danger: false,
+      })) return;
       const r = await withBusy(() => adminLoginAsUser(selected.value.id), 'Switching user…');
       if (r?.success && r.data?.token) {
         setLocalStorage('access_token', r.data.token);
@@ -455,7 +486,12 @@ export default {
 
     async function actDeletePasskey(name) {
       if (!selected.value) return;
-      if (!confirm(`Delete passkey "${name}"?`)) return;
+      if (!await confirmDialog({
+        title: 'Delete passkey',
+        message: `Delete passkey "${name}"?`,
+        confirmLabel: 'Delete',
+        danger: true,
+      })) return;
       const r = await withBusy(() => adminDeletePasskey(selected.value.id, name), 'Passkey deleted');
       if (r?.success) loadPasskeys(selected.value.id);
     }
@@ -649,7 +685,12 @@ export default {
     async function actDeleteApp() {
       if (!selectedApp.value) return;
       const a = selectedApp.value;
-      if (!confirm(`Permanently delete app "${a.name}" (${a.id})?`)) return;
+      if (!await confirmDialog({
+        title: 'Delete application',
+        message: `Permanently delete app "${a.name}" (${a.id})?`,
+        confirmLabel: 'Delete',
+        danger: true,
+      })) return;
       const r = await withBusy(() => adminDeleteApp(a.id), 'App deleted');
       if (r?.success) {
         appResults.value = appResults.value.filter(x => x.id !== a.id);
@@ -660,7 +701,12 @@ export default {
 
     async function actCycleSecret() {
       if (!selectedApp.value) return;
-      if (!confirm(`Cycle client secret for "${selectedApp.value.name}"? The old secret will stop working.`)) return;
+      if (!await confirmDialog({
+        title: 'Cycle client secret',
+        message: `Cycle client secret for "${selectedApp.value.name}"? The old secret will stop working.`,
+        confirmLabel: 'Cycle secret',
+        danger: true,
+      })) return;
       await withBusy(() => adminCycleAppSecret(selectedApp.value.id), 'Secret cycled');
       showSecret.value = true;
       await refreshSelectedApp();
@@ -844,7 +890,12 @@ export default {
     }
 
     async function deleteProduct(id, name) {
-      if (!confirm(`Permanently delete product "${name}" (${id})?`)) return;
+      if (!await confirmDialog({
+        title: 'Delete product',
+        message: `Permanently delete product "${name}" (${id})?`,
+        confirmLabel: 'Delete',
+        danger: true,
+      })) return;
       const r = await withBusy(() => adminDeleteProduct(id), 'Product deleted');
       if (r?.success) {
         if (editingProduct.value === id) closeProductPanel();
@@ -1169,7 +1220,12 @@ export default {
     }
 
     async function deleteService(id, name) {
-      if (!confirm(`Permanently delete service "${name}" (${id})?`)) return;
+      if (!await confirmDialog({
+        title: 'Delete service',
+        message: `Permanently delete service "${name}" (${id})?`,
+        confirmLabel: 'Delete',
+        danger: true,
+      })) return;
       const r = await withBusy(() => adminDeleteService(id), 'Service deleted');
       if (r?.success) {
         if (editingService.value === id) closeServicePanel();
@@ -1261,7 +1317,12 @@ export default {
     }
 
     async function deleteGroup(id, name) {
-      if (!confirm(`Permanently delete group "${name}" (${id})?`)) return;
+      if (!await confirmDialog({
+        title: 'Delete group',
+        message: `Permanently delete group "${name}" (${id})?`,
+        confirmLabel: 'Delete',
+        danger: true,
+      })) return;
       const r = await withBusy(() => adminDeleteGroup(id), 'Group deleted');
       if (r?.success) {
         if (editingGroupId.value === id) closeGroupPanel();
@@ -1310,7 +1371,12 @@ export default {
 
     async function removeGroupMember(userId) {
       if (!editingGroupId.value) return;
-      if (!confirm(`Remove user ${userId} from this group?`)) return;
+      if (!await confirmDialog({
+        title: 'Remove member',
+        message: `Remove user ${userId} from this group?`,
+        confirmLabel: 'Remove',
+        danger: true,
+      })) return;
       const r = await withBusy(() => adminRemoveGroupMember(editingGroupId.value, userId), 'Member removed');
       if (r?.success) loadGroupMembers(editingGroupId.value);
     }
@@ -1730,13 +1796,16 @@ export default {
 
 <template>
   <div class="admin-page">
-    <div v-if="!isAdmin" class="forbidden text-center py-5">
-      <h3>Forbidden</h3>
-      <p class="text-muted">You don't have permission to access the admin dashboard.</p>
+    <!-- The only part of this page a non-staff user ever sees, so it is the only
+         part that is translated. Everything under v-else is staff-facing
+         tooling and is deliberately left in English. -->
+    <div v-if="!isAdmin" class="forbidden text-center py-8">
+      <h3>{{ $t('forbidden') }}</h3>
+      <p class="text-muted">{{ $t('admin-no-permission') }}</p>
     </div>
 
     <template v-else>
-      <div class="d-flex align-items-center justify-content-between mb-4">
+      <div class="flex items-center justify-between mb-4">
         <div>
           <h3 class="mb-0">Admin Dashboard</h3>
           <p class="text-muted mb-0" style="font-size:0.9rem;">User & OAuth app management</p>
@@ -1744,37 +1813,37 @@ export default {
       </div>
 
       <!-- Tabs -->
-      <ul class="nav admin-tabs mb-4">
-        <li class="nav-item">
+      <ul class="admin-tabs mb-4">
+        <li>
           <button class="nav-link" :class="{ active: activeTab === 'users' }" @click="activeTab = 'users'">Users</button>
         </li>
-        <li class="nav-item">
+        <li>
           <button class="nav-link" :class="{ active: activeTab === 'apps' }" @click="activeTab = 'apps'">OAuth Apps</button>
         </li>
-        <li class="nav-item">
+        <li>
           <button class="nav-link" :class="{ active: activeTab === 'products' }" @click="activeTab = 'products'">Products</button>
         </li>
-        <li class="nav-item">
+        <li>
           <button class="nav-link" :class="{ active: activeTab === 'groups' }" @click="activeTab = 'groups'">Groups</button>
         </li>
-        <li class="nav-item">
+        <li>
           <button class="nav-link" :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">Services</button>
         </li>
-        <li v-if="economyEnabled" class="nav-item">
+        <li v-if="economyEnabled">
           <button class="nav-link" :class="{ active: activeTab === 'economy' }" @click="activeTab = 'economy'; if (!txLoaded) loadTransactions(); if (!economy) loadEconomy(); if (!taxPreview) loadTaxPreview()">Economy</button>
         </li>
-        <li class="nav-item">
+        <li>
           <button class="nav-link" :class="{ active: activeTab === 'webhooks' }" @click="activeTab = 'webhooks'; if (!whLoaded) loadWebhooks(); if (!delLoaded) loadWebhookDeliveries(0)">Webhooks</button>
         </li>
-        <li class="nav-item">
+        <li>
           <button class="nav-link" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'; if (!configLoaded) loadConfig()">Settings</button>
         </li>
       </ul>
 
       <!-- USERS TAB -->
       <div v-show="activeTab === 'users'" class="users-tab">
-      <div class="d-flex justify-content-end mb-2">
-        <button class="btn btn-sm btn-outline-secondary" @click="loadStats">Refresh stats</button>
+      <div class="flex justify-end mb-2">
+        <button class="btn btn-sm btn-ghost" @click="loadStats">Refresh stats</button>
       </div>
 
       <div class="row g-3 mb-4">
@@ -1803,17 +1872,17 @@ export default {
 
       <div class="search-card mb-4 user-search-card">
         <h5 class="mb-3">Find user</h5>
-        <form class="row g-2 align-items-end" @submit.prevent="runSearch">
+        <form class="row g-2 items-end" @submit.prevent="runSearch">
           <div class="col-md-7">
-            <label class="form-label mb-1" style="font-size:0.8rem;">Query (username, email, or ID)</label>
-            <input v-model="query" type="text" class="form-control dark-input" placeholder="Leave empty to list recent users" />
+            <label class="field-label-plain mb-1" style="font-size:0.8rem;">Query (username, email, or ID)</label>
+            <input v-model="query" type="text" class="input" placeholder="Leave empty to list recent users" />
           </div>
           <div class="col-md-2">
-            <label class="form-label mb-1" style="font-size:0.8rem;">Limit</label>
-            <input v-model.number="limit" type="number" min="1" max="200" class="form-control dark-input" />
+            <label class="field-label-plain mb-1" style="font-size:0.8rem;">Limit</label>
+            <input v-model.number="limit" type="number" min="1" max="200" class="input" />
           </div>
           <div class="col-md-3">
-            <button type="submit" class="btn btn-primary w-100" :disabled="searching">
+            <button type="submit" class="btn btn-primary w-full" :disabled="searching">
               {{ searching ? 'Searching…' : 'Search' }}
             </button>
           </div>
@@ -1823,19 +1892,19 @@ export default {
       </div>
 
       <div class="search-card mb-4 user-results-card">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <h5 class="mb-0">Users</h5>
-          <div class="d-flex align-items-center gap-2">
-            <span class="text-muted d-none d-md-inline" style="font-size:0.8rem;">Drag header edges to resize</span>
+          <div class="flex items-center gap-2">
+            <span class="text-muted hidden md:inline" style="font-size:0.8rem;">Drag header edges to resize</span>
             <div class="user-column-menu-wrap">
-              <button class="btn btn-sm btn-outline-secondary" type="button" @click="userTableSettingsOpen = !userTableSettingsOpen">
+              <button class="btn btn-sm btn-ghost" type="button" @click="userTableSettingsOpen = !userTableSettingsOpen">
                 Columns
               </button>
               <div v-if="userTableSettingsOpen" class="user-column-menu">
                 <div class="user-column-menu-title">Show columns</div>
                 <label v-for="column in availableUserTableColumns" :key="column.key" class="user-column-menu-item">
                   <input
-                    class="form-check-input mt-0"
+                    class="mt-0"
                     type="checkbox"
                     :checked="column.visible"
                     :disabled="column.visible && visibleUserTableColumns.length <= 1"
@@ -1853,7 +1922,7 @@ export default {
         </div>
 
         <div v-if="results.length" class="user-table-container mt-3">
-          <table class="table table-hover align-middle mb-0 user-results-table">
+          <table class="table table-hover mb-0 user-results-table">
             <colgroup>
               <col v-if="userTableColumnVisible('username')" :style="{ width: userTableColumnWidthPercent('username') }" />
               <col v-if="userTableColumnVisible('email')" :style="{ width: userTableColumnWidthPercent('email') }" />
@@ -1893,22 +1962,22 @@ export default {
                   <td v-if="userTableColumnVisible('username')" class="user-table-cell">{{ u.username }}</td>
                   <td v-if="userTableColumnVisible('email')" class="user-table-cell">
                     {{ u.email || '—' }}
-                    <span v-if="u.email && u.verifiedEmail" class="badge bg-success ms-1">✓</span>
-                    <span v-else-if="u.email" class="badge bg-warning text-dark ms-1">unverified</span>
+                    <span v-if="u.email && u.verifiedEmail" class="badge badge-success ms-1">✓</span>
+                    <span v-else-if="u.email" class="badge badge-warning ms-1">unverified</span>
                   </td>
                   <td v-if="userTableColumnVisible('id')" class="user-table-cell">
                     <code style="font-size:0.78rem;">{{ u.id }}</code>
                   </td>
                   <td v-if="userTableColumnVisible('role')" class="user-table-cell">
-                    <span v-if="u.permLevel === 0" class="badge bg-danger">Disabled</span>
-                    <span v-else-if="u.permLevel >= 2" class="badge bg-primary">Admin</span>
+                    <span v-if="u.permLevel === 0" class="badge badge-danger">Disabled</span>
+                    <span v-else-if="u.permLevel >= 2" class="badge badge-accent">Admin</span>
                     <span v-else class="text-muted-light">User</span>
                   </td>
                   <td v-if="userTableColumnVisible('coins')" class="user-table-cell"><CoinAmount :value="u.coins" /></td>
                   <td v-if="userTableColumnVisible('dateCreated')" class="user-table-cell">{{ formatDate(u.dateCreated) }}</td>
                   <td v-if="userTableColumnVisible('lastLogin')" class="user-table-cell">{{ formatDate(u.lastLogin) }}</td>
                   <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary" :disabled="selectedLoadingId === u.id" @click.stop="selectUser(u.id)">
+                    <button class="btn btn-sm btn-ghost" :disabled="selectedLoadingId === u.id" @click.stop="selectUser(u.id)">
                       {{ selectedRowId === u.id && selected ? 'Refresh' : selectedLoadingId === u.id ? 'Loading…' : 'Manage' }}
                     </button>
                   </td>
@@ -1926,12 +1995,12 @@ export default {
                 <tr v-else-if="selectedRowId === u.id && selected" class="inline-user-row">
                   <td :colspan="userTableColspan">
                     <div class="user-panel inline-user-panel">
-                      <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+                      <div class="flex items-start justify-between mb-3 gap-2">
                         <div>
                           <h4 class="mb-0">{{ selected.username }}</h4>
                           <div class="text-muted" style="font-size:0.85rem;"><code>{{ selected.id }}</code></div>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary" @click="closeUser">Close</button>
+                        <button class="btn btn-sm btn-ghost" @click="closeUser">Close</button>
                       </div>
 
                       <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
@@ -1950,72 +2019,72 @@ export default {
 
                       <template v-if="economyEnabled">
                         <h6 class="section-heading">Coins</h6>
-                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                          <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
+                        <div class="flex flex-wrap gap-2 items-center mb-2">
+                          <span class="badge badge-warning" style="font-size:0.85rem;">
                             <CoinAmount :value="userCoins ?? selected.coins" /> coins
                           </span>
-                          <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserCoins">Refresh</button>
+                          <button class="btn btn-sm btn-ghost" :disabled="actionBusy" @click="loadUserCoins">Refresh</button>
                         </div>
                         <div class="row g-2 mb-4">
                           <div class="col-md-6">
-                            <input v-model="userCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
+                            <input v-model="userCoinsAmount" type="text" inputmode="decimal" class="input" placeholder="Amount" />
                           </div>
-                          <div class="col-md-6 d-flex gap-2">
-                            <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustUserCoins('add')">Add</button>
-                            <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustUserCoins('remove')">Remove</button>
-                            <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustUserCoins('set')">Set</button>
+                          <div class="col-md-6 flex gap-2">
+                            <button class="btn btn-sm btn-success flex-grow" :disabled="actionBusy" @click="adjustUserCoins('add')">Add</button>
+                            <button class="btn btn-sm btn-warning flex-grow" :disabled="actionBusy" @click="adjustUserCoins('remove')">Remove</button>
+                            <button class="btn btn-sm btn-ghost flex-grow" :disabled="actionBusy" @click="adjustUserCoins('set')">Set</button>
                           </div>
                         </div>
                       </template>
 
                       <h6 class="section-heading">Actions</h6>
-                      <div class="d-flex flex-wrap gap-2 mb-4">
+                      <div class="flex flex-wrap gap-2 mb-4">
                         <button class="btn btn-sm btn-warning" :disabled="actionBusy" @click="actDisable">Disable account</button>
                         <button class="btn btn-sm btn-success" :disabled="actionBusy" @click="actEnable">Enable account</button>
-                        <button class="btn btn-sm btn-outline-warning" :disabled="actionBusy || !selected.totpEnabled" @click="actDisable2fa">Disable 2FA</button>
-                        <button class="btn btn-sm btn-outline-primary" :disabled="actionBusy" @click="actToggleAdmin">
+                        <button class="btn btn-sm btn-ghost" :disabled="actionBusy || !selected.totpEnabled" @click="actDisable2fa">Disable 2FA</button>
+                        <button class="btn btn-sm btn-ghost" :disabled="actionBusy" @click="actToggleAdmin">
                           {{ (selected.permLevel ?? 0) >= 2 ? 'Revoke admin' : 'Grant admin' }}
                         </button>
-                        <button class="btn btn-sm btn-outline-info" :disabled="actionBusy" @click="actLoginAs">Login as user</button>
+                        <button class="btn btn-sm btn-ghost" :disabled="actionBusy" @click="actLoginAs">Login as user</button>
                         <button class="btn btn-sm btn-danger ms-auto" :disabled="actionBusy" @click="actDelete">Delete user</button>
                       </div>
 
                       <h6 class="section-heading">Change password</h6>
                       <form class="row g-2 mb-4" @submit.prevent="actChangePassword">
                         <div class="col-md-9">
-                          <input v-model="passwordInput" type="text" class="form-control dark-input" placeholder="New password" autocomplete="off" />
+                          <input v-model="passwordInput" type="text" class="input" placeholder="New password" autocomplete="off" />
                         </div>
                         <div class="col-md-3">
-                          <button type="submit" class="btn btn-outline-warning w-100" :disabled="actionBusy">Set password</button>
+                          <button type="submit" class="btn btn-ghost w-full" :disabled="actionBusy">Set password</button>
                         </div>
                       </form>
 
                       <h6 class="section-heading">Passkeys</h6>
                       <div v-if="passkeysLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
                       <div v-else-if="!passkeys || passkeys.length === 0" class="text-muted mb-3" style="font-size:0.9rem;">No passkeys.</div>
-                      <ul v-else class="list-group list-group-flush mb-3">
-                        <li v-for="pk in passkeys" :key="pk.name ?? pk" class="list-group-item d-flex justify-content-between align-items-center px-0">
+                      <ul v-else class="list mb-3">
+                        <li v-for="pk in passkeys" :key="pk.name ?? pk" class="list-item flex justify-between items-center px-0">
                           <span>{{ pk.name ?? pk }}</span>
-                          <button class="btn btn-sm btn-outline-danger" :disabled="actionBusy" @click="actDeletePasskey(pk.name ?? pk)">Delete</button>
+                          <button class="btn btn-sm btn-danger-ghost" :disabled="actionBusy" @click="actDeletePasskey(pk.name ?? pk)">Delete</button>
                         </li>
                       </ul>
 
-                      <h6 class="section-heading d-flex justify-content-between align-items-center">
+                      <h6 class="section-heading flex justify-between items-center">
                         <span>OAuth Apps</span>
-                        <button class="btn btn-sm btn-outline-secondary" :disabled="actionBusy" @click="loadUserApps">
+                        <button class="btn btn-sm btn-ghost" :disabled="actionBusy" @click="loadUserApps">
                           {{ userApps === null ? 'Load apps' : 'Refresh' }}
                         </button>
                       </h6>
                       <div v-if="userAppsLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
                       <div v-else-if="userApps === null" class="text-muted" style="font-size:0.9rem;">Click "Load apps" to view this user's OAuth applications.</div>
                       <div v-else-if="userApps.length === 0" class="text-muted" style="font-size:0.9rem;">This user has no apps.</div>
-                      <ul v-else class="list-group list-group-flush mb-3">
-                        <li v-for="a in userApps" :key="a.id" class="list-group-item d-flex justify-content-between align-items-center px-0">
+                      <ul v-else class="list mb-3">
+                        <li v-for="a in userApps" :key="a.id" class="list-item flex justify-between items-center px-0">
                           <div>
                             <div>{{ a.name }}</div>
                             <code style="font-size:0.75rem;">{{ a.id }}</code>
                           </div>
-                          <button class="btn btn-sm btn-outline-primary" @click="viewAppFromUser(a.id)">Manage</button>
+                          <button class="btn btn-sm btn-ghost" @click="viewAppFromUser(a.id)">Manage</button>
                         </li>
                       </ul>
                     </div>
@@ -2033,8 +2102,8 @@ export default {
 
       <!-- APPS TAB -->
       <div v-show="activeTab === 'apps'">
-        <div class="d-flex justify-content-end mb-2">
-          <button class="btn btn-sm btn-outline-secondary" @click="loadAppStats">Refresh stats</button>
+        <div class="flex justify-end mb-2">
+          <button class="btn btn-sm btn-ghost" @click="loadAppStats">Refresh stats</button>
         </div>
 
         <div class="row g-3 mb-4">
@@ -2051,17 +2120,17 @@ export default {
 
         <div class="search-card mb-4">
           <h5 class="mb-3">Find app</h5>
-          <form class="row g-2 align-items-end" @submit.prevent="runAppSearch">
+          <form class="row g-2 items-end" @submit.prevent="runAppSearch">
             <div class="col-md-7">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Query (name or ID)</label>
-              <input v-model="appQuery" type="text" class="form-control dark-input" placeholder="Leave empty to list apps" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Query (name or ID)</label>
+              <input v-model="appQuery" type="text" class="input" placeholder="Leave empty to list apps" />
             </div>
             <div class="col-md-2">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Limit</label>
-              <input v-model.number="appLimit" type="number" min="1" max="200" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Limit</label>
+              <input v-model.number="appLimit" type="number" min="1" max="200" class="input" />
             </div>
             <div class="col-md-3">
-              <button type="submit" class="btn btn-primary w-100" :disabled="appSearching">
+              <button type="submit" class="btn btn-primary w-full" :disabled="appSearching">
                 {{ appSearching ? 'Searching…' : 'Search' }}
               </button>
             </div>
@@ -2069,8 +2138,8 @@ export default {
 
           <div v-if="appSearchError" class="alert alert-danger py-2 mt-3 mb-0">Search failed: {{ appSearchError }}</div>
 
-          <div v-if="appResults.length" class="table-responsive mt-3">
-            <table class="table table-hover align-middle mb-0">
+          <div v-if="appResults.length" class="table-wrap mt-3">
+            <table class="table table-hover mb-0">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -2093,7 +2162,7 @@ export default {
                   <td><code style="font-size:0.78rem;">{{ a.ownerId }}</code></td>
                   <td v-if="economyEnabled"><CoinAmount :value="a.coins" /></td>
                   <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary" @click="selectApp(a.id)">Manage</button>
+                    <button class="btn btn-sm btn-ghost" @click="selectApp(a.id)">Manage</button>
                   </td>
                 </tr>
               </tbody>
@@ -2108,7 +2177,7 @@ export default {
         <div v-if="selectedAppError" class="alert alert-danger">Failed to load app: {{ selectedAppError }}</div>
 
         <div v-if="selectedApp" class="user-panel">
-          <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+          <div class="flex items-start justify-between mb-3 gap-2">
             <div>
               <h4 class="mb-0">
                 {{ selectedApp.name }}
@@ -2116,7 +2185,7 @@ export default {
               </h4>
               <div class="text-muted" style="font-size:0.85rem;"><code>{{ selectedApp.id }}</code></div>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" @click="closeApp">Close</button>
+            <button class="btn btn-sm btn-ghost" @click="closeApp">Close</button>
           </div>
 
           <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
@@ -2124,59 +2193,58 @@ export default {
           <h6 class="section-heading">Details</h6>
           <form class="row g-3 mb-4" @submit.prevent="actSaveApp">
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Name</label>
-              <input v-model="appEdits.name" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Name</label>
+              <input v-model="appEdits.name" type="text" class="input" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Owner ID</label>
-              <input v-model="appEdits.ownerId" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Owner ID</label>
+              <input v-model="appEdits.ownerId" type="text" class="input" />
             </div>
             <div class="col-12">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Description</label>
-              <input v-model="appEdits.description" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Description</label>
+              <input v-model="appEdits.description" type="text" class="input" />
             </div>
             <div class="col-12">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Redirect URIs (semicolon-separated)</label>
-              <input v-model="appEdits.redirectUri" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Redirect URIs (semicolon-separated)</label>
+              <input v-model="appEdits.redirectUri" type="text" class="input" />
             </div>
-            <div class="col-12 d-flex gap-2">
+            <div class="col-12 flex gap-2">
               <button type="submit" class="btn btn-primary" :disabled="actionBusy">Save changes</button>
             </div>
           </form>
 
           <template v-if="economyEnabled">
             <h6 class="section-heading">Coins</h6>
-            <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
-              <span class="badge bg-warning text-dark" style="font-size:0.85rem;">
+            <div class="flex flex-wrap gap-2 items-center mb-1">
+              <span class="badge badge-warning" style="font-size:0.85rem;">
                 <CoinAmount :value="appCoins ?? selectedApp.coins" /> coins
               </span>
               <span class="text-muted-light" style="font-size:0.8rem;">Created: {{ formatDate(selectedApp.dateCreated) }}</span>
             </div>
             <div class="row g-2 mb-4">
               <div class="col-md-6">
-                <input v-model="appCoinsAmount" type="text" inputmode="decimal" class="form-control dark-input" placeholder="Amount" />
+                <input v-model="appCoinsAmount" type="text" inputmode="decimal" class="input" placeholder="Amount" />
               </div>
-              <div class="col-md-6 d-flex gap-2">
-                <button class="btn btn-sm btn-success flex-fill" :disabled="actionBusy" @click="adjustAppCoins('add')">Add</button>
-                <button class="btn btn-sm btn-warning flex-fill" :disabled="actionBusy" @click="adjustAppCoins('remove')">Remove</button>
-                <button class="btn btn-sm btn-outline-primary flex-fill" :disabled="actionBusy" @click="adjustAppCoins('set')">Set</button>
+              <div class="col-md-6 flex gap-2">
+                <button class="btn btn-sm btn-success flex-grow" :disabled="actionBusy" @click="adjustAppCoins('add')">Add</button>
+                <button class="btn btn-sm btn-warning flex-grow" :disabled="actionBusy" @click="adjustAppCoins('remove')">Remove</button>
+                <button class="btn btn-sm btn-ghost flex-grow" :disabled="actionBusy" @click="adjustAppCoins('set')">Set</button>
               </div>
             </div>
           </template>
 
           <h6 class="section-heading">Official app</h6>
-          <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
-            <div class="form-check form-switch m-0">
+          <div class="flex flex-wrap gap-2 items-center mb-4">
+            <div class="check m-0">
               <input
                 id="officialToggle"
-                class="form-check-input"
                 type="checkbox"
                 role="switch"
                 :checked="selectedApp.isOfficial"
                 :disabled="actionBusy"
                 @change="actToggleOfficial"
               />
-              <label class="form-check-label" for="officialToggle" style="font-size:0.9rem;">
+              <label for="officialToggle" style="font-size:0.9rem;">
                 Mark this as an official (first-party) app
               </label>
             </div>
@@ -2186,9 +2254,9 @@ export default {
           </div>
 
           <div v-if="economyEnabled && selectedApp.isOfficial" class="mb-4">
-            <label class="form-label mb-1" style="font-size:0.8rem;">Target balance for tax payouts</label>
-            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-              <span class="badge bg-info text-dark" style="font-size:0.85rem;">
+            <label class="field-label-plain mb-1" style="font-size:0.8rem;">Target balance for tax payouts</label>
+            <div class="flex flex-wrap gap-2 items-center mb-2">
+              <span class="badge badge-accent" style="font-size:0.85rem;">
                 <template v-if="appTaxTargetLoading">Loading…</template>
                 <template v-else><CoinAmount :value="appTaxTarget" /> coins</template>
               </span>
@@ -2200,22 +2268,22 @@ export default {
                   v-model="appTaxTargetDraft"
                   type="text"
                   inputmode="decimal"
-                  class="form-control dark-input"
+                  class="input"
                   placeholder="Target balance"
                   :disabled="appTaxTargetLoading || actionBusy"
                   @keyup.enter="saveAppTaxTarget"
                 />
               </div>
-              <div class="col-md-6 d-flex gap-2">
+              <div class="col-md-6 flex gap-2">
                 <button
-                  class="btn btn-sm btn-outline-primary"
+                  class="btn btn-sm btn-ghost"
                   :disabled="appTaxTargetLoading || appTaxTargetBusy || actionBusy"
                   @click="saveAppTaxTarget"
                 >
                   Save target
                 </button>
                 <button
-                  class="btn btn-sm btn-outline-secondary"
+                  class="btn btn-sm btn-ghost"
                   :disabled="appTaxTargetLoading || appTaxTargetBusy || actionBusy"
                   @click="loadAppTaxTarget()"
                 >
@@ -2226,26 +2294,26 @@ export default {
           </div>
 
           <h6 class="section-heading">Client secret</h6>
-          <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+          <div class="flex flex-wrap gap-2 items-center mb-4">
             <code v-if="showSecret" class="secret-box">{{ selectedApp.clientSecret }}</code>
             <code v-else class="secret-box">••••••••••••••••</code>
-            <button class="btn btn-sm btn-outline-secondary" @click="showSecret = !showSecret">
+            <button class="btn btn-sm btn-ghost" @click="showSecret = !showSecret">
               {{ showSecret ? 'Hide' : 'Show' }}
             </button>
-            <button class="btn btn-sm btn-outline-secondary" :disabled="!selectedApp.clientSecret" @click="copySecret">Copy</button>
+            <button class="btn btn-sm btn-ghost" :disabled="!selectedApp.clientSecret" @click="copySecret">Copy</button>
             <button class="btn btn-sm btn-warning ms-auto" :disabled="actionBusy" @click="actCycleSecret">Cycle secret</button>
           </div>
 
           <h6 class="section-heading">Webhooks</h6>
-          <div class="d-flex align-items-center gap-2 mb-4">
-            <button class="btn btn-sm btn-outline-secondary" @click="viewWebhooksForApp(selectedApp.id)">
+          <div class="flex items-center gap-2 mb-4">
+            <button class="btn btn-sm btn-ghost" @click="viewWebhooksForApp(selectedApp.id)">
               View subscriptions &amp; deliveries
             </button>
             <span class="text-muted" style="font-size:0.8rem;">Opens the Webhooks tab filtered to this app.</span>
           </div>
 
           <h6 class="section-heading">Danger zone</h6>
-          <div class="d-flex">
+          <div class="flex">
             <button class="btn btn-sm btn-danger" :disabled="actionBusy" @click="actDeleteApp">Delete app</button>
           </div>
 
@@ -2256,26 +2324,26 @@ export default {
           <div v-else-if="appOidcError" class="alert alert-danger py-2">Failed to load OIDC config: {{ appOidcError }}</div>
           <form v-else class="row g-3 mb-4" @submit.prevent="actSaveAppOidcClient">
             <div class="col-12">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label m-0" style="font-size:0.8rem;">Additional Redirect URIs (OIDC callbacks, exact match)</label>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addAdditionalRedirect">+ Add</button>
+              <div class="flex justify-between items-center mb-2">
+                <label class="field-label-plain m-0" style="font-size:0.8rem;">Additional Redirect URIs (OIDC callbacks, exact match)</label>
+                <button type="button" class="btn btn-sm btn-ghost" @click="addAdditionalRedirect">+ Add</button>
               </div>
               <div v-if="appOidcClientForm.additionalRedirectUris.length === 0" class="text-muted-light" style="font-size:0.85rem;">
                 No additional redirect URIs.
               </div>
-              <div v-for="(_, i) in appOidcClientForm.additionalRedirectUris" :key="'ari-'+i" class="d-flex gap-2 mb-2">
-                <input v-model="appOidcClientForm.additionalRedirectUris[i]" type="text" class="form-control dark-input" placeholder="https://app.example.com/callback" />
-                <button type="button" class="btn btn-sm btn-outline-danger" @click="removeAdditionalRedirect(i)">Remove</button>
+              <div v-for="(_, i) in appOidcClientForm.additionalRedirectUris" :key="'ari-'+i" class="flex gap-2 mb-2">
+                <input v-model="appOidcClientForm.additionalRedirectUris[i]" type="text" class="input" placeholder="https://app.example.com/callback" />
+                <button type="button" class="btn btn-sm btn-danger-ghost" @click="removeAdditionalRedirect(i)">Remove</button>
               </div>
             </div>
 
-            <div class="col-md-6 d-flex align-items-center gap-2">
-              <input id="oidc-public" v-model="appOidcClientForm.isPublicClient" type="checkbox" class="form-check-input m-0" />
-              <label for="oidc-public" class="form-label m-0">Public client (no client secret, PKCE-only)</label>
+            <div class="col-md-6 flex items-center gap-2">
+              <input id="oidc-public" v-model="appOidcClientForm.isPublicClient" type="checkbox" class="m-0" />
+              <label for="oidc-public" class="field-label-plain m-0">Public client (no client secret, PKCE-only)</label>
             </div>
-            <div class="col-md-6 d-flex align-items-center gap-2">
-              <input id="oidc-pkce" v-model="appOidcClientForm.requirePkce" type="checkbox" class="form-check-input m-0" />
-              <label for="oidc-pkce" class="form-label m-0">Require PKCE</label>
+            <div class="col-md-6 flex items-center gap-2">
+              <input id="oidc-pkce" v-model="appOidcClientForm.requirePkce" type="checkbox" class="m-0" />
+              <label for="oidc-pkce" class="field-label-plain m-0">Require PKCE</label>
             </div>
 
             <div class="col-12">
@@ -2291,16 +2359,16 @@ export default {
           <template v-else>
             <form class="row g-3 mb-4" @submit.prevent="actSaveAccessPolicy">
               <div class="col-md-8">
-                <label class="form-label mb-1" style="font-size:0.8rem;">Who may sign in to this app?</label>
-                <select v-model.number="appAccessForm.accessPolicy" class="form-control dark-input">
+                <label class="field-label-plain mb-1" style="font-size:0.8rem;">Who may sign in to this app?</label>
+                <select v-model.number="appAccessForm.accessPolicy" class="select">
                   <option v-for="opt in accessPolicyOptions" :key="opt.value" :value="opt.value">
                     {{ opt.label }}
                   </option>
                 </select>
               </div>
               <div class="col-md-4" v-if="Number(appAccessForm.accessPolicy) === 3">
-                <label class="form-label mb-1" style="font-size:0.8rem;">Required permission level</label>
-                <input v-model.number="appAccessForm.requiredPermLevel" type="number" min="0" class="form-control dark-input" placeholder="e.g. 2 for admin" />
+                <label class="field-label-plain mb-1" style="font-size:0.8rem;">Required permission level</label>
+                <input v-model.number="appAccessForm.requiredPermLevel" type="number" min="0" class="input" placeholder="e.g. 2 for admin" />
               </div>
               <div class="col-12">
                 <button type="submit" class="btn btn-primary" :disabled="actionBusy">Save access policy</button>
@@ -2309,7 +2377,7 @@ export default {
 
             <!-- Allowed/Denied groups -->
             <div class="mb-4">
-              <label class="form-label mb-2" style="font-size:0.8rem;">
+              <label class="field-label-plain mb-2" style="font-size:0.8rem;">
                 Group access
                 <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
                   — denied always overrides allowed. Allowed list only used when policy is "Require membership in an allowed group".
@@ -2318,7 +2386,7 @@ export default {
               <div v-if="!groups || groups.length === 0" class="text-muted-light" style="font-size:0.85rem;">
                 No groups defined. Create some in the Groups tab.
               </div>
-              <table v-else class="table align-middle mb-2">
+              <table v-else class="table mb-2">
                 <thead>
                   <tr>
                     <th>Group</th>
@@ -2335,7 +2403,7 @@ export default {
                     <td class="text-center">
                       <input
                         type="checkbox"
-                        class="form-check-input m-0"
+                        class="m-0"
                         :checked="appAccessForm.allowedGroupIds.includes(g.id)"
                         @change="toggleAllowedGroup(g.id)"
                       />
@@ -2343,7 +2411,7 @@ export default {
                     <td class="text-center">
                       <input
                         type="checkbox"
-                        class="form-check-input m-0"
+                        class="m-0"
                         :checked="appAccessForm.deniedGroupIds.includes(g.id)"
                         @change="toggleDeniedGroup(g.id)"
                       />
@@ -2356,30 +2424,30 @@ export default {
 
             <!-- Claim mappings -->
             <div class="mb-2">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label m-0" style="font-size:0.8rem;">
+              <div class="flex justify-between items-center mb-2">
+                <label class="field-label-plain m-0" style="font-size:0.8rem;">
                   Group claim mappings
                   <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
                     — what value the app sees in the <code>groups</code> claim for users in each Serble group.
                   </span>
                 </label>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addClaimMapping">+ Add</button>
+                <button type="button" class="btn btn-sm btn-ghost" @click="addClaimMapping">+ Add</button>
               </div>
               <div v-if="claimMappingsForm.length === 0" class="text-muted-light mb-2" style="font-size:0.85rem;">
                 No mappings. Apps will see no <code>groups</code> claim values for this user.
               </div>
               <div v-for="(row, i) in claimMappingsForm" :key="'cm-'+i" class="row g-2 mb-2">
                 <div class="col-md-6">
-                  <select v-model="row.groupId" class="form-control dark-input">
+                  <select v-model="row.groupId" class="select">
                     <option value="" disabled>Choose a group…</option>
                     <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }} ({{ g.id }})</option>
                   </select>
                 </div>
                 <div class="col-md-5">
-                  <input v-model="row.value" type="text" class="form-control dark-input" placeholder="claim value, e.g. admins" />
+                  <input v-model="row.value" type="text" class="input" placeholder="claim value, e.g. admins" />
                 </div>
-                <div class="col-md-1 d-flex">
-                  <button type="button" class="btn btn-sm btn-outline-danger w-100" @click="removeClaimMapping(i)">×</button>
+                <div class="col-md-1 flex">
+                  <button type="button" class="btn btn-sm btn-danger-ghost w-full" @click="removeClaimMapping(i)">×</button>
                 </div>
               </div>
               <button class="btn btn-primary mt-2" :disabled="actionBusy" @click="actSaveClaimMappings">Save claim mappings</button>
@@ -2390,12 +2458,12 @@ export default {
 
       <!-- PRODUCTS TAB -->
       <div v-show="activeTab === 'products'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <div class="text-muted-light" style="font-size:0.9rem;">
             {{ products ? `${products.length} products` : 'Loading…' }}
           </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-secondary" :disabled="productsLoading" @click="loadProducts">Refresh</button>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-ghost" :disabled="productsLoading" @click="loadProducts">Refresh</button>
             <button class="btn btn-sm btn-success" @click="openNewProduct">+ New product</button>
           </div>
         </div>
@@ -2410,24 +2478,24 @@ export default {
         <div v-if="products && products.length" class="row g-3 mb-4">
           <div v-for="p in products" :key="p.id" class="col-md-6">
             <div class="product-card">
-              <div class="d-flex align-items-start justify-content-between gap-2">
-                <div class="flex-grow-1">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-grow">
                   <h5 class="mb-1">{{ p.name }}</h5>
                   <code style="font-size:0.78rem;">{{ p.id }}</code>
                   <p v-if="p.description" class="mt-2 mb-0 text-muted-light" style="font-size:0.85rem;">{{ p.description }}</p>
                 </div>
               </div>
-              <div class="mt-3 d-flex flex-wrap gap-2">
-                <span class="badge" :class="p.purchasable ? 'bg-success' : 'bg-secondary'">
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span class="badge" :class="p.purchasable ? 'badge-success' : 'badge-neutral'">
                   {{ p.purchasable ? 'Purchasable' : 'Hidden' }}
                 </span>
-                <span v-if="p.allowAnonymous" class="badge bg-info text-dark">Anonymous OK</span>
-                <span v-if="p.isSubscription" class="badge bg-primary">Subscription</span>
-                <span class="badge bg-secondary">{{ (p.priceIds?.length ?? 0) }} price(s)</span>
+                <span v-if="p.allowAnonymous" class="badge badge-accent">Anonymous OK</span>
+                <span v-if="p.isSubscription" class="badge badge-accent">Subscription</span>
+                <span class="badge badge-neutral">{{ (p.priceIds?.length ?? 0) }} price(s)</span>
               </div>
-              <div class="mt-3 d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary" @click="editProduct(p.id)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteProduct(p.id, p.name)">Delete</button>
+              <div class="mt-3 flex gap-2">
+                <button class="btn btn-sm btn-ghost" @click="editProduct(p.id)">Edit</button>
+                <button class="btn btn-sm btn-danger-ghost ms-auto" :disabled="actionBusy" @click="deleteProduct(p.id, p.name)">Delete</button>
               </div>
             </div>
           </div>
@@ -2435,97 +2503,97 @@ export default {
 
         <!-- Product editor -->
         <div v-if="productPanelOpen" class="user-panel">
-          <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+          <div class="flex items-start justify-between mb-3 gap-2">
             <div>
               <h4 class="mb-0">{{ editingProduct ? 'Edit product' : 'New product' }}</h4>
               <div v-if="editingProduct" class="text-muted" style="font-size:0.85rem;"><code>{{ editingProduct }}</code></div>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" @click="closeProductPanel">Close</button>
+            <button class="btn btn-sm btn-ghost" @click="closeProductPanel">Close</button>
           </div>
 
           <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
 
           <form class="row g-3" @submit.prevent="saveProduct">
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">ID *</label>
-              <input v-model="productForm.id" type="text" class="form-control dark-input" :disabled="!!editingProduct" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">ID *</label>
+              <input v-model="productForm.id" type="text" class="input" :disabled="!!editingProduct" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Name *</label>
-              <input v-model="productForm.name" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Name *</label>
+              <input v-model="productForm.name" type="text" class="input" />
             </div>
             <div class="col-12">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Description</label>
-              <textarea v-model="productForm.description" rows="2" class="form-control dark-input"></textarea>
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Description</label>
+              <textarea v-model="productForm.description" rows="2" class="textarea"></textarea>
             </div>
 
-            <div class="col-md-6 d-flex align-items-center gap-2">
-              <input id="prod-purchasable" v-model="productForm.purchasable" type="checkbox" class="form-check-input m-0" />
-              <label for="prod-purchasable" class="form-label m-0">Purchasable</label>
+            <div class="col-md-6 flex items-center gap-2">
+              <input id="prod-purchasable" v-model="productForm.purchasable" type="checkbox" class="m-0" />
+              <label for="prod-purchasable" class="field-label-plain m-0">Purchasable</label>
             </div>
-            <div class="col-md-6 d-flex align-items-center gap-2">
-              <input id="prod-anon" v-model="productForm.allowAnonymous" type="checkbox" class="form-check-input m-0" />
-              <label for="prod-anon" class="form-label m-0">Allow anonymous purchase</label>
+            <div class="col-md-6 flex items-center gap-2">
+              <input id="prod-anon" v-model="productForm.allowAnonymous" type="checkbox" class="m-0" />
+              <label for="prod-anon" class="field-label-plain m-0">Allow anonymous purchase</label>
             </div>
-            <div class="col-md-6 d-flex align-items-center gap-2">
-              <input id="prod-subscription" v-model="productForm.isSubscription" type="checkbox" class="form-check-input m-0" />
-              <label for="prod-subscription" class="form-label m-0">Subscription</label>
+            <div class="col-md-6 flex items-center gap-2">
+              <input id="prod-subscription" v-model="productForm.isSubscription" type="checkbox" class="m-0" />
+              <label for="prod-subscription" class="field-label-plain m-0">Subscription</label>
             </div>
 
             <div class="col-12">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label m-0" style="font-size:0.8rem;">Stripe price IDs</label>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addPriceId">+ Add</button>
+              <div class="flex justify-between items-center mb-2">
+                <label class="field-label-plain m-0" style="font-size:0.8rem;">Stripe price IDs</label>
+                <button type="button" class="btn btn-sm btn-ghost" @click="addPriceId">+ Add</button>
               </div>
               <div v-if="productForm.priceIds.length === 0" class="text-muted-light" style="font-size:0.85rem;">No prices.</div>
-              <div v-for="(_, i) in productForm.priceIds" :key="'pid-' + i" class="d-flex gap-2 mb-2">
-                <input v-model="productForm.priceIds[i]" type="text" class="form-control dark-input" placeholder="price_..." />
-                <button type="button" class="btn btn-sm btn-outline-danger" @click="removePriceId(i)">Remove</button>
+              <div v-for="(_, i) in productForm.priceIds" :key="'pid-' + i" class="flex gap-2 mb-2">
+                <input v-model="productForm.priceIds[i]" type="text" class="input" placeholder="price_..." />
+                <button type="button" class="btn btn-sm btn-danger-ghost" @click="removePriceId(i)">Remove</button>
               </div>
             </div>
 
             <div class="col-12">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label m-0" style="font-size:0.8rem;">Price lookup IDs (key → Stripe price ID)</label>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @click="addPriceLookup">+ Add</button>
+              <div class="flex justify-between items-center mb-2">
+                <label class="field-label-plain m-0" style="font-size:0.8rem;">Price lookup IDs (key → Stripe price ID)</label>
+                <button type="button" class="btn btn-sm btn-ghost" @click="addPriceLookup">+ Add</button>
               </div>
               <div v-if="productForm.priceLookupIds.length === 0" class="text-muted-light" style="font-size:0.85rem;">No lookups.</div>
               <div v-for="(entry, i) in productForm.priceLookupIds" :key="'lk-' + i" class="row g-2 mb-2">
                 <div class="col-md-5">
-                  <input v-model="entry.key" type="text" class="form-control dark-input" placeholder="lookup key" />
+                  <input v-model="entry.key" type="text" class="input" placeholder="lookup key" />
                 </div>
                 <div class="col-md-6">
-                  <input v-model="entry.value" type="text" class="form-control dark-input" placeholder="price_..." />
+                  <input v-model="entry.value" type="text" class="input" placeholder="price_..." />
                 </div>
-                <div class="col-md-1 d-flex">
-                  <button type="button" class="btn btn-sm btn-outline-danger w-100" @click="removePriceLookup(i)">×</button>
+                <div class="col-md-1 flex">
+                  <button type="button" class="btn btn-sm btn-danger-ghost w-full" @click="removePriceLookup(i)">×</button>
                 </div>
               </div>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Success redirect URL</label>
-              <input v-model="productForm.successRedirect" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Success redirect URL</label>
+              <input v-model="productForm.successRedirect" type="text" class="input" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Success token secret</label>
-              <input v-model="productForm.successTokenSecret" type="text" class="form-control dark-input" autocomplete="off" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Success token secret</label>
+              <input v-model="productForm.successTokenSecret" type="text" class="input" autocomplete="off" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Webhook URL</label>
-              <input v-model="productForm.webhook" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Webhook URL</label>
+              <input v-model="productForm.webhook" type="text" class="input" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Webhook secret</label>
-              <input v-model="productForm.webhookSecret" type="text" class="form-control dark-input" autocomplete="off" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Webhook secret</label>
+              <input v-model="productForm.webhookSecret" type="text" class="input" autocomplete="off" />
             </div>
 
-            <div class="col-12 d-flex gap-2">
+            <div class="col-12 flex gap-2">
               <button type="submit" class="btn btn-primary" :disabled="actionBusy">
                 {{ editingProduct ? 'Save changes' : 'Create product' }}
               </button>
-              <button type="button" class="btn btn-outline-secondary" :disabled="actionBusy" @click="closeProductPanel">Cancel</button>
-              <button v-if="editingProduct" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteProduct(editingProduct, productForm.name)">Delete</button>
+              <button type="button" class="btn btn-ghost" :disabled="actionBusy" @click="closeProductPanel">Cancel</button>
+              <button v-if="editingProduct" type="button" class="btn btn-danger-ghost ms-auto" :disabled="actionBusy" @click="deleteProduct(editingProduct, productForm.name)">Delete</button>
             </div>
           </form>
         </div>
@@ -2533,12 +2601,12 @@ export default {
 
       <!-- SERVICES TAB -->
       <div v-show="activeTab === 'services'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <div class="text-muted-light" style="font-size:0.9rem;">
             {{ services ? `${services.length} services` : 'Loading…' }}
           </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-secondary" :disabled="servicesLoading" @click="loadServicesAdmin">Refresh</button>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-ghost" :disabled="servicesLoading" @click="loadServicesAdmin">Refresh</button>
             <button class="btn btn-sm btn-success" @click="openNewService">+ New service</button>
           </div>
         </div>
@@ -2553,79 +2621,79 @@ export default {
         <div v-if="services && services.length" class="row g-3 mb-4">
           <div v-for="service in services" :key="service.id" class="col-md-6">
             <div class="product-card">
-              <div class="d-flex align-items-start justify-content-between gap-2">
-                <div class="flex-grow-1">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-grow">
                   <h5 class="mb-1">{{ service.name }}</h5>
                   <code style="font-size:0.78rem;">{{ service.id }}</code>
                   <p v-if="service.description" class="mt-2 mb-0 text-muted-light" style="font-size:0.85rem;">{{ service.description }}</p>
                 </div>
               </div>
-              <div class="mt-3 d-flex flex-wrap gap-2">
-                <span v-if="service.new" class="badge bg-info text-dark">New</span>
-                <span class="badge" :class="service.visibilityMode === 'RestrictedToGroups' ? 'bg-warning text-dark' : 'bg-success'">
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span v-if="service.new" class="badge badge-accent">New</span>
+                <span class="badge" :class="service.visibilityMode === 'RestrictedToGroups' ? 'badge-warning' : 'badge-success'">
                   {{ serviceVisibilityLabel(service) }}
                 </span>
-                <span class="badge bg-secondary text-wrap">{{ service.url }}</span>
+                <span class="badge badge-neutral text-wrap">{{ service.url }}</span>
               </div>
-              <div class="mt-3 d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary" @click="editService(service.id)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteService(service.id, service.name)">Delete</button>
+              <div class="mt-3 flex gap-2">
+                <button class="btn btn-sm btn-ghost" @click="editService(service.id)">Edit</button>
+                <button class="btn btn-sm btn-danger-ghost ms-auto" :disabled="actionBusy" @click="deleteService(service.id, service.name)">Delete</button>
               </div>
             </div>
           </div>
         </div>
 
         <div v-if="servicePanelOpen" class="user-panel">
-          <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+          <div class="flex items-start justify-between mb-3 gap-2">
             <div>
               <h4 class="mb-0">{{ editingService ? 'Edit service' : 'New service' }}</h4>
               <div v-if="editingService" class="text-muted" style="font-size:0.85rem;"><code>{{ editingService }}</code></div>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" @click="closeServicePanel">Close</button>
+            <button class="btn btn-sm btn-ghost" @click="closeServicePanel">Close</button>
           </div>
 
           <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
 
           <form class="row g-3 mb-4" @submit.prevent="saveService">
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">ID *</label>
-              <input v-model="serviceForm.id" type="text" class="form-control dark-input" :disabled="!!editingService" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">ID *</label>
+              <input v-model="serviceForm.id" type="text" class="input" :disabled="!!editingService" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Name *</label>
-              <input v-model="serviceForm.name" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Name *</label>
+              <input v-model="serviceForm.name" type="text" class="input" />
             </div>
             <div class="col-12">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Description</label>
-              <textarea v-model="serviceForm.description" rows="2" class="form-control dark-input"></textarea>
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Description</label>
+              <textarea v-model="serviceForm.description" rows="2" class="textarea"></textarea>
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Service URL *</label>
-              <input v-model="serviceForm.url" type="text" class="form-control dark-input" placeholder="https://service.example.com" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Service URL *</label>
+              <input v-model="serviceForm.url" type="text" class="input" placeholder="https://service.example.com" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Icon URL</label>
-              <input v-model="serviceForm.iconUrl" type="text" class="form-control dark-input" placeholder="https://service.example.com/icon.png" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Icon URL</label>
+              <input v-model="serviceForm.iconUrl" type="text" class="input" placeholder="https://service.example.com/icon.png" />
             </div>
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Visibility</label>
-              <select v-model="serviceForm.visibilityMode" class="form-control dark-input">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Visibility</label>
+              <select v-model="serviceForm.visibilityMode" class="select">
                 <option value="Public">Public</option>
                 <option value="RestrictedToGroups">Restricted to groups</option>
               </select>
             </div>
-            <div class="col-md-6 d-flex align-items-end">
-              <div class="form-check">
-                <input id="service-new" v-model="serviceForm.new" type="checkbox" class="form-check-input" />
-                <label for="service-new" class="form-check-label" style="font-size:0.85rem;">Mark as new</label>
+            <div class="col-md-6 flex items-end">
+              <div class="check">
+                <input id="service-new" v-model="serviceForm.new" type="checkbox" />
+                <label for="service-new" style="font-size:0.85rem;">Mark as new</label>
               </div>
             </div>
             <div v-if="serviceForm.visibilityMode === 'RestrictedToGroups'" class="col-12">
-              <label class="form-label mb-2" style="font-size:0.8rem;">Allowed groups</label>
+              <label class="field-label-plain mb-2" style="font-size:0.8rem;">Allowed groups</label>
               <div v-if="!groups || groups.length === 0" class="text-muted-light" style="font-size:0.85rem;">
                 No groups defined. Create some in the Groups tab.
               </div>
-              <table v-else class="table align-middle mb-0">
+              <table v-else class="table mb-0">
                 <thead>
                   <tr>
                     <th>Group</th>
@@ -2641,7 +2709,7 @@ export default {
                     <td class="text-center">
                       <input
                         type="checkbox"
-                        class="form-check-input m-0"
+                        class="m-0"
                         :checked="serviceForm.allowedGroupIds.includes(g.id)"
                         @change="toggleServiceAllowedGroup(g.id)"
                       />
@@ -2650,12 +2718,12 @@ export default {
                 </tbody>
               </table>
             </div>
-            <div class="col-12 d-flex gap-2">
+            <div class="col-12 flex gap-2">
               <button type="submit" class="btn btn-primary" :disabled="actionBusy">
                 {{ editingService ? 'Save changes' : 'Create service' }}
               </button>
-              <button type="button" class="btn btn-outline-secondary" :disabled="actionBusy" @click="closeServicePanel">Cancel</button>
-              <button v-if="editingService" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteService(editingService, serviceForm.name)">Delete</button>
+              <button type="button" class="btn btn-ghost" :disabled="actionBusy" @click="closeServicePanel">Cancel</button>
+              <button v-if="editingService" type="button" class="btn btn-danger-ghost ms-auto" :disabled="actionBusy" @click="deleteService(editingService, serviceForm.name)">Delete</button>
             </div>
           </form>
         </div>
@@ -2663,12 +2731,12 @@ export default {
 
       <!-- GROUPS TAB -->
       <div v-show="activeTab === 'groups'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <div class="text-muted-light" style="font-size:0.9rem;">
             {{ groups ? `${groups.length} groups` : 'Loading…' }}
           </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-secondary" :disabled="groupsLoading" @click="loadGroups">Refresh</button>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-ghost" :disabled="groupsLoading" @click="loadGroups">Refresh</button>
             <button class="btn btn-sm btn-success" @click="openNewGroup">+ New group</button>
           </div>
         </div>
@@ -2683,16 +2751,16 @@ export default {
         <div v-if="groups && groups.length" class="row g-3 mb-4">
           <div v-for="g in groups" :key="g.id" class="col-md-6">
             <div class="product-card">
-              <div class="d-flex align-items-start justify-content-between gap-2">
-                <div class="flex-grow-1">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-grow">
                   <h5 class="mb-1">{{ g.name }}</h5>
                   <code style="font-size:0.78rem;">{{ g.id }}</code>
                   <p v-if="g.description" class="mt-2 mb-0 text-muted-light" style="font-size:0.85rem;">{{ g.description }}</p>
                 </div>
               </div>
-              <div class="mt-3 d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary" @click="openEditGroup(g.id)">Manage</button>
-                <button class="btn btn-sm btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteGroup(g.id, g.name)">Delete</button>
+              <div class="mt-3 flex gap-2">
+                <button class="btn btn-sm btn-ghost" @click="openEditGroup(g.id)">Manage</button>
+                <button class="btn btn-sm btn-danger-ghost ms-auto" :disabled="actionBusy" @click="deleteGroup(g.id, g.name)">Delete</button>
               </div>
             </div>
           </div>
@@ -2700,31 +2768,31 @@ export default {
 
         <!-- Group editor -->
         <div v-if="groupPanelOpen" class="user-panel">
-          <div class="d-flex align-items-start justify-content-between mb-3 gap-2">
+          <div class="flex items-start justify-between mb-3 gap-2">
             <div>
               <h4 class="mb-0">{{ editingGroupId ? 'Edit group' : 'New group' }}</h4>
               <div v-if="editingGroupId" class="text-muted" style="font-size:0.85rem;"><code>{{ editingGroupId }}</code></div>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" @click="closeGroupPanel">Close</button>
+            <button class="btn btn-sm btn-ghost" @click="closeGroupPanel">Close</button>
           </div>
 
           <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
 
           <form class="row g-3 mb-4" @submit.prevent="saveGroup">
             <div class="col-md-6">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Name *</label>
-              <input v-model="groupForm.name" type="text" class="form-control dark-input" />
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Name *</label>
+              <input v-model="groupForm.name" type="text" class="input" />
             </div>
             <div class="col-12">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Description</label>
-              <textarea v-model="groupForm.description" rows="2" class="form-control dark-input"></textarea>
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Description</label>
+              <textarea v-model="groupForm.description" rows="2" class="textarea"></textarea>
             </div>
-            <div class="col-12 d-flex gap-2">
+            <div class="col-12 flex gap-2">
               <button type="submit" class="btn btn-primary" :disabled="actionBusy">
                 {{ editingGroupId ? 'Save changes' : 'Create group' }}
               </button>
-              <button type="button" class="btn btn-outline-secondary" :disabled="actionBusy" @click="closeGroupPanel">Cancel</button>
-              <button v-if="editingGroupId" type="button" class="btn btn-outline-danger ms-auto" :disabled="actionBusy" @click="deleteGroup(editingGroupId, groupForm.name)">Delete</button>
+              <button type="button" class="btn btn-ghost" :disabled="actionBusy" @click="closeGroupPanel">Cancel</button>
+              <button v-if="editingGroupId" type="button" class="btn btn-danger-ghost ms-auto" :disabled="actionBusy" @click="deleteGroup(editingGroupId, groupForm.name)">Delete</button>
             </div>
           </form>
 
@@ -2732,16 +2800,16 @@ export default {
             <h6 class="section-heading">Members</h6>
             <form class="row g-2 mb-3" @submit.prevent="addGroupMember">
               <div class="col-md-9">
-                <input v-model="newMemberId" type="text" class="form-control dark-input" placeholder="Add user by ID" autocomplete="off" />
+                <input v-model="newMemberId" type="text" class="input" placeholder="Add user by ID" autocomplete="off" />
               </div>
               <div class="col-md-3">
-                <button type="submit" class="btn btn-outline-primary w-100" :disabled="actionBusy">Add member</button>
+                <button type="submit" class="btn btn-ghost w-full" :disabled="actionBusy">Add member</button>
               </div>
             </form>
             <div v-if="groupMembersLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
             <div v-else-if="groupMembers.length === 0" class="text-muted" style="font-size:0.9rem;">No members.</div>
-            <ul v-else class="list-group list-group-flush mb-3">
-              <li v-for="uid in groupMembers" :key="uid" class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <ul v-else class="list mb-3">
+              <li v-for="uid in groupMembers" :key="uid" class="list-item flex justify-between items-center px-0">
                 <div>
                   <div v-if="memberDetails[uid]?.username">
                     {{ memberDetails[uid].username }}
@@ -2749,7 +2817,7 @@ export default {
                   </div>
                   <code style="font-size:0.75rem;">{{ uid }}</code>
                 </div>
-                <button class="btn btn-sm btn-outline-danger" :disabled="actionBusy" @click="removeGroupMember(uid)">Remove</button>
+                <button class="btn btn-sm btn-danger-ghost" :disabled="actionBusy" @click="removeGroupMember(uid)">Remove</button>
               </li>
             </ul>
           </template>
@@ -2762,7 +2830,7 @@ export default {
         <div class="economy-card mb-3">
           <div class="economy-head">
             <span class="economy-title">Coins in circulation</span>
-            <button class="btn btn-sm btn-outline-secondary" :disabled="economyLoading" @click="loadEconomy">Refresh</button>
+            <button class="btn btn-sm btn-ghost" :disabled="economyLoading" @click="loadEconomy">Refresh</button>
           </div>
 
           <div v-if="economyError" class="alert alert-danger py-2 mb-0 mt-2">Failed to load economy total: {{ economyError }}</div>
@@ -2797,7 +2865,7 @@ export default {
               <p class="text-muted mb-0">Shows the percentage of each user's current balance that would be taxed, plus the resulting payout amounts, if tax were collected right now.</p>
             </div>
             <div class="tax-admin-actions">
-              <button class="btn btn-sm btn-outline-secondary" :disabled="taxPreviewLoading" @click="loadTaxPreview">
+              <button class="btn btn-sm btn-ghost" :disabled="taxPreviewLoading" @click="loadTaxPreview">
                 {{ taxPreviewLoading ? 'Refreshing…' : 'Refresh preview' }}
               </button>
               <button
@@ -2868,31 +2936,31 @@ export default {
         </div>
 
         <div class="search-card p-3 mb-3">
-          <div class="row g-2 align-items-end">
+          <div class="row g-2 items-end">
             <div class="col-12 col-md-3">
-              <label class="form-label mb-1" style="font-size:0.8rem;">User (sender or recipient)</label>
-              <input v-model="txFilters.user" class="form-control form-control-sm dark-input" placeholder="username or id" @keyup.enter="loadTransactions()">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">User (sender or recipient)</label>
+              <input v-model="txFilters.user" class="input input-sm" placeholder="username or id" @keyup.enter="loadTransactions()">
             </div>
             <div class="col-6 col-md-3">
-              <label class="form-label mb-1" style="font-size:0.8rem;">From (sender)</label>
-              <input v-model="txFilters.from" class="form-control form-control-sm dark-input" placeholder="username or id" @keyup.enter="loadTransactions()">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">From (sender)</label>
+              <input v-model="txFilters.from" class="input input-sm" placeholder="username or id" @keyup.enter="loadTransactions()">
             </div>
             <div class="col-6 col-md-3">
-              <label class="form-label mb-1" style="font-size:0.8rem;">To (recipient)</label>
-              <input v-model="txFilters.to" class="form-control form-control-sm dark-input" placeholder="username or id" @keyup.enter="loadTransactions()">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">To (recipient)</label>
+              <input v-model="txFilters.to" class="input input-sm" placeholder="username or id" @keyup.enter="loadTransactions()">
             </div>
             <div class="col-6 col-md-1">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Limit</label>
-              <select v-model.number="txLimit" class="form-control form-control-sm dark-input" @change="loadTransactions()">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Limit</label>
+              <select v-model.number="txLimit" class="select input-sm" @change="loadTransactions()">
                 <option :value="25">25</option>
                 <option :value="50">50</option>
                 <option :value="100">100</option>
                 <option :value="200">200</option>
               </select>
             </div>
-            <div class="col-6 col-md-2 d-flex gap-2">
-              <button class="btn btn-sm btn-primary w-100" :disabled="txLoading" @click="loadTransactions()">Search</button>
-              <button class="btn btn-sm btn-outline-secondary" :disabled="txLoading" @click="clearTxFilters" title="Clear filters">Clear</button>
+            <div class="col-6 col-md-2 flex gap-2">
+              <button class="btn btn-sm btn-primary w-full" :disabled="txLoading" @click="loadTransactions()">Search</button>
+              <button class="btn btn-sm btn-ghost" :disabled="txLoading" @click="clearTxFilters" title="Clear filters">Clear</button>
             </div>
           </div>
         </div>
@@ -2904,8 +2972,8 @@ export default {
         <template v-else>
           <div v-if="txList.length === 0 && txLoaded" class="text-muted py-3">No transactions found.</div>
 
-          <div v-else-if="txList.length" class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+          <div v-else-if="txList.length" class="table-wrap">
+            <table class="table table-hover mb-0">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -2921,14 +2989,14 @@ export default {
                   <td style="white-space:nowrap;">{{ formatDate(tx.dateCreated) }}</td>
                   <td>
                     <span v-if="tx.fromOwnerId">
-                      <span class="badge bg-secondary me-1">{{ tx.fromOwnerType }}</span>
+                      <span class="badge badge-neutral me-1">{{ tx.fromOwnerType }}</span>
                       <code>{{ tx.fromOwnerId }}</code>
                     </span>
                     <span v-else class="text-muted">deleted</span>
                   </td>
                   <td>
                     <span v-if="tx.toOwnerId">
-                      <span class="badge bg-secondary me-1">{{ tx.toOwnerType }}</span>
+                      <span class="badge badge-neutral me-1">{{ tx.toOwnerType }}</span>
                       <code>{{ tx.toOwnerId }}</code>
                     </span>
                     <span v-else class="text-muted">deleted</span>
@@ -2941,13 +3009,13 @@ export default {
             </table>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="flex justify-between items-center mt-3">
             <span class="text-muted" style="font-size:0.85rem;">
               Showing {{ txList.length }} result(s), offset {{ txOffset }}
             </span>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary" :disabled="txLoading || txOffset === 0" @click="txPrevPage">Previous</button>
-              <button class="btn btn-sm btn-outline-secondary" :disabled="txLoading || txList.length < txLimit" @click="txNextPage">Next</button>
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-ghost" :disabled="txLoading || txOffset === 0" @click="txPrevPage">Previous</button>
+              <button class="btn btn-sm btn-ghost" :disabled="txLoading || txList.length < txLimit" @click="txNextPage">Next</button>
             </div>
           </div>
         </template>
@@ -2960,23 +3028,23 @@ export default {
         </div>
 
         <!-- Subscriptions -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <div>
             <h5 class="mb-0">Webhook subscriptions</h5>
             <p class="text-muted mb-0" style="font-size:0.85rem;">Every endpoint registered by an app. Signing secrets are never returned.</p>
           </div>
-          <button class="btn btn-sm btn-outline-secondary" :disabled="whLoading" @click="loadWebhooks">Refresh</button>
+          <button class="btn btn-sm btn-ghost" :disabled="whLoading" @click="loadWebhooks">Refresh</button>
         </div>
 
         <div class="search-card p-3 mb-3">
-          <div class="row g-2 align-items-end">
+          <div class="row g-2 items-end">
             <div class="col-12 col-md-9">
-              <label class="form-label mb-1" style="font-size:0.8rem;">App ID</label>
-              <input v-model="whAppFilter" class="form-control form-control-sm dark-input" placeholder="leave blank for all apps" @keyup.enter="loadWebhooks">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">App ID</label>
+              <input v-model="whAppFilter" class="input input-sm" placeholder="leave blank for all apps" @keyup.enter="loadWebhooks">
             </div>
-            <div class="col-12 col-md-3 d-flex gap-2">
-              <button class="btn btn-sm btn-primary w-100" :disabled="whLoading" @click="loadWebhooks">Search</button>
-              <button class="btn btn-sm btn-outline-secondary" :disabled="whLoading" @click="whAppFilter = ''; loadWebhooks()" title="Clear filter">Clear</button>
+            <div class="col-12 col-md-3 flex gap-2">
+              <button class="btn btn-sm btn-primary w-full" :disabled="whLoading" @click="loadWebhooks">Search</button>
+              <button class="btn btn-sm btn-ghost" :disabled="whLoading" @click="whAppFilter = ''; loadWebhooks()" title="Clear filter">Clear</button>
             </div>
           </div>
         </div>
@@ -2985,8 +3053,8 @@ export default {
         <div v-else-if="whLoading" class="text-muted py-3">Loading…</div>
         <div v-else-if="whList.length === 0 && whLoaded" class="text-muted py-3">No webhooks registered.</div>
 
-        <div v-else-if="whList.length" class="table-responsive mb-2">
-          <table class="table table-hover align-middle mb-0">
+        <div v-else-if="whList.length" class="table-wrap mb-2">
+          <table class="table table-hover mb-0">
             <thead>
               <tr>
                 <th>App</th>
@@ -3002,7 +3070,7 @@ export default {
                 <td><code style="font-size:0.75rem;">{{ w.appId }}</code></td>
                 <td style="word-break:break-all; max-width:280px;">{{ w.url }}</td>
                 <td>
-                  <span v-for="e in w.eventTypes" :key="e" class="badge bg-secondary me-1">{{ e }}</span>
+                  <span v-for="e in w.eventTypes" :key="e" class="badge badge-neutral me-1">{{ e }}</span>
                 </td>
                 <td style="white-space:nowrap;">
                   <span :class="w.enabled ? 'text-success' : 'text-muted'">{{ w.enabled ? 'enabled' : 'disabled' }}</span>
@@ -3022,45 +3090,45 @@ export default {
         </p>
 
         <!-- Delivery outbox -->
-        <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+        <div class="flex justify-between items-center mb-3 mt-4">
           <div>
             <h5 class="mb-0">Delivery outbox</h5>
             <p class="text-muted mb-0" style="font-size:0.85rem;">
               Filter by <code>DeadLettered</code> to find integrations that gave up, or by cycle ID to see everything one tax run emitted.
             </p>
           </div>
-          <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading" @click="loadWebhookDeliveries(delOffset)">Refresh</button>
+          <button class="btn btn-sm btn-ghost" :disabled="delLoading" @click="loadWebhookDeliveries(delOffset)">Refresh</button>
         </div>
 
         <div class="search-card p-3 mb-3">
-          <div class="row g-2 align-items-end">
+          <div class="row g-2 items-end">
             <div class="col-12 col-md-4">
-              <label class="form-label mb-1" style="font-size:0.8rem;">App ID</label>
-              <input v-model="delFilters.appId" class="form-control form-control-sm dark-input" placeholder="any" @keyup.enter="loadWebhookDeliveries(0)">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">App ID</label>
+              <input v-model="delFilters.appId" class="input input-sm" placeholder="any" @keyup.enter="loadWebhookDeliveries(0)">
             </div>
             <div class="col-6 col-md-3">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Status</label>
-              <select v-model="delFilters.status" class="form-control form-control-sm dark-input" @change="loadWebhookDeliveries(0)">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Status</label>
+              <select v-model="delFilters.status" class="select input-sm" @change="loadWebhookDeliveries(0)">
                 <option value="">any</option>
                 <option v-for="s in WEBHOOK_STATUSES" :key="s" :value="s">{{ s }}</option>
               </select>
             </div>
             <div class="col-6 col-md-2">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Cycle ID</label>
-              <input v-model="delFilters.cycleId" class="form-control form-control-sm dark-input" placeholder="any" @keyup.enter="loadWebhookDeliveries(0)">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Cycle ID</label>
+              <input v-model="delFilters.cycleId" class="input input-sm" placeholder="any" @keyup.enter="loadWebhookDeliveries(0)">
             </div>
             <div class="col-6 col-md-1">
-              <label class="form-label mb-1" style="font-size:0.8rem;">Limit</label>
-              <select v-model.number="delLimit" class="form-control form-control-sm dark-input" @change="loadWebhookDeliveries(0)">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;">Limit</label>
+              <select v-model.number="delLimit" class="select input-sm" @change="loadWebhookDeliveries(0)">
                 <option :value="25">25</option>
                 <option :value="50">50</option>
                 <option :value="100">100</option>
                 <option :value="200">200</option>
               </select>
             </div>
-            <div class="col-6 col-md-2 d-flex gap-2">
-              <button class="btn btn-sm btn-primary w-100" :disabled="delLoading" @click="loadWebhookDeliveries(0)">Search</button>
-              <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading" @click="clearDeliveryFilters" title="Clear filters">Clear</button>
+            <div class="col-6 col-md-2 flex gap-2">
+              <button class="btn btn-sm btn-primary w-full" :disabled="delLoading" @click="loadWebhookDeliveries(0)">Search</button>
+              <button class="btn btn-sm btn-ghost" :disabled="delLoading" @click="clearDeliveryFilters" title="Clear filters">Clear</button>
             </div>
           </div>
         </div>
@@ -3070,8 +3138,8 @@ export default {
         <div v-else-if="delList.length === 0 && delLoaded" class="text-muted py-3">No deliveries found.</div>
 
         <template v-else-if="delList.length">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+          <div class="table-wrap">
+            <table class="table table-hover mb-0">
               <thead>
                 <tr>
                   <th>Created</th>
@@ -3104,10 +3172,10 @@ export default {
                     </td>
                     <td>{{ d.cycleId ?? '—' }}</td>
                     <td class="text-end" style="white-space:nowrap;">
-                      <button class="btn btn-sm btn-outline-secondary me-1" @click="toggleDeliveryPayload(d.id)">
+                      <button class="btn btn-sm btn-ghost me-1" @click="toggleDeliveryPayload(d.id)">
                         {{ delOpenPayload === d.id ? 'Hide' : 'Payload' }}
                       </button>
-                      <button class="btn btn-sm btn-outline-primary" :disabled="delRedeliverBusy === d.id" @click="redeliverWebhook(d.id)">
+                      <button class="btn btn-sm btn-ghost" :disabled="delRedeliverBusy === d.id" @click="redeliverWebhook(d.id)">
                         {{ delRedeliverBusy === d.id ? '…' : 'Redeliver' }}
                       </button>
                     </td>
@@ -3123,13 +3191,13 @@ export default {
             </table>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="flex justify-between items-center mt-3">
             <span class="text-muted" style="font-size:0.85rem;">
               Showing {{ delOffset + 1 }}–{{ delOffset + delList.length }} of {{ delTotal }}
             </span>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading || delOffset === 0" @click="loadWebhookDeliveries(Math.max(0, delOffset - delLimit))">Previous</button>
-              <button class="btn btn-sm btn-outline-secondary" :disabled="delLoading || delOffset + delList.length >= delTotal" @click="loadWebhookDeliveries(delOffset + delLimit)">Next</button>
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-ghost" :disabled="delLoading || delOffset === 0" @click="loadWebhookDeliveries(Math.max(0, delOffset - delLimit))">Previous</button>
+              <button class="btn btn-sm btn-ghost" :disabled="delLoading || delOffset + delList.length >= delTotal" @click="loadWebhookDeliveries(delOffset + delLimit)">Next</button>
             </div>
           </div>
         </template>
@@ -3137,17 +3205,17 @@ export default {
 
       <!-- SETTINGS TAB -->
       <div v-show="activeTab === 'settings'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="flex justify-between items-center mb-3">
           <h5 class="mb-0">Server settings</h5>
-          <button class="btn btn-sm btn-outline-secondary" :disabled="configLoading" @click="loadConfig">Refresh</button>
+          <button class="btn btn-sm btn-ghost" :disabled="configLoading" @click="loadConfig">Refresh</button>
         </div>
 
         <div class="search-card p-3 mb-3">
-          <label class="form-label mb-1" style="font-size:0.8rem;">Search settings</label>
+          <label class="field-label-plain mb-1" style="font-size:0.8rem;">Search settings</label>
           <input
             v-model="configSearch"
             type="search"
-            class="form-control dark-input"
+            class="input"
             placeholder="Search by group, label, key, type, or description"
           />
         </div>
@@ -3176,7 +3244,7 @@ export default {
                 <div class="config-info">
                   <div class="config-label">
                     {{ row.label }}
-                    <span v-if="row.public" class="badge bg-secondary ms-1" title="Readable by apps">public</span>
+                    <span v-if="row.public" class="badge badge-neutral ms-1" title="Readable by apps">public</span>
                   </div>
                   <div class="config-desc">{{ row.description }}</div>
                   <code class="config-key">{{ row.key }}</code>
@@ -3184,13 +3252,13 @@ export default {
 
                 <div class="config-control">
                   <div class="config-input-wrap">
-                    <div v-if="row.type === 'Boolean'" class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" v-model="row.draft" :id="'cfg-' + row.key">
+                    <div v-if="row.type === 'Boolean'" class="check">
+                      <input type="checkbox" v-model="row.draft" :id="'cfg-' + row.key">
                     </div>
                     <select
                       v-else-if="row.type === 'FeatureFlagMode'"
                       v-model="row.draft"
-                      class="form-control form-control-sm dark-input"
+                      class="select input-sm"
                     >
                       <option value="enabled">enabled</option>
                       <option value="disabled">disabled</option>
@@ -3202,7 +3270,7 @@ export default {
                       type="number"
                       min="0"
                       step="1"
-                      class="form-control form-control-sm dark-input"
+                      class="input input-sm"
                       @keyup.enter="saveConfig(row)"
                     >
                     <div v-else-if="isPercentSetting(row)" class="config-coins">
@@ -3213,7 +3281,7 @@ export default {
                         max="100"
                         step="any"
                         inputmode="decimal"
-                        class="form-control form-control-sm dark-input"
+                        class="input input-sm"
                         @keyup.enter="saveConfig(row)"
                       >
                       <span class="config-unit">%</span>
@@ -3225,7 +3293,7 @@ export default {
                         min="0"
                         step="any"
                         inputmode="decimal"
-                        class="form-control form-control-sm dark-input"
+                        class="input input-sm"
                         @keyup.enter="saveConfig(row)"
                       >
                       <span class="config-unit">coins</span>
@@ -3234,14 +3302,14 @@ export default {
                       v-else-if="row.type === 'StringList'"
                       v-model="row.draft"
                       rows="4"
-                      class="form-control form-control-sm dark-input config-textarea"
+                      class="textarea input-sm config-textarea"
                       placeholder="One per line"
                     ></textarea>
                     <input
                       v-else
                       v-model="row.draft"
                       type="text"
-                      class="form-control form-control-sm dark-input"
+                      class="input input-sm"
                       @keyup.enter="saveConfig(row)"
                     >
                     <button
@@ -3534,20 +3602,6 @@ export default {
 }
 
 /* Dark inputs to match the rest of the site */
-.dark-input {
-  background-color: rgb(28, 28, 28);
-  color: #fff;
-  border-color: #444;
-}
-.dark-input::placeholder {
-  color: #666;
-}
-.dark-input:focus {
-  background-color: rgb(28, 28, 28);
-  color: #fff;
-  border-color: #6ea8fe;
-  box-shadow: 0 0 0 0.2rem rgba(110, 168, 254, 0.15);
-}
 
 .form-label {
   color: var(--text-secondary);
@@ -3647,7 +3701,7 @@ export default {
 }
 .resizable-user-column:hover .user-column-resize-handle::after,
 .resizable-user-column.resizing .user-column-resize-handle::after {
-  background: #6ea8fe;
+  background: var(--accent-light);
 }
 .user-results-table {
   table-layout: fixed;
@@ -3737,8 +3791,16 @@ code { color: var(--text-secondary); }
 
 /* Tabs */
 .admin-tabs {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
   border-bottom: 1px solid var(--border);
   gap: 4px;
+  /* Nine tabs don't fit on a phone — scroll them rather than wrapping into
+     a second row that pushes the panel down. */
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .admin-tabs .nav-link {
   background: none;
@@ -3805,9 +3867,6 @@ code { color: var(--text-secondary); }
 .admin-page :deep(.form-check-input:checked) {
   background-color: var(--accent);
   border-color: var(--accent);
-}
-.admin-page textarea.dark-input {
-  resize: vertical;
 }
 .oidc-sep {
   border: 0;

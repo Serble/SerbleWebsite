@@ -90,23 +90,23 @@ export default {
             class="qr-img"
             width="220"
             height="220"
-            alt="TOTP QR Code"
+            :alt="$t('totp-qr-alt')"
           />
           <div v-else-if="qrError" class="qr-error">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16" class="text-danger mb-2">
               <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
               <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
             </svg>
-            <p class="text-muted" style="font-size:0.82rem;">Failed to load QR code.</p>
+            <p class="text-muted" style="font-size:0.82rem;">{{ $t('qr-load-failed') }}</p>
           </div>
           <div v-else class="qr-loading">
-            <LoadingSpinner :size="32" class="text-primary" />
+            <LoadingSpinner :size="32" class="text-accent" />
           </div>
         </div>
 
         <!-- Warning -->
         <div class="totp-warning">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0 mt-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="flex-none mt-1">
             <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
           </svg>
           <span>{{ $t('totp-warning') }}</span>
@@ -116,21 +116,21 @@ export default {
       <!-- Right: code entry -->
       <div class="setup-card setup-right">
         <div class="setup-card-header">
-          <img src="/images/icon.png" width="48" height="48" alt="Serble" class="setup-logo" />
+          <img src="/images/icon.png" width="48" height="48" :alt="$t('serble')" class="setup-logo" />
           <h2 class="setup-title">{{ $t('2fa') }}</h2>
-          <p class="setup-sub">Enter the 6-digit code from your authenticator app to confirm setup.</p>
+          <p class="setup-sub">{{ $t('totp-enter-code-setup') }}</p>
         </div>
 
         <!-- Error -->
         <div v-if="error === 'invalid-code'" class="code-error">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 flex-none">
             <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
             <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
           </svg>
           {{ $t('invalid-code') }}
         </div>
         <div v-else-if="error === 'enable-failed'" class="code-error">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 flex-none">
             <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
             <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
           </svg>
@@ -166,7 +166,7 @@ export default {
           {{ $t('submit') }}
         </button>
 
-        <RouterLink to="/account" class="cancel-link">← Back to account</RouterLink>
+        <RouterLink to="/account" class="cancel-link">← {{ $t('back-to-account') }}</RouterLink>
       </div>
 
     </div>
@@ -182,17 +182,20 @@ export default {
   padding: 40px 20px;
 }
 
+/* The left card carries the QR plus a long instruction paragraph, so it needs
+   noticeably more room than the right one, which is just a code field. */
 .setup-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 20px;
   width: 100%;
-  max-width: 820px;
+  max-width: 940px;
 }
 
-@media (max-width: 680px) {
+@media (max-width: 820px) {
   .setup-inner {
     grid-template-columns: 1fr;
+    max-width: 480px;
   }
 }
 
@@ -205,6 +208,12 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+/* The right card is much shorter than the left, so centre it in the shared row
+   height instead of leaving a block of empty space below it. */
+.setup-right {
+  justify-content: center;
 }
 
 .setup-card-header {
@@ -316,17 +325,21 @@ export default {
   color: var(--text-dim);
 }
 
+/* line-height must be set explicitly: base.css gives inputs `font: inherit`,
+   which drags in body's 1.6 and makes a large-font field absurdly tall. */
 .code-input {
   background: var(--surface-sunken);
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   color: var(--text);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
+  line-height: 1.2;
   letter-spacing: 0.3em;
+  text-indent: 0.3em; /* offsets the trailing letter-spacing so text stays centred */
   text-align: center;
-  padding: 12px 16px;
-  outline: none;
+  padding: 11px 16px;
+  width: 100%;
   transition: border-color 0.15s;
 }
 
@@ -334,10 +347,11 @@ export default {
   color: var(--border-strong);
   font-size: 0.9rem;
   letter-spacing: 0;
+  text-indent: 0;
   font-weight: 400;
 }
 
-.code-input:focus { border-color: #6ea8fe; }
+.code-input:focus { border-color: var(--accent-light); }
 .code-input-error { border-color: var(--danger) !important; }
 
 .code-submit {

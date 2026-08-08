@@ -307,14 +307,14 @@ export default {
               </svg>
               {{ noteTitles[id] || id }}
             </span>
-            <button class="note-delete-btn" @click="removeNote(id, $event)" title="Delete">
+            <button class="note-delete-btn" @click="removeNote(id, $event)" :title="$t('delete')">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
                 <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
               </svg>
             </button>
           </div>
-          <p class="note-item-summary">{{ noteSummaries[id] || 'Click to load…' }}</p>
+          <p class="note-item-summary">{{ noteSummaries[id] || $t('click-to-load') }}</p>
         </button>
       </div>
 
@@ -356,7 +356,7 @@ export default {
             </svg>
           </div>
           <h4>{{ $t('set-encryption-password') }}</h4>
-          <p class="text-muted lock-hint">Choose a strong password. It cannot be recovered if lost.</p>
+          <p class="text-muted lock-hint">{{ $t('choose-strong-password') }}</p>
           <input
             type="password"
             class="lock-input"
@@ -365,14 +365,14 @@ export default {
             @keydown.enter="setPassword"
             autofocus
           />
-          <button class="lock-btn lock-btn-primary" @click="setPassword">Set Password</button>
+          <button class="lock-btn lock-btn-primary" @click="setPassword">{{ $t('set-password') }}</button>
         </div>
       </div>
 
       <!-- Encrypted: enter password to decrypt -->
       <div v-else-if="isEncrypted && decryptedContent === null" class="editor-lock-screen">
         <div class="lock-card">
-          <div class="lock-icon-wrap text-primary">
+          <div class="lock-icon-wrap text-accent">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
               <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
             </svg>
@@ -405,11 +405,7 @@ export default {
           </div>
           <button
             class="save-btn"
-            :class="{
-              'save-btn-dirty':  saveState === 'dirty',
-              'save-btn-saving': saveState === 'saving',
-              'save-btn-saved':  saveState === 'saved',
-            }"
+            :class="{ 'save-btn-dirty': saveState === 'dirty', 'save-btn-saving': saveState === 'saving', 'save-btn-saved': saveState === 'saved', }"
             :disabled="saveState !== 'dirty'"
             @click="doSave()"
           >
@@ -662,12 +658,11 @@ export default {
   font-size: 0.95rem;
   padding: 10px 14px;
   text-align: center;
-  outline: none;
   transition: border-color 0.15s;
 }
 
 .lock-input::placeholder { color: var(--text-faint); }
-.lock-input:focus { border-color: #6ea8fe; }
+.lock-input:focus { border-color: var(--accent-light); }
 .lock-input-error { border-color: var(--danger) !important; }
 
 .lock-btn {
@@ -730,7 +725,7 @@ export default {
 
 .save-btn-dirty {
   border-color: var(--accent);
-  color: #93c5fd;
+  color: var(--accent-light);
   cursor: pointer;
 }
 
@@ -754,14 +749,13 @@ export default {
   width: 100%;
   background: transparent;
   border: none;
-  outline: none;
   resize: none;
   color: var(--text-secondary);
   font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
   font-size: 0.9rem;
   line-height: 1.7;
   padding: 20px 24px;
-  caret-color: #6ea8fe;
+  caret-color: var(--accent-light);
 }
 
 .editor-textarea::placeholder { color: var(--border-strong); }

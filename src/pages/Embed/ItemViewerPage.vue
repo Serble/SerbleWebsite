@@ -180,27 +180,27 @@ export default {
       <svg width="34" height="34" viewBox="0 0 16 16" fill="currentColor" class="state-icon">
         <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zM10 2.704 4.25 5.16 1.5 4.06v7.6l6.5 2.6 6.5-2.6V4.06z"/>
       </svg>
-      <p class="state-title">View your items here</p>
-      <p class="state-text">Connect your Serble account to see and manage your items without leaving this app.</p>
-      <button class="btn" @click="connect">Connect Serble account</button>
+      <p class="state-title">{{ $t('view-your-items-here') }}</p>
+      <p class="state-text">{{ $t('connect-account-blurb') }}</p>
+      <button class="btn" @click="connect">{{ $t('connect-serble-account') }}</button>
     </div>
 
     <!-- Signed in -->
     <template v-else-if="loggedIn">
       <div class="head">
         <h2 class="title">{{ heading }}</h2>
-        <button class="icon-btn" :disabled="loading" @click="load" title="Refresh">
+        <button class="icon-btn" :disabled="loading" @click="load" :title="$t('refresh')">
           <LoadingSpinner :size="14" :spin="loading" />
         </button>
       </div>
 
-      <input class="search" type="search" v-model="search" @input="onSearchInput" placeholder="Search your items…" />
+      <input class="search" type="search" v-model="search" @input="onSearchInput" :placeholder="$t('search-your-items')" />
 
-      <div v-if="loading" class="state">Loading…</div>
-      <div v-else-if="error" class="state err">Couldn't load your items.</div>
+      <div v-if="loading" class="state">{{ $t('loading-ellipsis') }}</div>
+      <div v-else-if="error" class="state err">{{ $t('items-load-failed') }}</div>
       <div v-else-if="isEmpty && search.trim()" class="state">No items match “{{ search.trim() }}”.</div>
       <div v-else-if="isEmpty" class="state">
-        <p class="state-title">No items yet</p>
+        <p class="state-title">{{ $t('inventory-empty-title') }}</p>
         <p class="state-text">Items you own{{ filterAppName ? ` from ${filterAppName}` : '' }} will show up here.</p>
       </div>
 
@@ -212,20 +212,20 @@ export default {
         </div>
         <div v-if="hasMore" class="more">
           <button class="btn ghost" :disabled="loadingMore" @click="loadMore">
-            {{ loadingMore ? 'Loading…' : 'Load more' }}
+            {{ loadingMore ? $t('loading-ellipsis') : $t('load-more') }}
           </button>
         </div>
       </template>
     </template>
 
-    <div v-else class="state">Loading…</div>
+    <div v-else class="state">{{ $t('loading-ellipsis') }}</div>
 
     <!-- Detail drawer — reuses the shared ItemDetails component, re-themed to the embed palette. -->
     <div v-if="selected" class="drawer-backdrop" @click.self="closeItem">
       <div class="drawer">
-        <button class="drawer-close" @click="closeItem" aria-label="Close">&times;</button>
+        <button class="drawer-close" @click="closeItem" :aria-label="$t('close')">&times;</button>
         <ItemDetails :item-id="selected.id" class="embed-details" />
-        <button class="btn ghost" @click="openFullPage(selected)">Open full item page ↗</button>
+        <button class="btn ghost" @click="openFullPage(selected)">{{ $t('open-full-item-page') }} ↗</button>
       </div>
     </div>
   </div>

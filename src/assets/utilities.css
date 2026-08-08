@@ -1,0 +1,191 @@
+/* ============================================================================
+   Layout and spacing utilities.
+
+   Deliberately small: only primitives that are genuinely useful inline. Anything
+   with a visual identity (buttons, inputs, cards, alerts) lives in
+   components.css instead. Add to this file sparingly — if a rule is only needed
+   once, it belongs in that component's scoped styles.
+   ========================================================================== */
+
+/* ── Page containers ────────────────────────────────────────────────────────
+   Every full-width page uses one of these so edges line up with nav and footer. */
+.container {
+    width: 100%;
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--space-6);
+}
+
+.container-narrow {
+    width: 100%;
+    max-width: var(--container-narrow);
+    margin-inline: auto;
+    padding-inline: var(--space-6);
+}
+
+/* ── Grid ───────────────────────────────────────────────────────────────────
+   12-column CSS grid. Columns are full width below 768px and take their span
+   above it, which is the mobile-first behaviour the old markup assumed. */
+.row {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.row > * {
+    grid-column: span 12;
+    min-width: 0;
+}
+
+.g-1 { gap: var(--space-1); }
+.g-2 { gap: var(--space-2); }
+.g-3 { gap: var(--space-3); }
+.g-4 { gap: var(--space-4); }
+
+.col-1  { grid-column: span 1; }
+.col-2  { grid-column: span 2; }
+.col-3  { grid-column: span 3; }
+.col-4  { grid-column: span 4; }
+.col-5  { grid-column: span 5; }
+.col-6  { grid-column: span 6; }
+.col-7  { grid-column: span 7; }
+.col-8  { grid-column: span 8; }
+.col-9  { grid-column: span 9; }
+.col-10 { grid-column: span 10; }
+.col-11 { grid-column: span 11; }
+.col-12 { grid-column: span 12; }
+
+@media (min-width: 768px) {
+    .col-md-1  { grid-column: span 1; }
+    .col-md-2  { grid-column: span 2; }
+    .col-md-3  { grid-column: span 3; }
+    .col-md-4  { grid-column: span 4; }
+    .col-md-5  { grid-column: span 5; }
+    .col-md-6  { grid-column: span 6; }
+    .col-md-7  { grid-column: span 7; }
+    .col-md-8  { grid-column: span 8; }
+    .col-md-9  { grid-column: span 9; }
+    .col-md-10 { grid-column: span 10; }
+    .col-md-11 { grid-column: span 11; }
+    .col-md-12 { grid-column: span 12; }
+}
+
+/* ── Flex ── */
+.flex           { display: flex; }
+.inline-flex    { display: inline-flex; }
+.flex-col       { flex-direction: column; }
+.flex-wrap      { flex-wrap: wrap; }
+.flex-grow      { flex-grow: 1; }
+.flex-none      { flex-shrink: 0; }
+.items-start    { align-items: flex-start; }
+.items-center   { align-items: center; }
+.items-end      { align-items: flex-end; }
+.items-baseline { align-items: baseline; }
+.justify-between { justify-content: space-between; }
+.justify-center  { justify-content: center; }
+.justify-end     { justify-content: flex-end; }
+
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-5 { gap: var(--space-5); }
+.gap-6 { gap: var(--space-6); }
+
+/* ── Display ── */
+.hidden { display: none; }
+.block  { display: block; }
+
+@media (min-width: 768px) {
+    .md\:inline { display: inline; }
+    .md\:hidden { display: none; }
+}
+
+/* ── Margin ─────────────────────────────────────────────────────────────────
+   Prefer flex/grid `gap` over these; they exist for one-off nudges and for
+   text flow, where gap doesn't apply. */
+.m-0  { margin: 0; }
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: var(--space-1); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); }
+.mt-4 { margin-top: var(--space-4); }
+.mt-6 { margin-top: var(--space-6); }
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: var(--space-1); }
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-6 { margin-bottom: var(--space-6); }
+.my-4 { margin-block: var(--space-4); }
+.mx-auto { margin-inline: auto; }
+.ms-auto { margin-inline-start: auto; }
+
+/* Inline-axis nudges, mostly for icons sitting next to text. */
+.me-1 { margin-inline-end: var(--space-1); }
+.me-2 { margin-inline-end: var(--space-2); }
+.ms-1 { margin-inline-start: var(--space-1); }
+.ms-2 { margin-inline-start: var(--space-2); }
+
+/* ── Padding ── */
+.p-0  { padding: 0; }
+.p-3  { padding: var(--space-3); }
+.p-4  { padding: var(--space-4); }
+.px-0 { padding-inline: 0; }
+.px-4 { padding-inline: var(--space-4); }
+.py-2 { padding-block: var(--space-2); }
+.py-3 { padding-block: var(--space-3); }
+.py-4 { padding-block: var(--space-4); }
+.py-6 { padding-block: var(--space-6); }
+.py-8 { padding-block: var(--space-8); }
+
+/* ── Sizing ── */
+.w-full { width: 100%; }
+.w-half { width: 50%; }
+
+/* ── Text ── */
+.text-center { text-align: center; }
+.text-end    { text-align: right; }
+.text-wrap   { overflow-wrap: anywhere; }
+.text-nowrap { white-space: nowrap; }
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.text-muted     { color: var(--text-muted); }
+.text-dim       { color: var(--text-dim); }
+.text-faint     { color: var(--text-faint); }
+.text-accent    { color: var(--accent-light); }
+.text-danger    { color: var(--danger); }
+.text-success   { color: var(--success); }
+.text-warning   { color: var(--warning); }
+
+.text-sm { font-size: 0.85rem; }
+.text-xs { font-size: 0.75rem; }
+.fw-semibold { font-weight: 600; }
+.mono {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+}
+
+/* Digits that line up in columns. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ── Misc ── */
+.opacity-25 { opacity: 0.25; }
+.opacity-50 { opacity: 0.5; }
+
+/* Visually hidden but available to screen readers. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

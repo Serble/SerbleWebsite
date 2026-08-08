@@ -65,14 +65,14 @@ export default {
 
       <!-- Header -->
       <div class="mfa-header">
-        <img src="/images/icon.png" width="52" height="52" alt="Serble" class="mfa-logo" />
+        <img src="/images/icon.png" width="52" height="52" :alt="$t('serble')" class="mfa-logo" />
         <h1 class="mfa-title">{{ $t('2fa') }}</h1>
-        <p class="mfa-sub">Enter the 6-digit code from your authenticator app.</p>
+        <p class="mfa-sub">{{ $t('totp-enter-code') }}</p>
       </div>
 
       <!-- Error -->
       <div v-if="error === 'invalid-code'" class="mfa-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-none">
           <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
           <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
         </svg>
@@ -190,17 +190,20 @@ export default {
   color: var(--text-dim);
 }
 
+/* line-height must be set explicitly: base.css gives inputs `font: inherit`,
+   which drags in body's 1.6 and makes a large-font field absurdly tall. */
 .mfa-input {
   background: var(--surface-sunken);
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   color: var(--text);
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  letter-spacing: 0.35em;
+  line-height: 1.2;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em; /* offsets the trailing letter-spacing so text stays centred */
   text-align: center;
-  padding: 12px 16px;
-  outline: none;
+  padding: 11px 16px;
   width: 100%;
   transition: border-color 0.15s;
 }
@@ -209,10 +212,11 @@ export default {
   color: var(--border-strong);
   font-size: 0.9rem;
   letter-spacing: 0;
+  text-indent: 0;
   font-weight: 400;
 }
 
-.mfa-input:focus { border-color: #6ea8fe; }
+.mfa-input:focus { border-color: var(--accent-light); }
 .mfa-input-error { border-color: var(--danger) !important; }
 
 .mfa-remember {

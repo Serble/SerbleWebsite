@@ -15,14 +15,14 @@ export default {
         key: 'img',
         label: 'HTML',
         hint: 'Scales to any size — set width/height in CSS or attributes.',
-        code: `<img src="${svgUrl.value}" alt="Serble coin" width="24" height="24">`,
+        code: `<img src="${svgUrl.value}" :alt="$t('serble-coin')" width="24" height="24">`,
       },
       {
         key: 'inline',
         label: 'Inline with text',
         hint: 'Aligns the coin with a balance or price.',
         code: `<span style="display:inline-flex;align-items:center;gap:4px">
-  <img src="${svgUrl.value}" alt="Serble coin" width="16" height="16">
+  <img src="${svgUrl.value}" :alt="$t('serble-coin')" width="16" height="16">
   1,250
 </span>`,
       },
@@ -71,8 +71,8 @@ export default {
 
       <!-- Header -->
       <div class="coin-header">
-        <img :src="svgUrl" alt="Serble coin" width="72" height="72" class="hero-coin">
-        <h1 class="coin-title">Serble coin asset</h1>
+        <img :src="svgUrl" :alt="$t('serble-coin')" width="72" height="72" class="hero-coin">
+        <h1 class="coin-title">{{ $t('serble-coin-asset') }}</h1>
         <p class="coin-sub">
           The Serble coin, hosted for anyone to embed. Hotlink it directly — no download, no
           attribution required, and it stays up to date if the artwork ever changes.
@@ -81,13 +81,13 @@ export default {
 
       <!-- Direct links -->
       <section class="coin-section">
-        <h2 class="section-title">Direct links</h2>
+        <h2 class="section-title">{{ $t('direct-links') }}</h2>
         <div class="link-list">
           <button class="link-row" type="button" @click="copy('svg', svgUrl)">
             <span class="link-badge svg">SVG</span>
             <span class="link-url">{{ svgUrl }}</span>
-            <span class="link-note">any size</span>
-            <span class="link-copy">{{ copied === 'svg' ? 'Copied' : 'Copy' }}</span>
+            <span class="link-note">{{ $t('any-size') }}</span>
+            <span class="link-copy">{{ copied === 'svg' ? $t('copied') : $t('copy') }}</span>
           </button>
           <button
             v-for="size in pngSizes"
@@ -110,34 +110,34 @@ export default {
 
       <!-- Preview at real sizes -->
       <section class="coin-section">
-        <h2 class="section-title">How it looks</h2>
+        <h2 class="section-title">{{ $t('how-it-looks') }}</h2>
         <div class="preview-grid">
           <div v-for="size in [16, 24, 32, 48, 64]" :key="size" class="preview-cell">
             <div class="preview-box">
-              <img :src="svgUrl" alt="Serble coin" :width="size" :height="size">
+              <img :src="svgUrl" :alt="$t('serble-coin')" :width="size" :height="size">
             </div>
             <span class="preview-label">{{ size }}px</span>
           </div>
         </div>
         <div class="bg-checks">
           <div class="bg-check light">
-            <img :src="svgUrl" alt="Serble coin" width="40" height="40">
-            <span>Light</span>
+            <img :src="svgUrl" :alt="$t('serble-coin')" width="40" height="40">
+            <span>{{ $t('light') }}</span>
           </div>
           <div class="bg-check dark">
-            <img :src="svgUrl" alt="Serble coin" width="40" height="40">
-            <span>Dark</span>
+            <img :src="svgUrl" :alt="$t('serble-coin')" width="40" height="40">
+            <span>{{ $t('dark') }}</span>
           </div>
           <div class="bg-check checker">
-            <img :src="svgUrl" alt="Serble coin" width="40" height="40">
-            <span>Transparent</span>
+            <img :src="svgUrl" :alt="$t('serble-coin')" width="40" height="40">
+            <span>{{ $t('transparent') }}</span>
           </div>
         </div>
       </section>
 
       <!-- Copy-paste snippets -->
       <section class="coin-section">
-        <h2 class="section-title">Snippets</h2>
+        <h2 class="section-title">{{ $t('snippets') }}</h2>
         <div class="snippet-list">
           <div v-for="s in snippets" :key="s.key" class="snippet">
             <div class="snippet-head">
@@ -146,7 +146,7 @@ export default {
                 <span class="snippet-hint">{{ s.hint }}</span>
               </div>
               <button class="snippet-copy" type="button" @click="copy(s.key, s.code)">
-                {{ copied === s.key ? 'Copied' : 'Copy' }}
+                {{ copied === s.key ? $t('copied') : $t('copy') }}
               </button>
             </div>
             <pre class="snippet-code"><code>{{ s.code }}</code></pre>
@@ -156,12 +156,12 @@ export default {
 
       <!-- Usage -->
       <section class="coin-section">
-        <h2 class="section-title">Usage</h2>
+        <h2 class="section-title">{{ $t('usage') }}</h2>
         <ul class="usage-list">
-          <li>Use it to represent Serble coins — balances, prices, rewards, payouts.</li>
-          <li>Don't recolour, rotate, or squash it; scale it evenly instead.</li>
-          <li>Leave a little clear space around it so it reads as a coin, not a bullet point.</li>
-          <li>Don't use it as your own app's logo or imply Serble endorses your site.</li>
+          <li>{{ $t('coin-usage-1') }}</li>
+          <li>{{ $t('coin-usage-2') }}</li>
+          <li>{{ $t('coin-usage-3') }}</li>
+          <li>{{ $t('coin-usage-4') }}</li>
         </ul>
       </section>
 

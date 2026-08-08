@@ -15,7 +15,7 @@ export default {
        hotlinkable asset documented on /coin. -->
   <img
     src="/images/coin.svg"
-    alt="Serble coin"
+    :alt="$t('serble-coin')"
     :width="size"
     :height="size"
     class="coin-icon"

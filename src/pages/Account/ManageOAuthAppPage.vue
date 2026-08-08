@@ -602,7 +602,7 @@ export default {
           v-model="transferAmount"
           type="text"
           inputmode="decimal"
-          class="dark-input"
+          class="input"
           placeholder="0"
           :disabled="transferring"
           @keyup.enter="submitTransfer"
@@ -613,7 +613,7 @@ export default {
           id="transfer-note"
           v-model="transferNote"
           type="text"
-          class="dark-input"
+          class="input"
           maxlength="256"
           :placeholder="$t('note-placeholder')"
           :disabled="transferring"
@@ -644,7 +644,7 @@ export default {
           v-model="taxTargetDraft"
           type="text"
           inputmode="decimal"
-          class="dark-input"
+          class="input"
           placeholder="0"
           :disabled="taxTargetLoading || taxTargetSaving"
           @keyup.enter="saveTaxTarget"
@@ -680,7 +680,7 @@ export default {
           id="app-name"
           v-model="name"
           type="text"
-          class="dark-input"
+          class="input"
           maxlength="255"
           :placeholder="$t('application-name')"
           @input="formSuccess = false"
@@ -690,7 +690,7 @@ export default {
         <textarea
           id="app-desc"
           v-model="description"
-          class="dark-input"
+          class="textarea"
           maxlength="4095"
           rows="3"
           :placeholder="$t('description')"
@@ -723,7 +723,7 @@ export default {
           <input
             v-model="newUri"
             type="text"
-            class="dark-input"
+            class="input"
             :placeholder="$t('add-redirect-uri')"
             @keydown.enter.prevent="addUri"
           >
@@ -770,7 +770,7 @@ export default {
           <input
             v-model="newKeyName"
             type="text"
-            class="dark-input"
+            class="input"
             maxlength="128"
             :placeholder="$t('key-name-placeholder')"
             @keydown.enter.prevent="createKey"
@@ -1054,33 +1054,16 @@ export default {
   margin: 8px 0 0;
 }
 
-.dark-input {
-  width: 100%;
-  background: var(--surface-sunken);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 0.9rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
 
-.dark-input::placeholder { color: var(--text-faint); }
 
-.dark-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
 
-textarea.dark-input { resize: vertical; line-height: 1.5; }
 
 .inline-row {
   display: flex;
   gap: 8px;
 }
 
-.inline-row .dark-input { flex-grow: 1; }
+.inline-row .input { flex-grow: 1; }
 
 /* ── Copy chips ── */
 .copy-chip {

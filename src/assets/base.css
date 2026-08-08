@@ -1,29 +1,43 @@
-:root {
-    /* Surfaces */
-    --surface: #18181b;
-    --surface-sunken: #111113;
-    --surface-footer: #141416;
+/* ============================================================================
+   Serble design system — tokens and global element styles.
 
-    /* Borders */
+   Everything visual should reference a token from here rather than a literal.
+   Loaded via main.css, which is imported from main.js, so it is available to
+   every component (including scoped styles, since custom properties inherit).
+   ========================================================================== */
+
+:root {
+    /* ── Surfaces ────────────────────────────────────────────────────────────
+       Dark UI uses lightness as the elevation cue: the further forward a
+       surface sits, the lighter it is. Keep this ordering intact. */
+    --surface-sunken: #111113;  /* page canvas, nav, inputs within cards */
+    --surface-footer: #141416;  /* footer band */
+    --surface: #18181b;         /* cards and panels */
+    --surface-raised: #1f1f23;  /* popovers, dropdowns, modals */
+
+    /* ── Borders ── */
     --border-subtle: #1f1f23;
     --border: #27272a;
     --border-strong: #3f3f46;
 
-    /* Text */
+    /* ── Text ── */
     --text: #f4f4f5;
     --text-secondary: #d4d4d8;
     --text-muted: #a1a1aa;
     --text-dim: #8e8e99;
     --text-faint: #7a7a85;
 
-    /* Accent */
+    /* ── Accent ──────────────────────────────────────────────────────────────
+       One blue, three roles. Do not introduce further blues: --accent for
+       solid fills, --accent-hover for their hover state, --accent-light for
+       text/links/focus borders on dark grounds. */
     --accent: #2563eb;
     --accent-hover: #1d4ed8;
-    --accent-purple: #7c3aed;
     --accent-light: #60a5fa;
+    --accent-purple: #7c3aed;
     --accent-ring: rgba(37, 99, 235, 0.15);
 
-    /* Danger */
+    /* ── Danger ── */
     --danger: #f87171;
     --danger-strong: #dc2626;
     --danger-stronger: #b91c1c;
@@ -35,27 +49,139 @@
     --danger-glow: rgba(248, 113, 113, 0.5);
     --danger-surface: #1a0a0a;
 
-    /* Success */
+    /* ── Success ── */
     --success: #4ade80;
     --success-bg: rgba(34, 197, 94, 0.12);
     --success-border: rgba(34, 197, 94, 0.4);
     --success-bg-soft: rgba(74, 222, 128, 0.1);
     --success-border-soft: rgba(74, 222, 128, 0.25);
 
-    /* Warning */
+    /* ── Warning ── */
     --warning: #facc15;
+    --warning-bg: rgba(250, 204, 21, 0.12);
+    --warning-border: rgba(250, 204, 21, 0.35);
+
+    /* ── Overlay ── */
+    --overlay: rgba(0, 0, 0, 0.6);
+    --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+
+    /* ── Typography ──────────────────────────────────────────────────────────
+       Generic families go last, otherwise nothing after them is ever reached. */
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                 Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+                 'Liberation Mono', monospace;
+
+    /* ── Radius ─────────────────────────────────────────────────────────────
+       Three steps plus a pill. Anything else is drift. */
+    --radius-sm: 6px;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+
+    /* ── Spacing ── */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 32px;
+    --space-8: 48px;
+
+    /* ── Layout ─────────────────────────────────────────────────────────────
+       Two container widths. Nav, footer and page content all use --container
+       so their edges line up. */
+    --container: 1000px;
+    --container-narrow: 680px;
+
+    /* ── Motion ── */
+    --t-fast: 0.12s;
+    --t: 0.15s;
+
+    /* ── Focus ── */
+    --focus-ring: 0 0 0 3px var(--accent-ring);
 }
 
-.dropdown-menu {
-    background-color: #393d41;
-    color: #ffffff;
+/* Breakpoints (media queries can't use custom properties — these are the only
+   three widths the site should break at):
+     640px   phone / small tablet
+     768px   tablet, where the nav collapses
+     1024px  small desktop                                                   */
+
+/* ============================================================================
+   Global element styles
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
-.dropdown-item {
-    color: #bebebe;
+html, body {
+    background-color: var(--surface-sunken);
+    color: var(--text);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
 }
 
-.dropdown-item:focus, .dropdown-item:hover {
-    background-color: #474c50;
-    color: #e3e3e3;
+h1, h2, h3, h4, h5, h6 {
+    line-height: 1.25;
+    text-wrap: balance;
+}
+
+a {
+    color: var(--accent-light);
+}
+
+code, pre, kbd, samp {
+    font-family: var(--font-mono);
+}
+
+img {
+    max-width: 100%;
+}
+
+/* Form controls don't inherit the page font by default. */
+button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+}
+
+/* ============================================================================
+   Focus — one visible ring for every interactive element.
+
+   Components may restyle :focus-visible, but must never remove the indicator
+   without providing a replacement.
+   ========================================================================== */
+
+:focus-visible {
+    outline: 2px solid var(--accent-light);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Suppress the ring for pointer interaction only, never for keyboard. */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ============================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

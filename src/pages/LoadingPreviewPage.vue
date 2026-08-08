@@ -14,17 +14,17 @@ export default {
 <template>
   <div class="loading-preview">
     <section class="preview-group">
-      <h3 class="preview-label">LoadingCard — dark box (OAuth / consent flows)</h3>
+      <h3 class="preview-label">{{ $t('preview-loading-card') }}</h3>
       <LoadingCard />
     </section>
 
     <section class="preview-group">
-      <h3 class="preview-label">LoadingBlock — centered block (in-page lists)</h3>
+      <h3 class="preview-label">{{ $t('preview-loading-block') }}</h3>
       <LoadingBlock />
     </section>
 
     <section class="preview-group">
-      <h3 class="preview-label">LoadingSpinner — inline icon (buttons / refresh)</h3>
+      <h3 class="preview-label">{{ $t('preview-loading-spinner') }}</h3>
       <div class="preview-inline">
         <LoadingSpinner :size="14" />
         <LoadingSpinner :size="24" />

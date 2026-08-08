@@ -89,7 +89,7 @@ export default {
     <div class="inv-layout" :class="{ 'has-selection': selectedId }">
       <div class="inv-main">
         <input class="inv-search" type="search" v-model="search" @input="onSearchInput"
-               placeholder="Search your items…" />
+               :placeholder="$t('search-your-items')" />
 
         <div v-if="loading" class="inv-state">{{ $t('loading') }}</div>
         <div v-else-if="error" class="inv-state inv-error">{{ $t('unknown-error') }}</div>
@@ -128,9 +128,9 @@ export default {
         <div v-if="selectedId" class="panel-inner">
           <div class="panel-bar">
             <router-link :to="{ name: 'ItemInfo', params: { id: selectedId } }" class="panel-link">
-              {{ $t('open-full-page') || 'Open full page' }} &nearr;
+              {{ $t('open-full-page') }} &nearr;
             </router-link>
-            <button class="panel-close" :title="$t('close') || 'Close'" @click="closePanel" aria-label="Close">&times;</button>
+            <button class="panel-close" :title="$t('close')" @click="closePanel" :aria-label="$t('close')">&times;</button>
           </div>
           <ItemDetails :item-id="selectedId" />
         </div>
@@ -138,7 +138,7 @@ export default {
           <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="currentColor" viewBox="0 0 16 16">
             <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zm3.564 1.426L5.596 5 8 5.961 14.154 3.5zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923z"/>
           </svg>
-          <p>Select an item to view its details.</p>
+          <p>{{ $t('select-item-hint') }}</p>
         </div>
       </aside>
     </div>

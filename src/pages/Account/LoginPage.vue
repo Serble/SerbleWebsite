@@ -4,9 +4,11 @@ import { inject, ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
+import AuthCard from "@/components/AuthCard.vue";
+import Icon from "@/components/Icon.vue";
 
 export default {
-  components: { LoadingSpinner },
+  components: { LoadingSpinner, AuthCard, Icon },
   setup() {
     const userStore = inject('userStore');
     const route = useRoute();
@@ -17,7 +19,6 @@ export default {
 
     const username      = ref('');
     const password      = ref('');
-    const rememberMe    = ref(false);
     const error         = ref(0);
     const working       = ref(false);
     const passkeyError  = ref('');
@@ -69,269 +70,107 @@ export default {
       window.location.href = returnUrl;
     }
 
-    function handleKey(e) {
-      if (e.key === 'Enter') login();
-    }
-
     const registerLink = computed(() =>
       route.query.return_url
         ? { path: '/register', query: { return_url: route.query.return_url } }
         : '/register'
     );
 
-    return { username, password, rememberMe, error, working, login, handleKey, passkeyLogin, passkeyWorking, passkeyError, registerLink };
+    return { username, password, error, working, login, passkeyLogin, passkeyWorking, passkeyError, registerLink };
   }
 };
 </script>
 
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
+  <AuthCard :title="$t('sign-in')" subtitle="Welcome back to Serble.">
 
-      <!-- Header -->
-      <div class="auth-header">
-        <img src="/images/icon.png" width="52" height="52" alt="Serble" class="auth-logo" />
-        <h1 class="auth-title">{{ $t('sign-in') }}</h1>
-        <p class="auth-sub">Welcome back to Serble.</p>
-      </div>
+    <!-- A real form so Enter submits and password managers behave. -->
+    <form class="auth-form" @submit.prevent="login">
 
-      <!-- Error banner -->
-      <div v-if="error === 1" class="auth-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
-        {{ $t('username-password-required') }}
+      <div v-if="error === 1" class="alert alert-danger">
+        <Icon name="alert" />{{ $t('username-password-required') }}
       </div>
-      <div v-else-if="error === 2" class="auth-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
-        {{ $t('invalid-creds-need-account') }}
+      <div v-else-if="error === 2" class="alert alert-danger">
+        <Icon name="alert" />{{ $t('invalid-creds-need-account') }}
         <RouterLink :to="registerLink" class="auth-error-link">{{ $t('register') }}</RouterLink>
       </div>
-      <div v-else-if="error === 3" class="auth-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
-        {{ $t('account-disabled') }}
+      <div v-else-if="error === 3" class="alert alert-danger">
+        <Icon name="alert" />{{ $t('account-disabled') }}
       </div>
 
-      <!-- Fields -->
-      <div class="auth-fields">
-        <div class="auth-field">
-          <label class="auth-label" for="username">{{ $t('username') }}</label>
-          <input
-            id="username"
-            type="text"
-            class="auth-input"
-            :class="{ 'auth-input-error': error === 2 }"
-            :placeholder="$t('username')"
-            v-model="username"
-            autocomplete="username"
-            @keydown="handleKey"
-          />
-        </div>
-
-        <div class="auth-field">
-          <label class="auth-label" for="password">{{ $t('password') }}</label>
-          <input
-            id="password"
-            type="password"
-            class="auth-input"
-            :class="{ 'auth-input-error': error === 2 }"
-            placeholder="••••••••••••"
-            v-model="password"
-            autocomplete="current-password"
-            @keydown="handleKey"
-          />
-        </div>
+      <div class="field">
+        <label class="field-label" for="username">{{ $t('username') }}</label>
+        <input
+          id="username"
+          type="text"
+          class="input"
+          :class="{ 'input-invalid': error === 2 }"
+          :placeholder="$t('username')"
+          v-model="username"
+          autocomplete="username"
+        />
       </div>
 
-      <!-- Remember me -->
-      <label class="auth-remember">
-        <input type="checkbox" v-model="rememberMe" class="auth-checkbox" />
-        <span>{{ $t('remember-me') }}</span>
-      </label>
+      <div class="field">
+        <label class="field-label" for="password">{{ $t('password') }}</label>
+        <input
+          id="password"
+          type="password"
+          class="input"
+          :class="{ 'input-invalid': error === 2 }"
+          placeholder="••••••••••••"
+          v-model="password"
+          autocomplete="current-password"
+        />
+      </div>
 
-      <!-- Submit -->
-      <button class="auth-submit" :disabled="working" @click="login">
-        <LoadingSpinner v-if="working" class="me-2" />
+      <button type="submit" class="btn btn-primary btn-block" :disabled="working">
+        <LoadingSpinner v-if="working" />
         {{ $t('sign-in') }}
       </button>
+    </form>
 
-      <!-- Passkey divider -->
-      <div class="auth-divider">
-        <span class="auth-divider-text">or</span>
-      </div>
-
-      <!-- Passkey error -->
-      <div v-if="passkeyError" class="auth-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
-        {{ passkeyError }}
-      </div>
-
-      <!-- Passkey login button -->
-      <button class="auth-submit auth-passkey-btn" :disabled="passkeyWorking" @click="passkeyLogin">
-        <LoadingSpinner v-if="passkeyWorking" class="me-2" />
-        <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/></svg>
-        {{ $t('login-with-passkey') }}
-      </button>
-
-      <p class="auth-switch">
-        {{ $t('dont-have-account') }}
-        <RouterLink :to="registerLink" class="auth-switch-link">{{ $t('register-for-free') }}</RouterLink>
-      </p>
-
+    <div class="auth-divider">
+      <span class="auth-divider-text">{{ $t('or') }}</span>
     </div>
-  </div>
+
+    <div v-if="passkeyError" class="alert alert-danger">
+      <AlertIcon /> {{ passkeyError }}
+    </div>
+
+    <button class="btn btn-secondary btn-block" :disabled="passkeyWorking" @click="passkeyLogin">
+      <LoadingSpinner v-if="passkeyWorking" />
+      <Icon v-else name="lock" />
+      {{ $t('login-with-passkey') }}
+    </button>
+
+    <p class="auth-switch">
+      {{ $t('dont-have-account') }}
+      <RouterLink :to="registerLink" class="auth-switch-link">{{ $t('register-for-free') }}</RouterLink>
+    </p>
+
+  </AuthCard>
 </template>
 
 <style scoped>
-.auth-page {
-  min-height: 70vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 36px 32px;
+.auth-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-.auth-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-}
-
-.auth-logo { border-radius: 10px; }
-
-.auth-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--text);
-  margin: 0;
-}
-
-.auth-sub {
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  margin: 0;
-}
-
-/* Error */
-.auth-error {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  font-size: 0.83rem;
-  color: var(--danger);
-  background: var(--danger-bg-soft);
-  border: 1px solid rgba(248,113,113,0.2);
-  border-radius: 8px;
-  padding: 9px 12px;
+  gap: var(--space-3);
 }
 
 .auth-error-link {
-  color: #fca5a5;
+  color: var(--danger);
   text-decoration: underline;
   margin-left: 2px;
 }
 
-/* Fields */
-.auth-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.auth-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.auth-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-dim);
-}
-
-.auth-input {
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 0.95rem;
-  padding: 10px 14px;
-  outline: none;
-  width: 100%;
-  transition: border-color 0.15s;
-}
-
-.auth-input::placeholder { color: var(--text-faint); }
-.auth-input:focus { border-color: #6ea8fe; }
-.auth-input-error { border-color: var(--danger) !important; }
-
-/* Remember me */
-.auth-remember {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
-}
-
-.auth-checkbox {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* Submit */
-.auth-submit {
-  width: 100%;
-  padding: 11px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-.auth-submit:hover:not(:disabled) { background: var(--accent-hover); }
-.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.auth-passkey-btn {
-  background: var(--border);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-strong);
-}
-.auth-passkey-btn:hover:not(:disabled) { background: var(--border-strong); }
-
 .auth-divider {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: -4px 0;
+  gap: var(--space-2);
 }
+
 .auth-divider::before,
 .auth-divider::after {
   content: '';
@@ -339,6 +178,7 @@ export default {
   height: 1px;
   background: var(--border);
 }
+
 .auth-divider-text {
   font-size: 0.75rem;
   color: var(--text-faint);
@@ -346,7 +186,6 @@ export default {
   letter-spacing: 0.08em;
 }
 
-/* Switch link */
 .auth-switch {
   font-size: 0.82rem;
   color: var(--text-dim);
@@ -361,5 +200,4 @@ export default {
 }
 
 .auth-switch-link:hover { text-decoration: underline; }
-
 </style>

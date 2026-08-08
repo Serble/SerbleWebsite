@@ -146,13 +146,13 @@ export default {
 
       <!-- Loading / error state -->
       <div v-if="dictLoading" class="wm-status-card">
-        <LoadingSpinner :size="36" class="text-primary mb-3" />
+        <LoadingSpinner :size="36" class="text-accent mb-3" />
         <p class="text-muted">{{ $t('loading') }}</p>
       </div>
 
       <div v-else-if="dictError" class="wm-status-card">
         <p class="text-danger mb-2">{{ $t('unknown-error-occured') }}</p>
-        <button class="btn btn-outline-secondary btn-sm" @click="$router.go(0)">{{ $t('reload') }}</button>
+        <button class="btn btn-ghost btn-sm" @click="$router.go(0)">{{ $t('reload') }}</button>
       </div>
 
       <!-- Game board -->
@@ -481,7 +481,6 @@ export default {
   padding: 10px 14px;
   text-align: center;
   letter-spacing: 0.05em;
-  outline: none;
   transition: border-color 0.15s;
 }
 

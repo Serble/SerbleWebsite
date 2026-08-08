@@ -1,6 +1,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import {
   getTransactionProposal,
@@ -23,6 +24,7 @@ function formatDate(value) {
 export default {
   components: { CoinAmount, ItemCard, LoadingCard, LoadingSpinner },
   setup() {
+    const { t } = useI18n();
     ensureLoggedIn();
     const route = useRoute();
     const router = useRouter();
@@ -36,21 +38,22 @@ export default {
 
     const proposalId = computed(() => route.query.proposal ?? '');
 
+    // Values are message keys; the template runs them through $t.
     const errorMessages = {
-      'no-proposal':  'No transaction proposal id was provided in the URL.',
-      'not-found':    'This transaction proposal was not found, has expired, or does not belong to you.',
-      'not-pending':  'This transaction proposal is no longer pending. It may have already been handled or expired.',
-      'unknown':      'An unexpected error occurred. Please try again.',
+      'no-proposal':  'txc-err-no-proposal',
+      'not-found':    'txc-err-not-found',
+      'not-pending':  'txc-err-not-pending',
+      'unknown':      'txc-err-unknown',
     };
 
     // Non-pending statuses returned by GET — already resolved, no buttons.
     const resolvedMessages = {
-      Approved:   'This transaction has already been approved and the coins were moved.',
-      Denied:     'This transaction was declined.',
-      Expired:    'This transaction proposal expired before it was acted on.',
-      Cancelled:  'The application withdrew this transaction proposal.',
-      Failed:     'This transaction was approved but the transfer could not be completed.',
-      InProgress: 'This transaction is currently being processed. Please check back shortly.',
+      Approved:   'txc-resolved-approved',
+      Denied:     'txc-resolved-denied',
+      Expired:    'txc-resolved-expired',
+      Cancelled:  'txc-resolved-cancelled',
+      Failed:     'txc-resolved-failed',
+      InProgress: 'txc-resolved-in-progress',
     };
 
     function setError(code, detail = '') {
@@ -108,9 +111,9 @@ export default {
 
     const status = computed(() => proposal.value?.status ?? 'Pending');
     const isPending = computed(() => status.value === 'Pending');
-    const resolvedMessage = computed(() => resolvedMessages[status.value] ?? 'This transaction proposal is no longer pending.');
+    const resolvedMessage = computed(() => resolvedMessages[status.value] ?? 'txc-resolved-default');
 
-    const appName = computed(() => proposal.value?.appName ?? proposal.value?.appId ?? 'An application');
+    const appName = computed(() => proposal.value?.appName ?? proposal.value?.appId ?? t('an-application'));
     const appDescription = computed(() => proposal.value?.appDescription ?? '');
     const recipientName = computed(() => proposal.value?.recipientName ?? proposal.value?.recipientId ?? '');
     const recipientType = computed(() => proposal.value?.recipientType ?? '');
@@ -193,7 +196,7 @@ export default {
     <!-- Loading / redirecting -->
     <LoadingCard
       v-if="state === 'loading' || state === 'redirecting'"
-      :text="state === 'redirecting' ? 'Redirecting…' : 'Loading…'"
+      :text="state === 'redirecting' ? $t('redirecting') : $t('loading-ellipsis')"
     />
 
     <!-- Error -->
@@ -204,21 +207,21 @@ export default {
           <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
         </svg>
       </div>
-      <h2 class="txc-error-title">Transaction unavailable</h2>
-      <p class="txc-error-sub">{{ errorMessages[error.code] ?? errorMessages.unknown }}</p>
+      <h2 class="txc-error-title">{{ $t('transaction-unavailable') }}</h2>
+      <p class="txc-error-sub">{{ $t(errorMessages[error.code] ?? errorMessages.unknown) }}</p>
 
       <div class="txc-error-detail">
         <div class="error-detail-row">
-          <span class="error-detail-label">Error code</span>
+          <span class="error-detail-label">{{ $t('error-code') }}</span>
           <code class="error-detail-value error-code-badge">{{ error.code || 'unknown' }}</code>
         </div>
         <div class="error-detail-row" v-if="error.detail">
-          <span class="error-detail-label">Detail</span>
+          <span class="error-detail-label">{{ $t('detail') }}</span>
           <pre class="error-detail-value error-detail-pre">{{ error.detail }}</pre>
         </div>
       </div>
 
-      <RouterLink to="/" class="txc-back-link">← Back to home</RouterLink>
+      <RouterLink to="/" class="txc-back-link">← {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Result -->
@@ -234,26 +237,26 @@ export default {
       </div>
 
       <h2 class="txc-result-title">
-        <template v-if="isApproved">{{ isGift ? 'Gift accepted' : involvesItems ? 'Trade approved' : 'Payment approved' }}</template>
-        <template v-else-if="isDenied">{{ isGift ? 'Gift declined' : involvesItems ? 'Trade declined' : 'Payment declined' }}</template>
-        <template v-else-if="isFailed">{{ involvesItems ? 'Trade failed' : 'Payment failed' }}</template>
+        <template v-if="isApproved">{{ isGift ? $t('gift-accepted') : involvesItems ? $t('trade-approved') : $t('payment-approved') }}</template>
+        <template v-else-if="isDenied">{{ isGift ? $t('gift-declined') : involvesItems ? $t('trade-declined') : $t('payment-declined') }}</template>
+        <template v-else-if="isFailed">{{ involvesItems ? $t('trade-failed') : $t('payment-failed') }}</template>
         <template v-else>{{ resultStatus }}</template>
       </h2>
 
       <p v-if="isApproved" class="txc-result-sub">
-        {{ involvesItems ? 'The trade completed successfully.' : 'The coins have been transferred successfully.' }}
+        {{ involvesItems ? $t('trade-completed') : $t('coins-transferred') }}
       </p>
       <p v-else-if="isDenied" class="txc-result-sub">
-        {{ involvesItems ? 'You declined this trade. Nothing was moved.' : 'You declined this transaction. No coins were moved.' }}
+        {{ involvesItems ? $t('trade-you-declined') : $t('txn-you-declined') }}
       </p>
-      <p v-else-if="isFailed" class="txc-result-sub">{{ failureReason || 'The transfer could not be completed.' }}</p>
+      <p v-else-if="isFailed" class="txc-result-sub">{{ failureReason || $t('transfer-failed-msg') }}</p>
 
       <div v-if="isApproved && transactionId" class="txc-result-detail">
-        <span class="error-detail-label">Transaction</span>
+        <span class="error-detail-label">{{ $t('transaction') }}</span>
         <code class="error-detail-value">{{ transactionId }}</code>
       </div>
 
-      <RouterLink to="/" class="txc-back-link txc-back-center">← Back to home</RouterLink>
+      <RouterLink to="/" class="txc-back-link txc-back-center">← {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Already resolved (non-pending status from GET) -->
@@ -263,9 +266,9 @@ export default {
           <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432zM8 16a8 8 0 0 1-.589-.022l.078-.997A7 7 0 0 0 8 15zm-2.004-.45a7 7 0 0 0 .985.299l-.219.976a8 8 0 0 1-1.126-.342zm-1.37-.71a7 7 0 0 0 .439.27l-.493.87a8 8 0 0 1-.979-.654l.615-.789q.197.154.418.302zm-1.834-1.79a7 7 0 0 0 .653.796l-.724.69a8 8 0 0 1-.747-.91zm-.744-1.352a7 7 0 0 0 .214.468l-.893.45a8 8 0 0 1-.45-1.088l.95-.313q.077.249.179.483m-.53-2.507a7 7 0 0 0 .1 1.025l-.985.17A8 8 0 0 1 0 7.917l1-.013zm.131-1.538a7 7 0 0 0-.081.51L.51 6.84a8 8 0 0 1 .23-1.155l.964.267q-.069.247-.12.501zm.952-2.379a7 7 0 0 0-.486.908l-.914-.405q.24-.54.555-1.038zm.964-1.205q-.183.183-.35.378l-.758-.653q.19-.22.401-.432z"/>
         </svg>
       </div>
-      <h2 class="txc-result-title">Already handled</h2>
-      <p class="txc-result-sub">{{ resolvedMessage }}</p>
-      <RouterLink to="/" class="txc-back-link txc-back-center">← Back to home</RouterLink>
+      <h2 class="txc-result-title">{{ $t('already-handled') }}</h2>
+      <p class="txc-result-sub">{{ $t(resolvedMessage) }}</p>
+      <RouterLink to="/" class="txc-back-link txc-back-center">← {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Consent UI (pending) -->
@@ -290,7 +293,7 @@ export default {
             Gift
           </span>
           <div v-if="hasOfferCoins" class="txc-coin-row">
-            <CoinAmount :value="offeredCoins" /> <span class="txc-amount-unit">coins</span>
+            <CoinAmount :value="offeredCoins" /> <span class="txc-amount-unit">{{ $t('coins-lower') }}</span>
           </div>
           <div v-if="offeredItems.length" class="txc-item-list">
             <ItemCard v-for="it in offeredItems" :key="it.id" :item="it" />
@@ -306,16 +309,16 @@ export default {
         </p>
         <div class="txc-swap">
           <div class="txc-swap-col">
-            <span class="txc-swap-label txc-swap-give">You give</span>
+            <span class="txc-swap-label txc-swap-give">{{ $t('you-give') }}</span>
             <template v-if="!youGiveEmpty">
               <div v-if="hasRequestCoins" class="txc-coin-row txc-coin-give">
-                <CoinAmount :value="amount" /> <span class="txc-amount-unit">coins</span>
+                <CoinAmount :value="amount" /> <span class="txc-amount-unit">{{ $t('coins-lower') }}</span>
               </div>
               <div v-if="requestedItems.length" class="txc-item-list">
                 <ItemCard v-for="it in requestedItems" :key="it.id" :item="it" />
               </div>
             </template>
-            <p v-else class="txc-swap-empty">Nothing</p>
+            <p v-else class="txc-swap-empty">{{ $t('nothing') }}</p>
           </div>
 
           <div class="txc-swap-arrow" aria-hidden="true">
@@ -325,16 +328,16 @@ export default {
           </div>
 
           <div class="txc-swap-col">
-            <span class="txc-swap-label txc-swap-get">You get</span>
+            <span class="txc-swap-label txc-swap-get">{{ $t('you-get') }}</span>
             <template v-if="!youGetEmpty">
               <div v-if="hasOfferCoins" class="txc-coin-row txc-coin-get">
-                <CoinAmount :value="offeredCoins" /> <span class="txc-amount-unit">coins</span>
+                <CoinAmount :value="offeredCoins" /> <span class="txc-amount-unit">{{ $t('coins-lower') }}</span>
               </div>
               <div v-if="offeredItems.length" class="txc-item-list">
                 <ItemCard v-for="it in offeredItems" :key="it.id" :item="it" />
               </div>
             </template>
-            <p v-else class="txc-swap-empty">Nothing</p>
+            <p v-else class="txc-swap-empty">{{ $t('nothing') }}</p>
           </div>
         </div>
       </template>
@@ -347,8 +350,8 @@ export default {
         </p>
 
         <div class="txc-amount-box" :class="{ 'txc-amount-box-bad': insufficientFunds }">
-          <span class="txc-amount-label">Amount</span>
-          <span class="txc-amount-value"><CoinAmount :value="amount" /> <span class="txc-amount-unit">coins</span></span>
+          <span class="txc-amount-label">{{ $t('amount') }}</span>
+          <span class="txc-amount-value"><CoinAmount :value="amount" /> <span class="txc-amount-unit">{{ $t('coins-lower') }}</span></span>
           <span v-if="hasBalance" class="txc-balance-line" :class="{ 'txc-balance-bad': insufficientFunds }">
             Your balance: <CoinAmount :value="balance" /> coins
           </span>
@@ -361,7 +364,7 @@ export default {
           <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
         </svg>
         <div>
-          <p class="txc-insufficient-title">Insufficient balance</p>
+          <p class="txc-insufficient-title">{{ $t('insufficient-balance') }}</p>
           <p class="txc-insufficient-text">
             <strong>{{ appName }}</strong> requested this payment, but it can't be made &mdash;
             you don't have enough coins to cover it. If you approve, the application will be
@@ -372,18 +375,18 @@ export default {
 
       <div class="txc-details">
         <div class="txc-detail-row" v-if="hasRequestCoins">
-          <span class="txc-detail-label">Pay to</span>
+          <span class="txc-detail-label">{{ $t('pay-to') }}</span>
           <span class="txc-detail-value">
             {{ recipientName }}
             <span v-if="recipientType" class="txc-recipient-tag">{{ recipientType }}</span>
           </span>
         </div>
         <div class="txc-detail-row" v-if="description">
-          <span class="txc-detail-label">For</span>
+          <span class="txc-detail-label">{{ $t('for') }}</span>
           <span class="txc-detail-value">{{ description }}</span>
         </div>
         <div class="txc-detail-row" v-if="expiresAt">
-          <span class="txc-detail-label">Expires</span>
+          <span class="txc-detail-label">{{ $t('expires') }}</span>
           <span class="txc-detail-value">{{ expiresAt }}</span>
         </div>
       </div>
@@ -392,10 +395,10 @@ export default {
         You'll be returned to <strong>{{ redirectHost }}</strong> after you decide.
       </p>
 
-      <p v-if="insufficientFunds" class="txc-deny-warning">This payment will fail if you approve it.</p>
-      <p v-else-if="isGift" class="txc-deny-warning">If you don't want this, click Deny.</p>
-      <p v-else-if="involvesItems" class="txc-deny-warning">If you didn't initiate this trade, click Deny.</p>
-      <p v-else class="txc-deny-warning">If you didn't initiate this payment, click Deny.</p>
+      <p v-if="insufficientFunds" class="txc-deny-warning">{{ $t('payment-will-fail') }}</p>
+      <p v-else-if="isGift" class="txc-deny-warning">{{ $t('deny-hint-gift') }}</p>
+      <p v-else-if="involvesItems" class="txc-deny-warning">{{ $t('deny-hint-trade') }}</p>
+      <p v-else class="txc-deny-warning">{{ $t('deny-hint-payment') }}</p>
 
       <div class="txc-actions">
         <button class="txc-btn txc-btn-allow" :class="{ 'txc-btn-allow-fail': insufficientFunds }" :disabled="state === 'working'" @click="decide(true)">
@@ -403,10 +406,10 @@ export default {
             <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
           </svg>
           <LoadingSpinner v-else class="me-2" />
-          <template v-if="insufficientFunds">Let them know</template>
-          <template v-else-if="isGift">Accept gift</template>
-          <template v-else-if="involvesItems">Approve trade</template>
-          <template v-else>Approve</template>
+          <template v-if="insufficientFunds">{{ $t('let-them-know') }}</template>
+          <template v-else-if="isGift">{{ $t('accept-gift') }}</template>
+          <template v-else-if="involvesItems">{{ $t('approve-trade') }}</template>
+          <template v-else>{{ $t('approve') }}</template>
         </button>
         <button class="txc-btn txc-btn-deny" :disabled="state === 'working'" @click="decide(false)">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">

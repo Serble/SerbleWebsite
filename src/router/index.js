@@ -1,13 +1,84 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { watch } from 'vue'
 import HomePage from '@/pages/HomePage.vue'
 import NotFound from "@/pages/NotFound.vue";
 import { authReadyPromise, userStore } from '@/assets/js/user.js';
 import { featureStore } from '@/assets/js/featureFlags.js';
+import i18n from '@/assets/js/i18n.js';
 
 const ECONOMY_FEATURE = 'economy';
 
+// The site name is localised too — the joke locales rewrite it. Resolved per
+// call rather than once at module load, so it follows a locale change.
+const siteName = () => i18n.global.t('serble');
+
+/**
+ * Document titles, keyed by route name. Kept as one table rather than a `meta`
+ * entry on every route so there's a single place to read and edit them.
+ * Routes missing here fall back to the bare site name.
+ *
+ * The values are i18n message keys, not literal text. They live under their own
+ * `title-` namespace rather than reusing the nav/button keys that happen to say
+ * the same thing: a title is Title Case and kept short for a browser tab, while
+ * the same words as a link or heading follow that component's own casing. One
+ * shared key would force the two to change together.
+ *
+ * Keep the translations short — ` · Serble` is appended, and a browser tab only
+ * shows around 20 characters before truncating. Aim for two words.
+ *
+ * These are titles, so they are written in Title Case: every word capitalised,
+ * including both halves of a hyphenated compound and the particle of a phrasal
+ * verb ("Sign In"). Only articles, coordinating conjunctions and short
+ * prepositions stay lowercase, and never as the first or last word.
+ */
+const ROUTE_TITLES = {
+  home: null,                          // the home page is just the site name
+  login: 'title-sign-in',
+  register: 'title-register',
+  MFA: 'title-mfa',
+  account: 'title-account',
+  SetupTOTP: 'title-setup-totp',
+  OAuthApps: 'title-oauth-apps',
+  NewOAuthApp: 'title-new-oauth-app',
+  ManageOAuthApp: 'title-manage-oauth-app',
+  AuthorizedApps: 'title-authorized-apps',
+  Balance: 'title-balance',
+  Inventory: 'title-inventory',
+  Trades: 'title-trades',
+  ItemInfo: 'title-item',
+  PaymentPortal: 'title-payments',
+  Admin: 'title-admin',
+  Store: 'title-store',
+  Purchase: 'title-checkout',
+  PurchaseAnon: 'title-checkout',
+  StoreSuccess: 'title-order-confirmed',
+  StoreCancel: 'title-order-cancelled',
+  Swift: 'title-swift',
+  WordMaster: 'title-word-master',
+  Discord: 'title-discord',
+  CoinAsset: 'title-coin',
+  Contact: 'title-contact',
+  Notes: 'title-notes',
+  EmailConfirmSuccess: 'title-email-confirmed',
+  EmailConfirmError: 'title-email-not-confirmed',
+  OAuthAuthorize: 'title-authorize',
+  TransactionConsent: 'title-transaction-consent',
+  LoadingPreview: 'title-loading-preview',
+  NotFound: 'title-not-found',
+};
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+
+  // Without this, navigating from a scrolled page lands you mid-page on the
+  // next one. Back/forward restore where the user was; everything else starts
+  // at the top, and in-page anchors scroll to their target.
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    if (to.hash) return { el: to.hash, behavior: 'smooth' };
+    return { top: 0 };
+  },
+
   routes: [
     {
       path: '/:pathMatch(.*)*',
@@ -236,5 +307,19 @@ router.beforeEach(async (to) => {
     }
   }
 });
+
+// Embedded routes render inside someone else's page, so leave the host's title.
+function applyTitle(route) {
+  if (!route?.name || route.meta.embed) return;
+  const key = ROUTE_TITLES[route.name];
+  const site = siteName();
+  document.title = key ? `${i18n.global.t(key)} · ${site}` : site;
+}
+
+router.afterEach(applyTitle);
+
+// The language picker in the footer swaps locale without navigating, so the
+// title set by the last afterEach would otherwise keep the previous language.
+watch(i18n.global.locale, () => applyTitle(router.currentRoute.value));
 
 export default router

@@ -1,6 +1,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { confirmDialog } from '@/assets/js/dialog.js';
 import {
   getWebhookEventTypes,
   getAppWebhooks,
@@ -204,7 +205,12 @@ export default {
     }
 
     async function rotate(hook) {
-      if (!confirm(t('webhook-rotate-confirm'))) return;
+      if (!await confirmDialog({
+        title: t('rotate-signing-secret'),
+        message: t('webhook-rotate-confirm'),
+        confirmLabel: t('rotate'),
+        danger: false,
+      })) return;
       busyId.value = hook.id;
       const r = await rotateAppWebhookSecret(props.appId, hook.id);
       busyId.value = null;
@@ -226,7 +232,12 @@ export default {
     }
 
     async function remove(hook) {
-      if (!confirm(t('webhook-delete-confirm', { url: hook.url }))) return;
+      if (!await confirmDialog({
+        title: t('delete-webhook'),
+        message: t('webhook-delete-confirm', { url: hook.url }),
+        confirmLabel: t('delete'),
+        danger: true,
+      })) return;
       busyId.value = hook.id;
       const r = await deleteAppWebhook(props.appId, hook.id);
       busyId.value = null;
@@ -345,7 +356,7 @@ export default {
         id="wh-url"
         v-model="newUrl"
         type="text"
-        class="dark-input"
+        class="input"
         maxlength="512"
         placeholder="https://example.com/hooks/serble"
         @keydown.enter.prevent="submitCreate"
@@ -410,7 +421,7 @@ export default {
           </div>
 
           <label class="field-label" :for="`url-${hook.id}`">{{ $t('endpoint-url') }}</label>
-          <input :id="`url-${hook.id}`" v-model="editDraft.url" type="text" class="dark-input" maxlength="512">
+          <input :id="`url-${hook.id}`" v-model="editDraft.url" type="text" class="input" maxlength="512">
 
           <label class="field-label">{{ $t('events') }}</label>
           <div class="event-list">
@@ -625,24 +636,8 @@ export default {
 }
 
 /* ── Inputs ── */
-.dark-input {
-  width: 100%;
-  background: var(--surface-sunken);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 0.9rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
 
-.dark-input::placeholder { color: var(--text-faint); }
 
-.dark-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
 
 .field-label {
   display: block;

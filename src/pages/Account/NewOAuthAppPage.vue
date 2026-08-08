@@ -90,7 +90,7 @@ export default {
         <label class="section-label" for="name">{{ $t('application-name') }}</label>
         <input
           type="text"
-          class="dark-input"
+          class="input"
           id="name"
           :placeholder="$t('application-name')"
           maxlength="255"
@@ -103,7 +103,7 @@ export default {
         <label class="section-label" for="desc">{{ $t('description') }}</label>
         <p class="section-hint">{{ $t('description-hint') }}</p>
         <textarea
-          class="dark-input"
+          class="textarea"
           id="desc"
           :placeholder="$t('description')"
           maxlength="1024"
@@ -131,7 +131,7 @@ export default {
         <div class="uri-input-group">
           <input
             type="text"
-            class="dark-input"
+            class="input"
             :placeholder="$t('add-redirect-uri')"
             v-model="newUri"
             @keydown="handleUriKeydown"
@@ -250,29 +250,9 @@ export default {
 }
 
 /* ── Inputs ── */
-.dark-input {
-  width: 100%;
-  background: var(--surface-sunken);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 0.9rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
 
-.dark-input::placeholder { color: var(--text-faint); }
 
-.dark-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
 
-textarea.dark-input {
-  resize: vertical;
-  line-height: 1.5;
-}
 
 /* ── URI list ── */
 .uri-list {
@@ -326,7 +306,7 @@ textarea.dark-input {
   gap: 8px;
 }
 
-.uri-input-group .dark-input { flex-grow: 1; }
+.uri-input-group .input { flex-grow: 1; }
 
 .add-btn {
   flex-shrink: 0;

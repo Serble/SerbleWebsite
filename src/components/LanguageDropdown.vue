@@ -25,14 +25,10 @@ function onChange(event) {
 </script>
 
 <template>
-  <select name="languages" :value="selectedValue" @change="onChange">
+  <select class="select" name="languages" :value="selectedValue" @change="onChange">
     <option value="" disabled>{{ placeholder }}</option>
     <option v-for="option in languageOptions" :key="option.value" :value="option.value">
       {{ option.label }}
     </option>
   </select>
 </template>
-
-<style scoped>
-
-</style>

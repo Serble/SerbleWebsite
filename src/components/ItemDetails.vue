@@ -448,7 +448,7 @@ export default {
   padding: 3px 8px; border-radius: 6px;
 }
 .kind-created { background: #1f4d2e; color: #86efac; }
-.kind-trade { background: #2c4a6b; color: #93c5fd; }
+.kind-trade { background: #2c4a6b; color: var(--accent-light); }
 .history-body { min-width: 0; flex: 1 1 auto; }
 .history-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--d-text); font-size: 0.9rem; }
 .flow-owner { font-weight: 600; word-break: break-word; }

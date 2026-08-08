@@ -22,34 +22,34 @@ function changeLanguage(e) {
       <!-- Brand -->
       <div class="footer-col">
         <div class="footer-brand">
-          <img src="/images/icon.png" width="32" height="32" alt="Serble" class="footer-logo" />
-          <span class="footer-brand-name">Serble</span>
+          <img src="/images/icon.png" width="32" height="32" :alt="$t('serble')" class="footer-logo" />
+          <span class="footer-brand-name">{{ $t('serble') }}</span>
         </div>
-        <p class="footer-tagline">A collection of services and tools,<br>built as a hobby.</p>
+        <p class="footer-tagline">{{ $t('footer-tagline-1') }}<br>{{ $t('footer-tagline-2') }}</p>
       </div>
 
       <!-- Navigation -->
       <div class="footer-col">
-        <p class="footer-heading">Navigate</p>
+        <p class="footer-heading">{{ $t('navigate') }}</p>
         <ul class="footer-links">
-          <li><a href="/">Home</a></li>
-          <li><a href="/store">Store</a></li>
-          <li><RouterLink to="/notes">Vault</RouterLink></li>
-          <li><RouterLink to="/wordmaster">Games</RouterLink></li>
-          <li><RouterLink to="/contact">Contact</RouterLink></li>
-          <li><a href="https://status.serble.net" target="_blank" rel="noopener">Status ↗</a></li>
+          <li><a href="/">{{ $t('home') }}</a></li>
+          <li><a href="/store">{{ $t('store') }}</a></li>
+          <li><RouterLink to="/notes">{{ $t('vault') }}</RouterLink></li>
+          <li><RouterLink to="/wordmaster">{{ $t('games') }}</RouterLink></li>
+          <li><RouterLink to="/contact">{{ $t('contact') }}</RouterLink></li>
+          <li><a href="https://status.serble.net" target="_blank" rel="noopener">{{ $t('status') }} ↗</a></li>
         </ul>
       </div>
 
       <!-- Account -->
       <div class="footer-col">
-        <p class="footer-heading">Account</p>
+        <p class="footer-heading">{{ $t('account') }}</p>
         <ul class="footer-links">
-          <li><RouterLink to="/login">Login</RouterLink></li>
-          <li><RouterLink to="/register">Register</RouterLink></li>
-          <li><RouterLink to="/account">Profile</RouterLink></li>
-          <li><RouterLink to="/oauthapps">My Applications</RouterLink></li>
-          <li><RouterLink to="/authorizedapps">Authorized Apps</RouterLink></li>
+          <li><RouterLink to="/login">{{ $t('login') }}</RouterLink></li>
+          <li><RouterLink to="/register">{{ $t('register') }}</RouterLink></li>
+          <li><RouterLink to="/account">{{ $t('profile') }}</RouterLink></li>
+          <li><RouterLink to="/oauthapps">{{ $t('my-applications') }}</RouterLink></li>
+          <li><RouterLink to="/authorizedapps">{{ $t('authorized-apps') }}</RouterLink></li>
         </ul>
       </div>
 
@@ -71,7 +71,7 @@ function changeLanguage(e) {
     </div>
 
     <div class="footer-bottom">
-      <span>&copy; 2020–{{ new Date().getFullYear() }} CoPokBl &middot; <a href="/">Serble</a></span>
+      <span>&copy; 2020–{{ new Date().getFullYear() }} CoPokBl &middot; <a href="/">{{ $t('serble') }}</a></span>
       <span class="footer-discord">
         <a href="/discord/" class="footer-discord-link">
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
@@ -87,14 +87,14 @@ function changeLanguage(e) {
 <style scoped>
 .site-footer {
   border-top: 1px solid var(--border);
-  background: var(--surface-sunken);
+  background: var(--surface-footer);
   margin-top: 48px;
 }
 
 .footer-top {
-  max-width: 1000px;
+  max-width: var(--container);
   margin: 0 auto;
-  padding: 48px 24px 32px;
+  padding: var(--space-8) var(--space-6) var(--space-7);
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 40px;
@@ -171,7 +171,7 @@ function changeLanguage(e) {
 /* Bottom bar */
 .footer-bottom {
   border-top: 1px solid var(--border-subtle);
-  max-width: 1000px;
+  max-width: var(--container);
   margin: 0 auto;
   padding: 16px 24px;
   display: flex;
@@ -228,7 +228,6 @@ function changeLanguage(e) {
   font-size: 0.82rem;
   padding: 6px 28px 6px 30px;
   cursor: pointer;
-  outline: none;
   transition: border-color 0.15s, color 0.15s;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;

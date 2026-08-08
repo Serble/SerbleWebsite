@@ -1,11 +1,12 @@
 <script>
-import { inject, computed, ref } from 'vue';
+import { inject, computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 import CoinIcon from '@/components/CoinIcon.vue';
+import Icon from '@/components/Icon.vue';
 import { FEATURES } from '@/assets/js/featureFlags.js';
 
 export default {
-  components: { CoinIcon },
+  components: { CoinIcon, Icon },
   setup() {
     const userStore = inject('userStore');
     const featureStore = inject('featureStore');
@@ -16,19 +17,55 @@ export default {
     const economyEnabled = computed(() => featureStore?.isEnabled(FEATURES.ECONOMY) === true);
     const mobileOpen = ref(false);
 
+    // Which dropdown is open, by key. Hover alone used to drive this in CSS,
+    // which left the menus unreachable by keyboard.
+    const openMenu = ref(null);
+
+    function toggleMenu(key) {
+      openMenu.value = openMenu.value === key ? null : key;
+    }
+
+    function openMenuNow(key) {
+      openMenu.value = key;
+    }
+
+    function closeMenu() {
+      openMenu.value = null;
+    }
+
+    // Escape closes from anywhere inside the menu.
+    function onMenuKeydown(e) {
+      if (e.key === 'Escape') {
+        closeMenu();
+        e.currentTarget.querySelector('button')?.focus();
+      }
+    }
+
     function toggleMobile() {
       mobileOpen.value = !mobileOpen.value;
     }
 
     function closeMobile() {
       mobileOpen.value = false;
+      closeMenu();
     }
 
     function isActive(path) {
       return route.path === path;
     }
 
-    return { user, isAdmin, economyEnabled, userStore, mobileOpen, toggleMobile, closeMobile, isActive };
+    // A menu opened by click stays open until something else is clicked.
+    function onDocumentClick(e) {
+      if (openMenu.value && !e.target.closest('.nav-dropdown-wrap')) closeMenu();
+    }
+
+    onMounted(() => document.addEventListener('click', onDocumentClick));
+    onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
+
+    return {
+      user, isAdmin, economyEnabled, userStore, mobileOpen, toggleMobile, closeMobile, isActive,
+      openMenu, toggleMenu, openMenuNow, closeMenu, onMenuKeydown,
+    };
   },
   methods: {
     logout() {
@@ -46,8 +83,8 @@ export default {
 
       <!-- Brand -->
       <RouterLink to="/" class="nav-brand" @click="closeMobile">
-        <img src="/images/icon.png" width="32" height="32" alt="Serble" class="nav-logo" />
-        <span class="nav-brand-name">Serble</span>
+        <img src="/images/icon.png" width="32" height="32" :alt="$t('serble')" class="nav-logo" />
+        <span class="nav-brand-name">{{ $t('serble') }}</span>
       </RouterLink>
 
       <!-- Centre links (desktop) -->
@@ -63,42 +100,66 @@ export default {
         </li>
 
         <!-- Games dropdown -->
-        <li class="nav-dropdown-wrap">
-          <button class="nav-link nav-dropdown-btn">
+        <li
+          class="nav-dropdown-wrap"
+          @mouseenter="openMenuNow('games')"
+          @mouseleave="closeMenu"
+          @keydown="onMenuKeydown"
+        >
+          <button
+            class="nav-link nav-dropdown-btn"
+            aria-haspopup="true"
+            :aria-expanded="openMenu === 'games'"
+            @click="toggleMenu('games')"
+          >
             {{ $t('games') }}
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16" class="chevron">
-              <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-            </svg>
+            <Icon name="chevronDown" :size="11" class="chevron" />
           </button>
-          <div class="nav-dropdown">
-            <RouterLink to="/wordmaster" class="nav-dropdown-item">{{ $t('word-master') }}</RouterLink>
+          <div class="nav-dropdown" :class="{ open: openMenu === 'games' }">
+            <RouterLink to="/wordmaster" class="nav-dropdown-item" @click="closeMenu">{{ $t('word-master') }}</RouterLink>
           </div>
         </li>
 
         <!-- Info dropdown -->
-        <li class="nav-dropdown-wrap">
-          <button class="nav-link nav-dropdown-btn">
+        <li
+          class="nav-dropdown-wrap"
+          @mouseenter="openMenuNow('info')"
+          @mouseleave="closeMenu"
+          @keydown="onMenuKeydown"
+        >
+          <button
+            class="nav-link nav-dropdown-btn"
+            aria-haspopup="true"
+            :aria-expanded="openMenu === 'info'"
+            @click="toggleMenu('info')"
+          >
             {{ $t('info') }}
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16" class="chevron">
-              <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-            </svg>
+            <Icon name="chevronDown" :size="11" class="chevron" />
           </button>
-          <div class="nav-dropdown">
-            <RouterLink to="/discord" class="nav-dropdown-item">{{ $t('serble-discord') }}</RouterLink>
-            <RouterLink to="/contact" class="nav-dropdown-item">{{ $t('contact') }}</RouterLink>
+          <div class="nav-dropdown" :class="{ open: openMenu === 'info' }">
+            <RouterLink to="/discord" class="nav-dropdown-item" @click="closeMenu">{{ $t('serble-discord') }}</RouterLink>
+            <RouterLink to="/contact" class="nav-dropdown-item" @click="closeMenu">{{ $t('contact') }}</RouterLink>
           </div>
         </li>
 
         <!-- Vault dropdown -->
-        <li class="nav-dropdown-wrap">
-          <button class="nav-link nav-dropdown-btn">
+        <li
+          class="nav-dropdown-wrap"
+          @mouseenter="openMenuNow('vault')"
+          @mouseleave="closeMenu"
+          @keydown="onMenuKeydown"
+        >
+          <button
+            class="nav-link nav-dropdown-btn"
+            aria-haspopup="true"
+            :aria-expanded="openMenu === 'vault'"
+            @click="toggleMenu('vault')"
+          >
             {{ $t('vault') }}
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16" class="chevron">
-              <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-            </svg>
+            <Icon name="chevronDown" :size="11" class="chevron" />
           </button>
-          <div class="nav-dropdown">
-            <RouterLink to="/notes" class="nav-dropdown-item">{{ $t('notes') }}</RouterLink>
+          <div class="nav-dropdown" :class="{ open: openMenu === 'vault' }">
+            <RouterLink to="/notes" class="nav-dropdown-item" @click="closeMenu">{{ $t('notes') }}</RouterLink>
           </div>
         </li>
       </ul>
@@ -106,15 +167,24 @@ export default {
       <!-- Right side -->
       <div class="nav-right">
         <!-- Logged in: user menu -->
-        <div v-if="user" class="nav-dropdown-wrap">
-          <button class="nav-user-btn nav-dropdown-btn">
+        <div
+          v-if="user"
+          class="nav-dropdown-wrap"
+          @mouseenter="openMenuNow('user')"
+          @mouseleave="closeMenu"
+          @keydown="onMenuKeydown"
+        >
+          <button
+            class="nav-user-btn nav-dropdown-btn"
+            aria-haspopup="true"
+            :aria-expanded="openMenu === 'user'"
+            @click="toggleMenu('user')"
+          >
             <span class="nav-avatar">{{ (user.username || '?').charAt(0).toUpperCase() }}</span>
             <span class="nav-username">{{ user.username }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16" class="chevron">
-              <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-            </svg>
+            <Icon name="chevronDown" :size="11" class="chevron" />
           </button>
-          <div class="nav-dropdown nav-dropdown-right">
+          <div class="nav-dropdown nav-dropdown-right" :class="{ open: openMenu === 'user' }">
             <RouterLink to="/account" class="nav-dropdown-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4"/></svg>
               {{ $t('account') }}
@@ -185,7 +255,7 @@ export default {
         <RouterLink to="/authorizedapps" class="nav-mobile-link" @click="closeMobile">{{ $t('authorized-applications') }}</RouterLink>
         <RouterLink v-if="economyEnabled" to="/account/balance" class="nav-mobile-link" @click="closeMobile">{{ $t('balance') }}</RouterLink>
         <RouterLink v-if="economyEnabled" to="/account/inventory" class="nav-mobile-link" @click="closeMobile">{{ $t('inventory') }}</RouterLink>
-        <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-mobile-link" @click="closeMobile">Trades</RouterLink>
+        <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-mobile-link" @click="closeMobile">{{ $t('trades') }}</RouterLink>
         <RouterLink to="/account/paymentportal" class="nav-mobile-link" @click="closeMobile">{{ $t('manage-payments') }}</RouterLink>
         <button class="nav-mobile-link nav-mobile-danger" @click="logout">{{ $t('logout') }}</button>
       </template>
@@ -210,9 +280,10 @@ export default {
 }
 
 .nav-inner {
-  max-width: 1100px;
+  /* Shares --container with the footer so their edges line up on wide screens. */
+  max-width: var(--container);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 var(--space-6);
   height: 56px;
   display: flex;
   align-items: center;
@@ -281,22 +352,16 @@ export default {
   position: relative;
 }
 
-.nav-dropdown-wrap:hover .nav-dropdown {
-  opacity: 1;
-  pointer-events: all;
-  transform: translateY(0);
-}
-
 .nav-dropdown-btn {
   /* inherits .nav-link */
 }
 
 .chevron {
   opacity: 0.5;
-  transition: transform 0.15s;
+  transition: transform var(--t);
 }
 
-.nav-dropdown-wrap:hover .chevron {
+.nav-dropdown-wrap:has(.nav-dropdown.open) .chevron {
   transform: rotate(180deg);
 }
 
@@ -306,15 +371,25 @@ export default {
   left: 0;
   min-width: 180px;
   padding: 6px 4px 4px;
-  background: var(--surface);
+  background: var(--surface-raised);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-popover);
   opacity: 0;
+  /* visibility (not just opacity) so the links leave the tab order when
+     closed — otherwise keyboard users tab through an invisible menu. */
+  visibility: hidden;
   pointer-events: none;
   transform: translateY(-4px);
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity var(--t), transform var(--t), visibility var(--t);
   z-index: 200;
+}
+
+.nav-dropdown.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 /* Invisible bridge so the mouse can travel from trigger into the dropdown */

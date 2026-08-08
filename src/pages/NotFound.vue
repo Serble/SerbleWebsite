@@ -39,10 +39,10 @@ export default {
       <div class="cat-card">
         <img
           src="https://http.cat/404"
-          alt="A cat hiding under paper — HTTP 404"
+          :alt="$t('cat-404-alt')"
           class="cat-img"
         />
-        <p class="cat-caption">via <a href="https://http.cat" target="_blank" rel="noopener">http.cat</a></p>
+        <p class="cat-caption">{{ $t('via') }} <a href="https://http.cat" target="_blank" rel="noopener">http.cat</a></p>
       </div>
 
     </div>

@@ -6,9 +6,11 @@ import router from "@/router/index.js";
 import VueTurnstile from 'vue-turnstile';
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import LinkedText from "@/components/LinkedText.vue";
+import AuthCard from "@/components/AuthCard.vue";
+import Icon from "@/components/Icon.vue";
 
 export default {
-  components: { VueTurnstile, LoadingSpinner, LinkedText },
+  components: { VueTurnstile, LoadingSpinner, LinkedText, AuthCard, Icon },
   setup() {
     const userStore = inject('userStore');
     const route = useRoute();
@@ -46,68 +48,50 @@ export default {
       window.location.href = returnUrl ? `/login?return_url=${encodeURIComponent(returnUrl)}` : '/login';
     }
 
-    function handleKey(e) {
-      if (e.key === 'Enter') register();
-    }
-
-    return { username, password, error, working, recapToken, turnstileDisabled, register, handleKey, loginLink };
+    return { username, password, error, working, recapToken, turnstileDisabled, register, loginLink };
   }
 };
 </script>
 
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
+  <AuthCard :title="$t('register')" subtitle="Create your free Serble account.">
 
-      <!-- Header -->
-      <div class="auth-header">
-        <img src="/images/icon.png" width="52" height="52" alt="Serble" class="auth-logo" />
-        <h1 class="auth-title">{{ $t('register') }}</h1>
-        <p class="auth-sub">Create your free Serble account.</p>
-      </div>
+    <form class="auth-form" @submit.prevent="register">
 
-      <!-- Error banner -->
-      <div v-if="error === 1" class="auth-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
-        {{ $t('username-password-required') }}
+      <div v-if="error === 1" class="alert alert-danger">
+        <Icon name="alert" />{{ $t('username-password-required') }}
       </div>
-      <div v-else-if="error === 2" class="auth-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+      <div v-else-if="error === 2" class="alert alert-danger">
+        <Icon name="alert" />
         <LinkedText :text="$t('user-exists-trying-to-login')" :to="loginLink" />
       </div>
 
-      <!-- Fields -->
-      <div class="auth-fields">
-        <div class="auth-field">
-          <label class="auth-label" for="reg-username">{{ $t('username') }}</label>
-          <input
-            id="reg-username"
-            type="text"
-            class="auth-input"
-            :class="{ 'auth-input-error': error > 0 }"
-            :placeholder="$t('username')"
-            v-model="username"
-            autocomplete="username"
-            @keydown="handleKey"
-          />
-        </div>
-
-        <div class="auth-field">
-          <label class="auth-label" for="reg-password">{{ $t('password') }}</label>
-          <input
-            id="reg-password"
-            type="password"
-            class="auth-input"
-            :class="{ 'auth-input-error': error > 0 }"
-            placeholder="••••••••••••"
-            v-model="password"
-            autocomplete="new-password"
-            @keydown="handleKey"
-          />
-        </div>
+      <div class="field">
+        <label class="field-label" for="reg-username">{{ $t('username') }}</label>
+        <input
+          id="reg-username"
+          type="text"
+          class="input"
+          :class="{ 'input-invalid': error > 0 }"
+          :placeholder="$t('username')"
+          v-model="username"
+          autocomplete="username"
+        />
       </div>
 
-      <!-- Turnstile -->
+      <div class="field">
+        <label class="field-label" for="reg-password">{{ $t('password') }}</label>
+        <input
+          id="reg-password"
+          type="password"
+          class="input"
+          :class="{ 'input-invalid': error > 0 }"
+          placeholder="••••••••••••"
+          v-model="password"
+          autocomplete="new-password"
+        />
+      </div>
+
       <div v-if="!turnstileDisabled" class="captcha-wrap">
         <vue-turnstile
           theme="dark"
@@ -117,146 +101,32 @@ export default {
         />
       </div>
 
-      <!-- Submit -->
-      <button
-        class="auth-submit"
-        :disabled="working || !recapToken"
-        @click="register"
-      >
-        <LoadingSpinner v-if="working" class="me-2" />
+      <button type="submit" class="btn btn-primary btn-block" :disabled="working || !recapToken">
+        <LoadingSpinner v-if="working" />
         {{ $t('register') }}
       </button>
+    </form>
 
-      <p class="auth-switch">
-        <LinkedText :text="$t('want-login-go-here')" :to="loginLink" />
-      </p>
+    <p class="auth-switch">
+      <LinkedText :text="$t('want-login-go-here')" :to="loginLink" />
+    </p>
 
-    </div>
-  </div>
+  </AuthCard>
 </template>
 
 <style scoped>
-.auth-page {
-  min-height: 70vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 36px 32px;
+/* Layout, card and header styles live in AuthCard.vue; fields, inputs, buttons
+   and alerts come from components.css. Only what is unique to this page stays. */
+.auth-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--space-3);
 }
 
-.auth-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-}
-
-.auth-logo { border-radius: 10px; }
-
-.auth-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--text);
-  margin: 0;
-}
-
-.auth-sub {
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  margin: 0;
-}
-
-.auth-error {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  font-size: 0.83rem;
-  color: var(--danger);
-  background: var(--danger-bg-soft);
-  border: 1px solid rgba(248,113,113,0.2);
-  border-radius: 8px;
-  padding: 9px 12px;
-}
-
-.auth-error :deep(a) {
-  color: #fca5a5;
-  text-decoration: underline;
-}
-
-.auth-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.auth-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.auth-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-dim);
-}
-
-.auth-input {
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 0.95rem;
-  padding: 10px 14px;
-  outline: none;
-  width: 100%;
-  transition: border-color 0.15s;
-}
-
-.auth-input::placeholder { color: var(--text-faint); }
-.auth-input:focus { border-color: #6ea8fe; }
-.auth-input-error { border-color: var(--danger) !important; }
-
-/* Turnstile captcha */
 .captcha-wrap {
   display: flex;
   justify-content: center;
 }
-
-.auth-submit {
-  width: 100%;
-  padding: 11px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-.auth-submit:hover:not(:disabled) { background: var(--accent-hover); }
-.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .auth-switch {
   font-size: 0.82rem;
@@ -272,5 +142,4 @@ export default {
 }
 
 .auth-switch :deep(a:hover) { text-decoration: underline; }
-
 </style>

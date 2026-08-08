@@ -45,7 +45,7 @@ export default {
 
       <!-- Monthly (featured) -->
       <div class="plan-card plan-card-featured">
-        <div class="plan-badge">Best Value</div>
+        <div class="plan-badge">{{ $t('best-value') }}</div>
         <div class="plan-top">
           <span class="plan-name">{{ $t('monthly-plan') }}</span>
           <div class="plan-price">$1.99 <span class="plan-period">{{ $t('per-month') }}</span></div>
@@ -65,7 +65,7 @@ export default {
 
       <!-- Yearly (featured) -->
       <div class="plan-card plan-card-featured plan-card-yearly">
-        <div class="plan-badge plan-badge-yearly">Save ~16%</div>
+        <div class="plan-badge plan-badge-yearly">{{ $t('save-16-percent') }}</div>
         <div class="plan-top">
           <span class="plan-name">{{ $t('yearly-plan') }}</span>
           <div class="plan-price">$19.99 <span class="plan-period">{{ $t('per-year') }}</span></div>
@@ -131,7 +131,7 @@ export default {
               <td class="td-featured"><span class="tick">✓</span></td>
             </tr>
             <tr>
-              <td class="feature-name">Price</td>
+              <td class="feature-name">{{ $t('price') }}</td>
               <td>$0</td>
               <td class="td-featured">$1.99/mo</td>
               <td class="td-featured">$19.99/yr</td>

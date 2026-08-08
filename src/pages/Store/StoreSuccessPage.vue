@@ -85,13 +85,13 @@ export default {
       </div>
 
       <h1 class="success-title">{{ $t('purchase-complete') }}</h1>
-      <p class="success-sub">Thank you for your support! Your account has been upgraded.</p>
+      <p class="success-sub">{{ $t('purchase-thanks') }}</p>
 
       <!-- Minions gif -->
       <div class="minions-wrap">
         <img
           src="/images/awesome-minions.gif"
-          alt="Awesome minions celebration"
+          :alt="$t('celebration-alt')"
           class="minions-img"
         />
       </div>

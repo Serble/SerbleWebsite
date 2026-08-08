@@ -171,7 +171,7 @@ export default {
           <span class="field-label">{{ $t('recipient') }}</span>
           <input
             type="text"
-            class="dark-input"
+            class="input"
             :placeholder="$t('recipient-placeholder')"
             v-model="recipient"
             :disabled="sending"
@@ -183,7 +183,7 @@ export default {
           <input
             type="text"
             inputmode="decimal"
-            class="dark-input"
+            class="input"
             placeholder="0"
             v-model="amount"
             :disabled="sending"
@@ -194,7 +194,7 @@ export default {
           <span class="field-label">{{ $t('note-optional') }}</span>
           <input
             type="text"
-            class="dark-input"
+            class="input"
             maxlength="256"
             :placeholder="$t('note-placeholder')"
             v-model="description"
@@ -374,23 +374,8 @@ export default {
   color: var(--text-muted);
 }
 
-.dark-input {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  color: var(--text);
-  font-size: 0.9rem;
-  transition: border-color 0.15s;
-}
 
-.dark-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
 
-.dark-input:disabled { opacity: 0.6; }
 
 .form-message {
   font-size: 0.82rem;

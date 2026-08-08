@@ -29,10 +29,10 @@ export default {
           <div class="plan-price">$0 <span class="plan-period">{{ $t('per-month') }}</span></div>
         </div>
         <ul class="plan-features">
-          <li><span class="check">✓</span> Link Shortener</li>
-          <li><span class="check">✓</span> File Hosting</li>
-          <li><span class="check">✓</span> Chat API</li>
-          <li><span class="check">✓</span> Email Support</li>
+          <li><span class="check">✓</span> {{ $t('feature-link-shortener') }}</li>
+          <li><span class="check">✓</span> {{ $t('feature-file-hosting') }}</li>
+          <li><span class="check">✓</span> {{ $t('feature-chat-api') }}</li>
+          <li><span class="check">✓</span> {{ $t('feature-email-support') }}</li>
           <li><span class="check muted">–</span> &nbsp;</li>
           <li><span class="check muted">–</span> &nbsp;</li>
         </ul>
@@ -41,15 +41,15 @@ export default {
 
       <!-- Premium (highlighted) -->
       <div class="plan-card plan-card-featured">
-        <div class="plan-badge">Popular</div>
+        <div class="plan-badge">{{ $t('popular') }}</div>
         <div class="plan-top">
           <span class="plan-name">{{ $t('account-type-premium') }}</span>
           <div class="plan-price">$5 <span class="plan-period">{{ $t('per-month') }}</span></div>
         </div>
         <ul class="plan-features">
-          <li><span class="check">✓</span> Everything from Free</li>
-          <li><span class="check">✓</span> Increased File Hosting Upload Limit</li>
-          <li><span class="check muted">–</span> More coming soon</li>
+          <li><span class="check">✓</span> {{ $t('everything-from-free') }}</li>
+          <li><span class="check">✓</span> {{ $t('feature-increased-upload') }}</li>
+          <li><span class="check muted">–</span> {{ $t('more-coming-soon') }}</li>
           <li><span class="check muted">–</span> &nbsp;</li>
           <li><span class="check muted">–</span> &nbsp;</li>
           <li><span class="check muted">–</span> &nbsp;</li>
@@ -89,25 +89,25 @@ export default {
           </thead>
           <tbody>
             <tr>
-              <td class="feature-name">Increased File Hosting Upload Limit</td>
+              <td class="feature-name">{{ $t('feature-increased-upload') }}</td>
               <td class="muted-cell">—</td>
               <td class="td-featured"><span class="tick">✓</span></td>
               <td class="muted-cell">—</td>
             </tr>
             <tr>
-              <td class="feature-name">Link Shortener</td>
+              <td class="feature-name">{{ $t('feature-link-shortener') }}</td>
               <td><span class="tick">✓</span></td>
               <td class="td-featured"><span class="tick">✓</span></td>
               <td class="muted-cell">—</td>
             </tr>
             <tr>
-              <td class="feature-name">Chat API</td>
+              <td class="feature-name">{{ $t('feature-chat-api') }}</td>
               <td><span class="tick">✓</span></td>
               <td class="td-featured"><span class="tick">✓</span></td>
               <td class="muted-cell">—</td>
             </tr>
             <tr>
-              <td class="feature-name">Email Support</td>
+              <td class="feature-name">{{ $t('feature-email-support') }}</td>
               <td><span class="tick">✓</span></td>
               <td class="td-featured"><span class="tick">✓</span></td>
               <td class="muted-cell">—</td>
@@ -330,7 +330,7 @@ export default {
 }
 
 .th-featured {
-  color: #93c5fd !important;
+  color: var(--accent-light) !important;
   background: rgba(37,99,235,0.08) !important;
 }
 
@@ -361,7 +361,7 @@ export default {
 
 .td-featured {
   background: rgba(37,99,235,0.06) !important;
-  color: #93c5fd !important;
+  color: var(--accent-light) !important;
 }
 
 .feature-name {

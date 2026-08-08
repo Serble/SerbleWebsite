@@ -41,8 +41,8 @@ export default {
 <template>
   <div class="purchase-page">
 
-    <div v-if="state === 'loading' || state === 'redirecting'" class="purchase-card bg-dark border rounded-3 text-center">
-      <div class="purchase-icon text-primary">
+    <div v-if="state === 'loading' || state === 'redirecting'" class="purchase-card card text-center">
+      <div class="purchase-icon text-accent">
         <LoadingSpinner :size="48" />
       </div>
       <h4 class="mb-2">{{ $t('wait-while-login') }}</h4>
@@ -52,7 +52,7 @@ export default {
       </p>
     </div>
 
-    <div v-else class="purchase-card bg-dark border border-danger rounded-3 text-center">
+    <div v-else class="purchase-card card card-danger text-center">
       <div class="purchase-icon text-danger">
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
           <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
@@ -61,7 +61,7 @@ export default {
       </div>
       <h4 class="mb-2">{{ $t('an-error-occured') }}</h4>
       <p class="text-muted mb-4" style="font-size:0.9rem;">{{ $t('unknown-error-occured') }}</p>
-      <RouterLink to="/store" class="btn btn-outline-secondary">← {{ $t('store') }}</RouterLink>
+      <RouterLink to="/store" class="btn btn-ghost">← {{ $t('store') }}</RouterLink>
     </div>
 
   </div>

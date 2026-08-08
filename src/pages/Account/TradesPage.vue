@@ -1,5 +1,6 @@
 <script>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import {
   getUserTrades, createUserTrade, approveUserTrade, denyUserTrade, cancelUserTrade, getInventory, getUserItems,
@@ -8,17 +9,18 @@ import { parseCoinsToRaw } from '@/assets/js/coins.js';
 import CoinAmount from '@/components/CoinAmount.vue';
 import ItemCard from '@/components/ItemCard.vue';
 import RefreshButton from '@/components/RefreshButton.vue';
+import { alertDialog } from '@/assets/js/dialog.js';
 
-// Status → display label + style. The API uses Approved/Denied; users think
+// Status → message key + style. The API uses Approved/Denied; users think
 // "complete"/"rejected".
 const STATUS_META = {
-  Pending:    { label: 'Pending',    cls: 'pending' },
-  InProgress: { label: 'Processing', cls: 'pending' },
-  Approved:   { label: 'Complete',   cls: 'ok' },
-  Denied:     { label: 'Rejected',   cls: 'bad' },
-  Cancelled:  { label: 'Cancelled',  cls: 'muted' },
-  Expired:    { label: 'Expired',    cls: 'muted' },
-  Failed:     { label: 'Failed',     cls: 'bad' },
+  Pending:    { key: 'trade-status-pending',    cls: 'pending' },
+  InProgress: { key: 'trade-status-processing', cls: 'pending' },
+  Approved:   { key: 'trade-status-complete',   cls: 'ok' },
+  Denied:     { key: 'trade-status-rejected',   cls: 'bad' },
+  Cancelled:  { key: 'trade-status-cancelled',  cls: 'muted' },
+  Expired:    { key: 'trade-status-expired',    cls: 'muted' },
+  Failed:     { key: 'trade-status-failed',     cls: 'bad' },
 };
 
 function formatDate(value) {
@@ -32,6 +34,7 @@ export default {
   name: 'TradesPage',
   components: { CoinAmount, ItemCard, RefreshButton },
   setup() {
+    const { t } = useI18n();
     ensureLoggedIn();
 
     const loading = ref(true);
@@ -178,7 +181,8 @@ export default {
         getCoins: t.offeredCoins, getItems: t.offeredItems,
       };
     }
-    function statusMeta(s) { return STATUS_META[s] || { label: s, cls: 'muted' }; }
+    function statusMeta(s) { return STATUS_META[s] || { cls: 'muted' }; }
+    function statusLabel(s) { return STATUS_META[s] ? t(STATUS_META[s].key) : s; }
     function rawStr(v) { return String(v ?? '0'); }
 
     // Selected items are remembered (with their display data) so the chips stay visible even when
@@ -225,17 +229,17 @@ export default {
     async function submit() {
       formError.value = '';
       formSuccess.value = '';
-      if (!toUser.value.trim()) { formError.value = 'Enter the recipient username.'; return; }
+      if (!toUser.value.trim()) { formError.value = t('trade-err-recipient'); return; }
 
       const offeredRaw = offerCoins.value.trim() ? parseCoinsToRaw(offerCoins.value.trim()) : '0';
       const requestedRaw = requestCoins.value.trim() ? parseCoinsToRaw(requestCoins.value.trim()) : '0';
-      if (offeredRaw === null || requestedRaw === null) { formError.value = 'Enter a valid coin amount.'; return; }
+      if (offeredRaw === null || requestedRaw === null) { formError.value = t('trade-err-coin-amount'); return; }
 
       const requestedItemIds = selectedRequestIds.value.slice();
 
       const movesSomething = offeredRaw !== '0' || requestedRaw !== '0'
         || selectedOfferIds.value.length > 0 || requestedItemIds.length > 0;
-      if (!movesSomething) { formError.value = 'A trade must include at least some coins or items.'; return; }
+      if (!movesSomething) { formError.value = t('trade-err-empty'); return; }
 
       submitting.value = true;
       const r = await createUserTrade(
@@ -244,7 +248,7 @@ export default {
       submitting.value = false;
 
       if (r.success) {
-        formSuccess.value = `Trade proposed to ${r.trade.toUsername || toUser.value.trim()}.`;
+        formSuccess.value = t('trade-proposed-to', { user: r.trade.toUsername || toUser.value.trim() });
         toUser.value = ''; offerCoins.value = ''; requestCoins.value = ''; description.value = '';
         selectedOfferIds.value = []; selectedOfferItems.value = {};
         selectedRequestIds.value = []; selectedRequestItems.value = {};
@@ -252,17 +256,24 @@ export default {
         showForm.value = false;
         await loadTrades();
       } else {
-        formError.value = r.message || 'Could not create the trade.';
+        formError.value = r.message || t('trade-err-create');
       }
     }
 
-    async function act(t, action) {
+    // Named `trade`, not `t` — `t` is the i18n translate function in this scope.
+    async function act(trade, action) {
       if (busyId.value) return;
-      busyId.value = t.id;
+      busyId.value = trade.id;
       const fn = action === 'approve' ? approveUserTrade : action === 'deny' ? denyUserTrade : cancelUserTrade;
-      const r = await fn(t.id);
+      const r = await fn(trade.id);
       busyId.value = null;
-      if (!r.success) { alert(r.message || `Could not ${action} the trade.`); return; }
+      if (!r.success) {
+        await alertDialog({
+          title: t('trade-action-failed'),
+          message: r.message || t(`trade-err-${action}`),
+        });
+        return;
+      }
       await loadTrades();
     }
 
@@ -275,7 +286,7 @@ export default {
       reqSearch, reqItems, reqPage, reqHasMore, reqLoading, reqNotFound,
       selectedRequestList, onReqSearchInput, reqNext, reqPrev, toggleRequest, removeRequest, isRequestSelected,
       incoming, outgoing, pendingIncoming, visibleTrades,
-      sides, statusMeta, rawStr, toggleOffer, submit, act, formatDate, loadTrades,
+      sides, statusMeta, statusLabel, rawStr, toggleOffer, submit, act, formatDate, loadTrades,
     };
   },
 };
@@ -284,42 +295,42 @@ export default {
 <template>
   <div class="trades-page">
     <div class="head">
-      <h3 class="title">Trades</h3>
-      <button class="btn primary" @click="showForm = !showForm">{{ showForm ? 'Close' : 'New trade' }}</button>
+      <h3 class="title">{{ $t('trades') }}</h3>
+      <button class="btn primary" @click="showForm = !showForm">{{ showForm ? $t('close') : $t('new-trade') }}</button>
     </div>
-    <p class="subtitle">Propose trades of coins and items to other users, and approve or deny trades sent to you.</p>
+    <p class="subtitle">{{ $t('trades-subtitle') }}</p>
 
     <!-- Propose form -->
     <section v-if="showForm" class="card form">
-      <h4 class="card-title">Propose a trade</h4>
+      <h4 class="card-title">{{ $t('propose-a-trade') }}</h4>
       <div v-if="formError" class="banner bad">{{ formError }}</div>
 
       <label class="field">
-        <span class="field-label">Recipient username</span>
-        <input v-model="toUser" type="text" placeholder="e.g. alice" />
+        <span class="field-label">{{ $t('recipient-username') }}</span>
+        <input v-model="toUser" type="text" :placeholder="$t('recipient-placeholder-eg')" />
       </label>
 
       <div class="two-col">
         <div class="give-col">
-          <p class="col-head">You give</p>
+          <p class="col-head">{{ $t('you-give') }}</p>
           <label class="field">
-            <span class="field-label">Coins</span>
+            <span class="field-label">{{ $t('coins') }}</span>
             <input v-model="offerCoins" type="text" inputmode="decimal" placeholder="0" />
           </label>
-          <p class="field-label">Items from your inventory</p>
+          <p class="field-label">{{ $t('items-from-your-inventory') }}</p>
 
           <!-- Chips for items already chosen (persist across search/pages). -->
           <div v-if="selectedOfferList.length" class="chips">
             <span v-for="it in selectedOfferList" :key="it.id" class="chip" :title="it.name">
               {{ it.name }}
-              <button type="button" class="chip-x" @click="removeOffer(it.id)" aria-label="Remove">×</button>
+              <button type="button" class="chip-x" @click="removeOffer(it.id)" :aria-label="$t('remove')">×</button>
             </span>
           </div>
 
           <input class="picker-search" type="search" v-model="pickerSearch" @input="onSearchInput"
-                 placeholder="Search your items…" />
+                 :placeholder="$t('search-your-items')" />
 
-          <div v-if="pickerLoading" class="hint">Loading…</div>
+          <div v-if="pickerLoading" class="hint">{{ $t('loading-ellipsis') }}</div>
           <template v-else>
             <div v-if="pickerItems.length" class="pick-grid">
               <button v-for="it in pickerItems" :key="it.id" type="button"
@@ -327,54 +338,54 @@ export default {
                 <ItemCard :item="it" :minimal="true" />
               </button>
             </div>
-            <p v-else-if="pickerSearch.trim()" class="hint">No items match “{{ pickerSearch.trim() }}”.</p>
-            <p v-else class="hint">You own no items to offer.</p>
+            <p v-else-if="pickerSearch.trim()" class="hint">{{ $t('no-items-match', { query: pickerSearch.trim() }) }}</p>
+            <p v-else class="hint">{{ $t('you-own-no-items') }}</p>
 
             <div v-if="pickerItems.length && (pickerPage > 0 || pickerHasMore)" class="pager">
-              <button type="button" class="pg-btn" :disabled="pickerPage === 0" @click="pickerPrev">‹ Prev</button>
-              <span class="pg-info">Page {{ pickerPage + 1 }}</span>
-              <button type="button" class="pg-btn" :disabled="!pickerHasMore" @click="pickerNext">Next ›</button>
+              <button type="button" class="pg-btn" :disabled="pickerPage === 0" @click="pickerPrev">‹ {{ $t('previous') }}</button>
+              <span class="pg-info">{{ $t('page-n', { n: pickerPage + 1 }) }}</span>
+              <button type="button" class="pg-btn" :disabled="!pickerHasMore" @click="pickerNext">{{ $t('next') }} ›</button>
             </div>
           </template>
         </div>
 
         <div class="get-col">
-          <p class="col-head">You get</p>
+          <p class="col-head">{{ $t('you-get') }}</p>
           <label class="field">
-            <span class="field-label">Coins</span>
+            <span class="field-label">{{ $t('coins') }}</span>
             <input v-model="requestCoins" type="text" inputmode="decimal" placeholder="0" />
           </label>
 
-          <p class="field-label">Items from {{ toUser.trim() ? `${toUser.trim()}'s` : 'their' }} inventory</p>
+          <p class="field-label">{{ toUser.trim() ? $t('items-from-users-inventory', { user: toUser.trim() }) : $t('items-from-their-inventory') }}</p>
 
           <!-- Chips for requested items already chosen. -->
           <div v-if="selectedRequestList.length" class="chips">
             <span v-for="it in selectedRequestList" :key="it.id" class="chip" :title="it.name">
               {{ it.name }}
-              <button type="button" class="chip-x" @click="removeRequest(it.id)" aria-label="Remove">×</button>
+              <button type="button" class="chip-x" @click="removeRequest(it.id)" :aria-label="$t('remove')">×</button>
             </span>
           </div>
 
-          <p v-if="!toUser.trim()" class="hint">Enter a recipient above to browse and pick their items.</p>
+          <p v-if="!toUser.trim()" class="hint">{{ $t('enter-recipient-to-browse') }}</p>
           <template v-else>
             <input class="picker-search" type="search" v-model="reqSearch" @input="onReqSearchInput"
-                   placeholder="Search their items…" />
-            <div v-if="reqLoading" class="hint">Loading…</div>
+                   :placeholder="$t('search-their-items')" />
+            <div v-if="reqLoading" class="hint">{{ $t('loading-ellipsis') }}</div>
             <template v-else>
-              <p v-if="reqNotFound" class="hint">No user “{{ toUser.trim() }}” found.</p>
+              <p v-if="reqNotFound" class="hint">{{ $t('no-user-found', { user: toUser.trim() }) }}</p>
               <div v-else-if="reqItems.length" class="pick-grid">
                 <button v-for="it in reqItems" :key="it.id" type="button"
                         class="pick" :class="{ on: isRequestSelected(it.id) }" @click="toggleRequest(it)">
                   <ItemCard :item="it" :minimal="true" />
                 </button>
               </div>
-              <p v-else-if="reqSearch.trim()" class="hint">No items match “{{ reqSearch.trim() }}”.</p>
-              <p v-else class="hint">This user has no items.</p>
+              <p v-else-if="reqSearch.trim()" class="hint">{{ $t('no-items-match', { query: reqSearch.trim() }) }}</p>
+              <p v-else class="hint">{{ $t('user-has-no-items') }}</p>
 
               <div v-if="reqItems.length && (reqPage > 0 || reqHasMore)" class="pager">
-                <button type="button" class="pg-btn" :disabled="reqPage === 0" @click="reqPrev">‹ Prev</button>
-                <span class="pg-info">Page {{ reqPage + 1 }}</span>
-                <button type="button" class="pg-btn" :disabled="!reqHasMore" @click="reqNext">Next ›</button>
+                <button type="button" class="pg-btn" :disabled="reqPage === 0" @click="reqPrev">‹ {{ $t('previous') }}</button>
+                <span class="pg-info">{{ $t('page-n', { n: reqPage + 1 }) }}</span>
+                <button type="button" class="pg-btn" :disabled="!reqHasMore" @click="reqNext">{{ $t('next') }} ›</button>
               </div>
             </template>
           </template>
@@ -382,12 +393,12 @@ export default {
       </div>
 
       <label class="field">
-        <span class="field-label">Note (optional)</span>
-        <input v-model="description" type="text" maxlength="256" placeholder="What's this trade for?" />
+        <span class="field-label">{{ $t('note-optional') }}</span>
+        <input v-model="description" type="text" maxlength="256" :placeholder="$t('trade-note-placeholder')" />
       </label>
 
       <button class="btn primary" :disabled="submitting" @click="submit">
-        {{ submitting ? 'Sending…' : 'Send trade' }}
+        {{ submitting ? $t('sending') : $t('send-trade') }}
       </button>
     </section>
     <div v-if="formSuccess" class="banner ok">{{ formSuccess }}</div>
@@ -395,41 +406,41 @@ export default {
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab" :class="{ active: tab === 'incoming' }" @click="tab = 'incoming'">
-        Incoming<span v-if="pendingIncoming" class="count">{{ pendingIncoming }}</span>
+        {{ $t('incoming') }}<span v-if="pendingIncoming" class="count">{{ pendingIncoming }}</span>
       </button>
-      <button class="tab" :class="{ active: tab === 'outgoing' }" @click="tab = 'outgoing'">Sent</button>
-      <button class="tab" :class="{ active: tab === 'all' }" @click="tab = 'all'">All</button>
-      <RefreshButton small class="trades-refresh" :loading="loading" @click="loadTrades" title="Refresh" />
+      <button class="tab" :class="{ active: tab === 'outgoing' }" @click="tab = 'outgoing'">{{ $t('sent') }}</button>
+      <button class="tab" :class="{ active: tab === 'all' }" @click="tab = 'all'">{{ $t('all') }}</button>
+      <RefreshButton small class="trades-refresh" :loading="loading" @click="loadTrades" :title="$t('refresh')" />
     </div>
 
-    <div v-if="loading" class="state">Loading…</div>
-    <div v-else-if="error" class="state bad">Couldn't load your trades.</div>
-    <div v-else-if="visibleTrades.length === 0" class="state">No trades here yet.</div>
+    <div v-if="loading" class="state">{{ $t('loading-ellipsis') }}</div>
+    <div v-else-if="error" class="state bad">{{ $t('trades-load-failed') }}</div>
+    <div v-else-if="visibleTrades.length === 0" class="state">{{ $t('no-trades-yet') }}</div>
 
     <ul v-else class="trade-list">
       <li v-for="t in visibleTrades" :key="t.id" class="trade">
         <div class="trade-top">
           <div class="who">
-            <span class="dir">{{ t.direction === 'incoming' ? 'From' : 'To' }}</span>
+            <span class="dir">{{ t.direction === 'incoming' ? $t('from') : $t('to') }}</span>
             <strong>{{ sides(t).counterparty }}</strong>
-            <span v-if="t.isGift" class="gift-tag">gift</span>
+            <span v-if="t.isGift" class="gift-tag">{{ $t('gift') }}</span>
           </div>
-          <span class="badge" :class="statusMeta(t.status).cls">{{ statusMeta(t.status).label }}</span>
+          <span class="badge" :class="statusMeta(t.status).cls">{{ statusLabel(t.status) }}</span>
         </div>
 
         <div class="swap">
           <div class="swap-col">
-            <p class="swap-head">You give</p>
-            <p v-if="rawStr(sides(t).giveCoins) !== '0'" class="coins"><CoinAmount :value="rawStr(sides(t).giveCoins)" /> coins</p>
+            <p class="swap-head">{{ $t('you-give') }}</p>
+            <p v-if="rawStr(sides(t).giveCoins) !== '0'" class="coins"><CoinAmount :value="rawStr(sides(t).giveCoins)" /> {{ $t('coins-lower') }}</p>
             <ItemCard v-for="it in sides(t).giveItems" :key="it.id" :item="it" :minimal="true" />
-            <p v-if="rawStr(sides(t).giveCoins) === '0' && sides(t).giveItems.length === 0" class="nothing">nothing</p>
+            <p v-if="rawStr(sides(t).giveCoins) === '0' && sides(t).giveItems.length === 0" class="nothing">{{ $t('nothing-lower') }}</p>
           </div>
           <div class="swap-arrow">⇄</div>
           <div class="swap-col">
-            <p class="swap-head">You get</p>
-            <p v-if="rawStr(sides(t).getCoins) !== '0'" class="coins"><CoinAmount :value="rawStr(sides(t).getCoins)" /> coins</p>
+            <p class="swap-head">{{ $t('you-get') }}</p>
+            <p v-if="rawStr(sides(t).getCoins) !== '0'" class="coins"><CoinAmount :value="rawStr(sides(t).getCoins)" /> {{ $t('coins-lower') }}</p>
             <ItemCard v-for="it in sides(t).getItems" :key="it.id" :item="it" :minimal="true" />
-            <p v-if="rawStr(sides(t).getCoins) === '0' && sides(t).getItems.length === 0" class="nothing">nothing</p>
+            <p v-if="rawStr(sides(t).getCoins) === '0' && sides(t).getItems.length === 0" class="nothing">{{ $t('nothing-lower') }}</p>
           </div>
         </div>
 
@@ -440,11 +451,11 @@ export default {
           <span class="time">{{ formatDate(t.createdAt) }}</span>
           <div class="actions">
             <template v-if="t.status === 'Pending' && t.direction === 'incoming'">
-              <button class="btn small primary" :disabled="busyId === t.id" @click="act(t, 'approve')">Approve</button>
-              <button class="btn small bad" :disabled="busyId === t.id" @click="act(t, 'deny')">Deny</button>
+              <button class="btn small primary" :disabled="busyId === t.id" @click="act(t, 'approve')">{{ $t('approve') }}</button>
+              <button class="btn small bad" :disabled="busyId === t.id" @click="act(t, 'deny')">{{ $t('deny') }}</button>
             </template>
             <template v-else-if="t.status === 'Pending' && t.direction === 'outgoing'">
-              <button class="btn small ghost" :disabled="busyId === t.id" @click="act(t, 'cancel')">Cancel</button>
+              <button class="btn small ghost" :disabled="busyId === t.id" @click="act(t, 'cancel')">{{ $t('cancel') }}</button>
             </template>
           </div>
         </div>

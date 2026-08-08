@@ -1,1 +1,6 @@
+/* Order matters: tokens and element defaults, then layout primitives, then
+   component classes (which reference the tokens and may override element
+   defaults). Page-scoped styles load after all of these. */
 @import './base.css';
+@import './utilities.css';
+@import './components.css';

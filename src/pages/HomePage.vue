@@ -94,7 +94,7 @@ export default {
     <section class="home-header-shell">
       <div class="home-header-band">
         <section class="home-header">
-          <img src="/images/icon.png" alt="Serble" class="home-header-icon" />
+          <img src="/images/icon.png" :alt="$t('serble')" class="home-header-icon" />
           <div class="home-header-copy">
             <h1 class="home-header-title">{{ $t('serble') }}</h1>
             <p class="home-header-sub"><LinkedText :text="$t('welcome-to-serble')" to="/contact" /></p>
@@ -106,7 +106,7 @@ export default {
 
     <section class="home-section">
       <div class="section-heading">
-        <h2 class="section-title">Accounts</h2>
+        <h2 class="section-title">{{ $t('accounts') }}</h2>
       </div>
 
       <div class="account-grid">
@@ -136,7 +136,7 @@ export default {
 
     <section class="home-section">
       <div class="section-heading">
-        <h2 class="section-title">Services</h2>
+        <h2 class="section-title">{{ $t('services') }}</h2>
       </div>
 
       <div v-if="servicesError" class="services-state services-state-error">
@@ -178,7 +178,7 @@ export default {
           </div>
           <h3 class="external-card-title">
             {{ service.name }}
-            <span v-if="service.new" class="service-new-badge">New</span>
+            <span v-if="service.new" class="service-new-badge">{{ $t('new') }}</span>
           </h3>
           <p class="external-card-desc">{{ service.description }}</p>
         </a>
@@ -266,7 +266,7 @@ export default {
 }
 
 .home-header-note :deep(a) {
-  color: #93c5fd;
+  color: var(--accent-light);
   text-decoration: none;
 }
 

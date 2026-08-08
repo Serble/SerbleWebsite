@@ -37,9 +37,9 @@ export default {
   <div class="bridge">
     <div class="bridge-card">
       <div class="spinner" v-if="!noOpener"></div>
-      <p v-if="noOpener">You're signed in. You can close this window and return to the app.</p>
-      <p v-else-if="done">Connected — returning to the app…</p>
-      <p v-else>Connecting your Serble account…</p>
+      <p v-if="noOpener">{{ $t('bridge-signed-in') }}</p>
+      <p v-else-if="done">{{ $t('bridge-connected') }}</p>
+      <p v-else>{{ $t('bridge-connecting') }}</p>
     </div>
   </div>
 </template>

@@ -15,7 +15,7 @@ export default {};
           </svg>
         </div>
         <h1 class="contact-title">{{ $t('contact-us') }}</h1>
-        <p class="contact-sub">Reach out through any of the methods below.</p>
+        <p class="contact-sub">{{ $t('contact-sub') }}</p>
       </div>
 
       <!-- Contact cards -->
