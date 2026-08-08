@@ -1,12 +1,8 @@
 <script>
+import LinkedText from '@/components/LinkedText.vue';
+
 export default {
-  computed: {
-    sorryText() {
-      return this.$t('sorry-not-found')
-        .replace('[', '<a href="/">')
-        .replace(']', '</a>');
-    }
-  }
+  components: { LinkedText }
 }
 </script>
 
@@ -20,7 +16,7 @@ export default {
 
       <!-- Heading & description -->
       <h1 class="notfound-title">{{ $t('not-found') }}</h1>
-      <p class="notfound-desc" v-html="sorryText"></p>
+      <p class="notfound-desc"><LinkedText :text="$t('sorry-not-found')" to="/" /></p>
 
       <!-- Actions -->
       <div class="notfound-actions">

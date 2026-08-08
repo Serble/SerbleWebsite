@@ -3,9 +3,10 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getCheckoutUrlAnon } from '@/assets/js/serble.js';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import LinkedText from '@/components/LinkedText.vue';
 
 export default {
-  components: { LoadingSpinner },
+  components: { LoadingSpinner, LinkedText },
   setup() {
     const route = useRoute();
 
@@ -47,8 +48,7 @@ export default {
       <h4 class="mb-2">{{ $t('wait-while-login') }}</h4>
       <p class="text-muted mb-4" style="font-size:0.9rem;">{{ $t('redirecting-to-portal') }}</p>
       <p class="stuck-text">
-        {{ $t('stuck-go-back-to-store').replace('[', '').replace(']', '') }}
-        <RouterLink to="/store">{{ $t('store') }}</RouterLink>
+        <LinkedText :text="$t('stuck-go-back-to-store')" to="/store" />
       </p>
     </div>
 
@@ -89,7 +89,7 @@ export default {
   color: var(--text-faint);
 }
 
-.stuck-text a {
+.stuck-text :deep(a) {
   color: var(--accent-light);
   text-decoration: none;
 }

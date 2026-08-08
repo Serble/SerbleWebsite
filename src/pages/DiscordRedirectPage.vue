@@ -1,9 +1,11 @@
 <script>
 import { onMounted } from 'vue';
+import LinkedText from '@/components/LinkedText.vue';
 
 const DISCORD_INVITE = 'https://discord.com/invite/fzvcNhW';
 
 export default {
+  components: { LinkedText },
   setup() {
     onMounted(() => {
       window.location.href = DISCORD_INVITE;
@@ -23,8 +25,7 @@ export default {
       </div>
       <h2 class="redirect-title">Serble Discord</h2>
       <p class="redirect-sub">
-        {{ $t('browser-not-redirecting') }}
-        <a :href="DISCORD_INVITE" target="_blank" rel="noopener">{{ $t('click-here') }}</a>
+        <LinkedText :text="$t('browser-not-redirecting')" :href="DISCORD_INVITE" target="_blank" />
       </p>
     </div>
   </div>
@@ -70,13 +71,13 @@ export default {
   margin: 0;
 }
 
-.redirect-sub a {
+.redirect-sub :deep(a) {
   color: #7289da;
   text-decoration: none;
   font-weight: 600;
 }
 
-.redirect-sub a:hover {
+.redirect-sub :deep(a:hover) {
   text-decoration: underline;
 }
 </style>

@@ -5,9 +5,10 @@ import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
 import VueTurnstile from 'vue-turnstile';
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
+import LinkedText from "@/components/LinkedText.vue";
 
 export default {
-  components: { VueTurnstile, LoadingSpinner },
+  components: { VueTurnstile, LoadingSpinner, LinkedText },
   setup() {
     const userStore = inject('userStore');
     const route = useRoute();
@@ -72,8 +73,7 @@ export default {
       </div>
       <div v-else-if="error === 2" class="auth-error">
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
-        {{ $t('user-exists-trying-to-login') }}
-        <RouterLink :to="loginLink" class="auth-error-link">{{ $t('login') }}</RouterLink>
+        <LinkedText :text="$t('user-exists-trying-to-login')" :to="loginLink" />
       </div>
 
       <!-- Fields -->
@@ -128,8 +128,7 @@ export default {
       </button>
 
       <p class="auth-switch">
-        {{ $t('want-login-go-here').replace('[', '').replace(']', '') }}
-        <RouterLink :to="loginLink" class="auth-switch-link">{{ $t('sign-in') }}</RouterLink>
+        <LinkedText :text="$t('want-login-go-here')" :to="loginLink" />
       </p>
 
     </div>
@@ -193,10 +192,9 @@ export default {
   padding: 9px 12px;
 }
 
-.auth-error-link {
+.auth-error :deep(a) {
   color: #fca5a5;
   text-decoration: underline;
-  margin-left: 2px;
 }
 
 .auth-fields {
@@ -267,12 +265,12 @@ export default {
   margin: 0;
 }
 
-.auth-switch-link {
+.auth-switch :deep(a) {
   color: var(--accent-light);
   text-decoration: none;
   font-weight: 500;
 }
 
-.auth-switch-link:hover { text-decoration: underline; }
+.auth-switch :deep(a:hover) { text-decoration: underline; }
 
 </style>
