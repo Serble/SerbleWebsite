@@ -120,5 +120,6 @@
     "reload": "Reload",
     "info": "Info",
     "login": "Login",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "settings": "Preferences"
 }
