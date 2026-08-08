@@ -12,7 +12,7 @@ export default {
     const user = ensureLoggedIn();
     const errors = ref([]);
     const successMessage = ref(false);
-    const { locale } = useI18n({ useScope: 'global' });
+    const { locale, t } = useI18n({ useScope: 'global' });
     const userStore = inject('userStore');
 
     const username = ref('');
@@ -187,11 +187,11 @@ export default {
       registeringPasskey.value = false;
       if (!result.success) {
         if (result.error === 'cancelled') {
-          passkeyError.value = 'Registration was cancelled.';
+          passkeyError.value = t('passkey-register-cancelled');
         } else if (result.error === 'webauthn-unavailable') {
-          passkeyError.value = 'Passkeys are not available. This page must be served over HTTPS.';
+          passkeyError.value = t('passkey-unavailable');
         } else {
-          passkeyError.value = 'Failed to register passkey. Please try again.';
+          passkeyError.value = t('passkey-register-failed');
         }
         return;
       }
@@ -235,7 +235,7 @@ export default {
         if (pk) pk.name = newName;
         cancelRename();
       } else {
-        passkeyError.value = 'Failed to rename passkey. Please try again.';
+        passkeyError.value = t('passkey-rename-failed');
       }
     };
 
@@ -417,7 +417,7 @@ export default {
         </div>
 
         <div v-if="passkeysLoading" class="passkey-empty">
-          <span class="spinner" role="status"></span> Loading...
+          <span class="spinner" role="status"></span> {{ $t('loading') }}
         </div>
         <div v-else-if="passkeys.length === 0" class="passkey-empty">{{ $t('no-passkeys') }}</div>
         <ul v-else class="passkey-list">

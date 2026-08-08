@@ -1,8 +1,10 @@
 <script>
 import { ref, computed, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 export default {
   setup() {
+    const { t } = useI18n();
     // Assets live in /public, so they're served from the site root and are hotlinkable as-is.
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://serble.net';
 
@@ -14,13 +16,13 @@ export default {
       {
         key: 'img',
         label: 'HTML',
-        hint: 'Scales to any size — set width/height in CSS or attributes.',
+        hint: t('coin-snippet-html-hint'),
         code: `<img src="${svgUrl.value}" :alt="$t('serble-coin')" width="24" height="24">`,
       },
       {
         key: 'inline',
-        label: 'Inline with text',
-        hint: 'Aligns the coin with a balance or price.',
+        label: t('coin-snippet-inline'),
+        hint: t('coin-snippet-inline-hint'),
         code: `<span style="display:inline-flex;align-items:center;gap:4px">
   <img src="${svgUrl.value}" :alt="$t('serble-coin')" width="16" height="16">
   1,250
@@ -29,13 +31,13 @@ export default {
       {
         key: 'markdown',
         label: 'Markdown',
-        hint: 'For READMEs, docs and wikis.',
+        hint: t('coin-snippet-markdown-hint'),
         code: `![Serble coin](${pngUrl(64)})`,
       },
       {
         key: 'css',
-        label: 'CSS background',
-        hint: 'When the coin is decoration rather than content.',
+        label: t('coin-snippet-css'),
+        hint: t('coin-snippet-css-hint'),
         code: `.coin {
   background: url("${svgUrl.value}") no-repeat center / contain;
   width: 24px;
@@ -73,10 +75,7 @@ export default {
       <div class="coin-header">
         <img :src="svgUrl" :alt="$t('serble-coin')" width="72" height="72" class="hero-coin">
         <h1 class="coin-title">{{ $t('serble-coin-asset') }}</h1>
-        <p class="coin-sub">
-          The Serble coin, hosted for anyone to embed. Hotlink it directly — no download, no
-          attribution required, and it stays up to date if the artwork ever changes.
-        </p>
+        <p class="coin-sub">{{ $t('coin-asset-blurb') }}</p>
       </div>
 
       <!-- Direct links -->
@@ -99,13 +98,10 @@ export default {
             <span class="link-badge png">PNG</span>
             <span class="link-url">{{ pngUrl(size) }}</span>
             <span class="link-note">{{ size }}&times;{{ size }}</span>
-            <span class="link-copy">{{ copied === `png-${size}` ? 'Copied' : 'Copy' }}</span>
+            <span class="link-copy">{{ copied === `png-${size}` ? $t('copied') : $t('copy') }}</span>
           </button>
         </div>
-        <p class="section-note">
-          Prefer the SVG — it's under 1&nbsp;KB and stays sharp at every size. The PNGs are there
-          for places that don't render SVG, like some chat embeds and email clients.
-        </p>
+        <p class="section-note">{{ $t('coin-asset-format-note') }}</p>
       </section>
 
       <!-- Preview at real sizes -->

@@ -1,5 +1,6 @@
 <script>
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getBalance, transferCoins, getTransactions } from '@/assets/js/serble.js';
 import { parseCoinsToRaw, isValidCoinAmount } from '@/assets/js/coins.js';
@@ -20,6 +21,7 @@ export default {
   setup() {
     ensureLoggedIn();
 
+    const { t } = useI18n();
     const loading = ref(true);
     const error = ref(false);
     const coins = ref('0');
@@ -91,11 +93,11 @@ export default {
       const recip = recipient.value.trim();
       const amt = amount.value.trim();
       if (!recip) {
-        sendError.value = 'Enter a recipient.';
+        sendError.value = t('trade-err-recipient');
         return;
       }
       if (!isValidCoinAmount(amt)) {
-        sendError.value = 'Enter an amount greater than zero.';
+        sendError.value = t('enter-amount');
         return;
       }
       const rawAmount = parseCoinsToRaw(amt);
@@ -107,20 +109,22 @@ export default {
       if (r.success) {
         const newCoins = r.data?.fromBalance?.coins;
         if (newCoins != null) coins.value = String(newCoins);
-        sendSuccess.value = 'Coins sent!';
+        sendSuccess.value = t('coins-sent');
         recipient.value = '';
         amount.value = '';
         description.value = '';
         load();
         loadTransactions();
       } else if (r.error === 404) {
-        sendError.value = 'Recipient user not found.';
+        sendError.value = t('recipient-not-found');
       } else if (r.error === 400) {
-        sendError.value = r.message || 'Transfer failed. Check the amount and recipient.';
+        // The server's own message is more specific when it sends one, but it
+        // only ever comes back in English.
+        sendError.value = r.message || t('transfer-failed');
       } else if (r.error === 403) {
-        sendError.value = 'You do not have permission to send coins.';
+        sendError.value = t('no-permission-send-coins');
       } else {
-        sendError.value = 'Something went wrong. Please try again.';
+        sendError.value = t('something-went-wrong');
       }
     }
 

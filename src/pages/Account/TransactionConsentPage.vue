@@ -281,16 +281,15 @@ export default {
 
       <!-- Gift: app gives, asks nothing -->
       <template v-if="isGift">
-        <p class="txc-warning-text">
-          <strong>{{ appName }}</strong> wants to give you the following
-          &mdash; for free, with nothing asked in return.
-        </p>
+        <i18n-t keypath="txc-gift-warning" tag="p" class="txc-warning-text" scope="global">
+          <template #app><strong>{{ appName }}</strong></template>
+        </i18n-t>
         <div class="txc-gift-box">
           <span class="txc-gift-badge">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
               <path d="M3 2.5a2.5 2.5 0 0 1 5 0 2.5 2.5 0 0 1 5 0v.006c0 .07 0 .27-.038.494H15a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 14.5V7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2.038A3 3 0 0 1 3 2.506zm1.068.5H7v-.5a1.5 1.5 0 1 0-3 0c0 .085.002.274.045.43zM9 3h2.932l.023-.07c.043-.156.045-.345.045-.43a1.5 1.5 0 0 0-3 0zM1 4v2h6V4zm8 0v2h6V4zM2 7v7.5a.5.5 0 0 0 .5.5H7V7zm7 8h4.5a.5.5 0 0 0 .5-.5V7H9z"/>
             </svg>
-            Gift
+            {{ $t('gift') }}
           </span>
           <div v-if="hasOfferCoins" class="txc-coin-row">
             <CoinAmount :value="offeredCoins" /> <span class="txc-amount-unit">{{ $t('coins-lower') }}</span>
@@ -303,10 +302,9 @@ export default {
 
       <!-- Item trade: two-sided swap -->
       <template v-else-if="involvesItems">
-        <p class="txc-warning-text">
-          <strong>{{ appName }}</strong> is proposing a trade. Review both sides carefully.
-          Only approve if you trust this application and want to make this exchange.
-        </p>
+        <i18n-t keypath="txc-trade-warning" tag="p" class="txc-warning-text" scope="global">
+          <template #app><strong>{{ appName }}</strong></template>
+        </i18n-t>
         <div class="txc-swap">
           <div class="txc-swap-col">
             <span class="txc-swap-label txc-swap-give">{{ $t('you-give') }}</span>
@@ -344,16 +342,15 @@ export default {
 
       <!-- Coins-only payment (original flow) -->
       <template v-else>
-        <p class="txc-warning-text">
-          <strong>{{ appName }}</strong> is requesting that you pay coins from your account.
-          Only approve if you trust this application and recognise this payment.
-        </p>
+        <i18n-t keypath="txc-payment-warning" tag="p" class="txc-warning-text" scope="global">
+          <template #app><strong>{{ appName }}</strong></template>
+        </i18n-t>
 
         <div class="txc-amount-box" :class="{ 'txc-amount-box-bad': insufficientFunds }">
           <span class="txc-amount-label">{{ $t('amount') }}</span>
           <span class="txc-amount-value"><CoinAmount :value="amount" /> <span class="txc-amount-unit">{{ $t('coins-lower') }}</span></span>
           <span v-if="hasBalance" class="txc-balance-line" :class="{ 'txc-balance-bad': insufficientFunds }">
-            Your balance: <CoinAmount :value="balance" /> coins
+            {{ $t('your-balance') }}: <CoinAmount :value="balance" /> {{ $t('coins-lower') }}
           </span>
         </div>
       </template>
@@ -365,11 +362,9 @@ export default {
         </svg>
         <div>
           <p class="txc-insufficient-title">{{ $t('insufficient-balance') }}</p>
-          <p class="txc-insufficient-text">
-            <strong>{{ appName }}</strong> requested this payment, but it can't be made &mdash;
-            you don't have enough coins to cover it. If you approve, the application will be
-            told you accepted but the payment will fail.
-          </p>
+          <i18n-t keypath="txc-insufficient-text" tag="p" class="txc-insufficient-text" scope="global">
+            <template #app><strong>{{ appName }}</strong></template>
+          </i18n-t>
         </div>
       </div>
 
@@ -391,9 +386,9 @@ export default {
         </div>
       </div>
 
-      <p v-if="redirectHost" class="txc-return-note">
-        You'll be returned to <strong>{{ redirectHost }}</strong> after you decide.
-      </p>
+      <i18n-t v-if="redirectHost" keypath="txc-return-note" tag="p" class="txc-return-note" scope="global">
+        <template #host><strong>{{ redirectHost }}</strong></template>
+      </i18n-t>
 
       <p v-if="insufficientFunds" class="txc-deny-warning">{{ $t('payment-will-fail') }}</p>
       <p v-else-if="isGift" class="txc-deny-warning">{{ $t('deny-hint-gift') }}</p>
@@ -415,7 +410,7 @@ export default {
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
             <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
           </svg>
-          Deny
+          {{ $t('deny') }}
         </button>
       </div>
     </div>

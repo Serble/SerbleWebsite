@@ -1,5 +1,6 @@
 <script>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import {
@@ -13,6 +14,7 @@ const ENCRYPTION_HEADER = '------BEGIN ENCRYPTED NOTE-----\n';
 
 export default {
   setup() {
+    const { t } = useI18n();
     ensureLoggedIn();
     const route = useRoute();
     const router = useRouter();
@@ -46,12 +48,12 @@ export default {
     }
 
     function summaryFromContent(content) {
-      if (!content) return 'Empty note';
+      if (!content) return t('empty-note');
       const plain = content.startsWith(ENCRYPTION_HEADER)
         ? content.slice(ENCRYPTION_HEADER.length)
         : content;
       const flat = plain.replace(/\n/g, ' ').trim();
-      return flat.length > 80 ? flat.slice(0, 80) + '…' : (flat || 'Empty note');
+      return flat.length > 80 ? flat.slice(0, 80) + '…' : (flat || t('empty-note'));
     }
 
     function setMeta(id, rawOrDecrypted) {
@@ -158,7 +160,7 @@ export default {
       passwords.value = { ...passwords.value, [currentId.value]: pw };
       savePasswords(passwords.value);
       passwordInput.value = '';
-      await doSave('Welcome to your encrypted note!');
+      await doSave(t('welcome-to-encrypted-note'));
       await loadNoteBackground(currentId.value);
       await openNote(currentId.value);
     }

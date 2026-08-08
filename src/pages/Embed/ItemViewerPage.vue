@@ -1,5 +1,6 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { getInventory, getPublicAppsBatch, checkLogin, getAuthToken } from '@/assets/js/serble.js';
 import { setLocalStorage } from '@/assets/js/utils.js';
@@ -21,6 +22,7 @@ export default {
   components: { ItemCard, ItemDetails, LoadingSpinner },
   setup() {
     const route = useRoute();
+    const { t } = useI18n();
     const origin = window.location.origin;
 
     const appFilter = computed(() => {
@@ -61,10 +63,13 @@ export default {
     });
     const heading = computed(() => {
       if (route.query.title) return String(route.query.title);
-      if (filterAppName.value) return `Your ${filterAppName.value} items`;
-      return 'Your items';
+      if (filterAppName.value) return t('your-app-items', { app: filterAppName.value });
+      return t('your-items');
     });
     const isEmpty = computed(() => !loading.value && !error.value && items.value.length === 0);
+    const emptyText = computed(() => filterAppName.value
+      ? t('items-from-app-appear-here', { app: filterAppName.value })
+      : t('items-appear-here'));
 
     // Resolve creator-app names for a set of items (merged into appMap), used for the heading.
     async function resolveApps(list) {
@@ -166,7 +171,7 @@ export default {
 
     return {
       rootEl, rootStyle, loggedIn, authChecked, loading, loadingMore, hasMore, error,
-      items, isEmpty, heading, filterAppName, search, selected,
+      items, isEmpty, emptyText, heading, filterAppName, search, selected,
       load, loadMore, onSearchInput, connect, openItem, closeItem, openFullPage,
     };
   },
@@ -198,10 +203,10 @@ export default {
 
       <div v-if="loading" class="state">{{ $t('loading-ellipsis') }}</div>
       <div v-else-if="error" class="state err">{{ $t('items-load-failed') }}</div>
-      <div v-else-if="isEmpty && search.trim()" class="state">No items match “{{ search.trim() }}”.</div>
+      <div v-else-if="isEmpty && search.trim()" class="state">{{ $t('no-items-match', { query: search.trim() }) }}</div>
       <div v-else-if="isEmpty" class="state">
         <p class="state-title">{{ $t('inventory-empty-title') }}</p>
-        <p class="state-text">Items you own{{ filterAppName ? ` from ${filterAppName}` : '' }} will show up here.</p>
+        <p class="state-text">{{ emptyText }}</p>
       </div>
 
       <template v-else>

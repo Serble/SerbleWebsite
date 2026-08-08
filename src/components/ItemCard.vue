@@ -1,5 +1,6 @@
 <script>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 
 // A single tradeable / inventory item tile. Purely presentational.
@@ -18,7 +19,8 @@ export default {
     showCreatorOfficialBadge: { type: Boolean, default: false },
   },
   setup(props) {
-    const name = computed(() => props.item?.name ?? 'Unknown item');
+    const { t } = useI18n();
+    const name = computed(() => props.item?.name ?? t('unknown-item'));
     const description = computed(() => props.item?.description ?? '');
     const iconUrl = computed(() => props.item?.iconUrl ?? null);
     const initial = computed(() => name.value.charAt(0).toUpperCase() || '?');

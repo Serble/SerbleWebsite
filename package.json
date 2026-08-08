@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "generate-locales": "node scripts/generate-locales.mjs",
+    "predev": "npm run generate-locales",
     "dev": "vite",
+    "prebuild": "npm run generate-locales",
     "build": "vite build",
     "preview": "vite preview"
   },

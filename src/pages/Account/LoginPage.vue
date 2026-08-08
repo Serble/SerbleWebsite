@@ -1,6 +1,7 @@
 <script>
 import { loginUser, loginWithPasskey } from "@/assets/js/serble.js";
 import { inject, ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
@@ -12,6 +13,7 @@ export default {
   setup() {
     const userStore = inject('userStore');
     const route = useRoute();
+    const { t } = useI18n();
 
     if (userStore.state.user) {
       router.push('/');
@@ -57,11 +59,11 @@ export default {
 
       if (!result.success) {
         if (result.error === 'cancelled') {
-          passkeyError.value = 'Passkey sign-in was cancelled.';
+          passkeyError.value = t('passkey-login-cancelled');
         } else if (result.error === 'webauthn-unavailable') {
-          passkeyError.value = 'Passkeys are not available. This page must be served over HTTPS.';
+          passkeyError.value = t('passkey-unavailable');
         } else {
-          passkeyError.value = 'Passkey sign-in failed. Please try again.';
+          passkeyError.value = t('passkey-login-failed');
         }
         return;
       }

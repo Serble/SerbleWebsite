@@ -1,4 +1,7 @@
 <script>
+// Deliberately not localised. This is internal tooling, and most of its copy is
+// jargon that maps onto server-side and Stripe concepts — translating it would
+// make it harder to follow, not easier.
 import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import {

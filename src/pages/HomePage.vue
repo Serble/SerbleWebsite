@@ -22,28 +22,28 @@ export default {
         {
           to: '/account',
           label: this.$t('account'),
-          description: 'Profile settings, sign-in details, and security controls.',
+          description: this.$t('account-tile-desc'),
           iconColor: '#60a5fa',
           icon: 'account'
         },
         {
           to: '/oauthapps',
           label: this.$t('my-applications'),
-          description: 'Create and manage apps connected to your Serble account.',
+          description: this.$t('my-applications-tile-desc'),
           iconColor: '#818cf8',
           icon: 'apps'
         },
         {
           to: '/authorizedapps',
           label: this.$t('authorized-applications'),
-          description: 'Review third-party apps you have already approved.',
+          description: this.$t('authorized-applications-tile-desc'),
           iconColor: '#4ade80',
           icon: 'authorized'
         },
         {
           to: '/account/paymentportal',
           label: this.$t('manage-payments'),
-          description: 'Open billing tools and manage your payment methods.',
+          description: this.$t('manage-payments-tile-desc'),
           iconColor: '#fbbf24',
           icon: 'payments'
         }
@@ -140,13 +140,13 @@ export default {
       </div>
 
       <div v-if="servicesError" class="services-state services-state-error">
-        Failed to load services: {{ servicesError }}
+        {{ $t('services-load-failed', { error: servicesError }) }}
       </div>
       <div v-else-if="servicesLoading" class="services-state">
-        Loading services…
+        {{ $t('loading-services') }}
       </div>
       <div v-else-if="services.length === 0" class="services-state">
-        No services available.
+        {{ $t('no-services') }}
       </div>
 
       <div v-else class="external-grid">
@@ -163,7 +163,7 @@ export default {
             <img
               v-if="serviceHasIcon(service)"
               :src="service.iconUrl"
-              :alt="`${service.name} icon`"
+              :alt="$t('service-icon-alt', { name: service.name })"
               class="service-icon-image"
               @error="markServiceIconFailed(service.id)"
             />

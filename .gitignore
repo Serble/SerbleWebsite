@@ -33,3 +33,7 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Joke locales built from default.json by scripts/generate-locales.mjs.
+# Kept out of src/assets/locales so Weblate doesn't try to translate them.
+src/assets/locales-generated

@@ -207,7 +207,7 @@ export default {
             </RouterLink>
             <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-dropdown-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H9a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3A.5.5 0 0 1 0 3.5m16 9a.5.5 0 0 1-.5.5H7a.5.5 0 0 1 0-1h7.793l-2.147-2.146a.5.5 0 0 1 .708-.708l3 3a.5.5 0 0 1 .146.354"/></svg>
-              Trades
+              {{ $t('trades') }}
             </RouterLink>
             <RouterLink to="/account/paymentportal" class="nav-dropdown-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/></svg>
