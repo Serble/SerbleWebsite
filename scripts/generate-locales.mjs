@@ -20,17 +20,19 @@ const outputDir = join(repoRoot, 'src/assets/locales-generated');
 const lolcatDictFile = join(scriptDir, 'data/tranzlashun.json');
 
 /**
- * Splits a message into runs of literal text and vue-i18n placeholders.
+ * Splits a message into runs of literal text and markup that must be preserved.
  * Placeholders ({app}, {count}, ...) have to survive every transform verbatim
- * or interpolation breaks at runtime.
+ * or interpolation breaks at runtime, and the square brackets LinkedText uses
+ * to mark up its link text ("... contact me through [one of these methods].")
+ * have to survive or the link disappears.
  */
 function tokenise(message) {
     const tokens = [];
-    const placeholder = /\{[^{}]*\}/g;
+    const markup = /\{[^{}]*\}|[[\]]/g;
     let index = 0;
     let match;
 
-    while ((match = placeholder.exec(message)) !== null) {
+    while ((match = markup.exec(message)) !== null) {
         if (match.index > index) {
             tokens.push({ literal: true, text: message.slice(index, match.index) });
         }
@@ -66,7 +68,13 @@ function generateBinary(message) {
     // readable, and the surrounding spaces don't turn into stray octets.
     return tokenise(message)
         .map(token => (token.literal ? toBinary(token.text) : token.text))
+        .filter(part => part !== '')
         .join(' ')
+        // Octets are only ones, zeroes and spaces, so the only brackets here are
+        // the link markup — close the gap the join left so the space doesn't end
+        // up inside the link text.
+        .replace(/\[ /g, '[')
+        .replace(/ \]/g, ']')
         .trim();
 }
 

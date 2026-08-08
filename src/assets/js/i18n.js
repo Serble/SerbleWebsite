@@ -28,7 +28,6 @@ import pen from '@/assets/locales/pen.json';
 import po from '@/assets/locales/pol.json';
 import es from '@/assets/locales/es.json';
 import tok from '@/assets/locales/tok.json';
-import uwu from '@/assets/locales/uwu.json';
 
 import bin from '@/assets/locales-generated/bin.json';
 import lol from '@/assets/locales-generated/lol.json';
@@ -55,8 +54,7 @@ const i18n = createI18n({
         po,
         es,
         tes,
-        tok,
-        uwu
+        tok
     },
 });
 
