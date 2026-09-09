@@ -29,7 +29,7 @@ export async function decrypt(cipherText, password) {
     return new TextDecoder().decode(plainBuffer);
 }
 
-// ── Password cache (localStorage) ──
+// -- Password cache (localStorage) --
 // Stored as base64(JSON({noteId: password})) with '=' replaced by '~'
 
 export function loadPasswords() {

@@ -27,16 +27,16 @@ export default {
     const userStore = inject('userStore');
     const economyEnabled = computed(() => featureStore?.isEnabled(FEATURES.ECONOMY) === true);
     // The tax target is an admin-only setting, and the only endpoint for it that a user token can
-    // reach is the admin one — so the panel appears only for admins.
+    // reach is the admin one - so the panel appears only for admins.
     const isAdmin = computed(() => (userStore?.state?.user?.permLevel ?? 0) >= 2);
 
     const appId = ref('');
     const app = ref(null);
     const loading = ref(true);
 
-    // ── Tabs ──
+    // -- Tabs --
     // The active tab lives in the URL so a refresh, a bookmark or a shared link all land in the
-    // same place. Webhooks and economy are switched off with the economy flag — while it's off
+    // same place. Webhooks and economy are switched off with the economy flag - while it's off
     // those tabs aren't rendered at all, so nothing hints at a section the server won't serve.
     // Webhooks only carry tax events for now, so there's nothing to show without the economy.
     const tabs = computed(() => [
@@ -55,7 +55,7 @@ export default {
       return tabs.value.some(t => t.id === id);
     }
 
-    // The webhook panel fetches on mount, so it's only created once its tab has been opened —
+    // The webhook panel fetches on mount, so it's only created once its tab has been opened -
     // after that it stays mounted so flipping between tabs doesn't refetch.
     const webhooksOpened = ref(false);
 
@@ -82,11 +82,11 @@ export default {
         pendingTab = null;
         return;
       }
-      // The economy and webhooks tabs disappear when the flag goes off — don't strand the user.
+      // The economy and webhooks tabs disappear when the flag goes off - don't strand the user.
       if (!isValidTab(activeTab.value)) selectTab('overview');
     });
 
-    // ── Copy feedback (shared by the id / secret chips) ──
+    // -- Copy feedback (shared by the id / secret chips) --
     const copied = ref(null);
     let copyTimer = null;
 
@@ -104,17 +104,17 @@ export default {
     }
 
     const secretVisible = ref(false);
-    const maskedSecret = computed(() => '•'.repeat(Math.min(app.value?.clientSecret?.length ?? 24, 36)));
+    const maskedSecret = computed(() => '*'.repeat(Math.min(app.value?.clientSecret?.length ?? 24, 36)));
 
     function formatDate(value) {
-      if (!value) return '—';
+      if (!value) return '-';
       const d = new Date(value);
       // Apps created before the model tracked a date come back as DateTime.MinValue.
-      if (Number.isNaN(d.getTime()) || d.getFullYear() < 2000) return '—';
+      if (Number.isNaN(d.getTime()) || d.getFullYear() < 2000) return '-';
       return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
-    // ── Settings form ──
+    // -- Settings form --
     const name = ref('');
     const description = ref('');
     const redirectUris = ref([]);
@@ -185,7 +185,7 @@ export default {
         return;
       }
 
-      // Stay on the page — the app the user is managing hasn't changed, only its details.
+      // Stay on the page - the app the user is managing hasn't changed, only its details.
       app.value = {
         ...app.value,
         name: name.value.trim(),
@@ -196,7 +196,7 @@ export default {
       formSuccess.value = true;
     }
 
-    // ── API keys ──
+    // -- API keys --
     const keys = ref(null);
     const keysLoading = ref(false);
     const keysError = ref(false);
@@ -252,7 +252,7 @@ export default {
       sayKey(ok ? 'key-copied' : 'copy-failed', !ok);
     }
 
-    // ── App balance ──
+    // -- App balance --
     // Two balances are in play: the app's and the owner's own. Both are shown, because every
     // move here is between exactly those two.
     const balanceCoins = ref(null);
@@ -270,7 +270,7 @@ export default {
       if (userResult.success) userCoins.value = String(userResult.balance?.coins ?? '0');
     }
 
-    // ── Moving coins between the owner and the app ──
+    // -- Moving coins between the owner and the app --
     const transferDirection = ref('deposit');
     const transferAmount = ref('');
     const transferNote = ref('');
@@ -317,7 +317,7 @@ export default {
       sayTransfer(depositing ? 'deposit-success' : 'withdraw-success', '', true);
     }
 
-    // ── Tax target balance (official apps, admins only) ──
+    // -- Tax target balance (official apps, admins only) --
     const showTaxTarget = computed(() => economyEnabled.value && isAdmin.value && app.value?.isOfficial === true);
     const taxTargetDraft = ref('');
     const taxTargetLoading = ref(false);
@@ -337,7 +337,7 @@ export default {
       taxTargetMsg.value = '';
       taxTargetOk.value = false;
       const amount = taxTargetDraft.value.trim();
-      // Zero is meaningful here — it turns the top-up off.
+      // Zero is meaningful here - it turns the top-up off.
       if (!isNonNegativeCoinAmount(amount)) {
         taxTargetMsg.value = 'enter-amount-zero-or-more';
         return;
@@ -354,7 +354,7 @@ export default {
       taxTargetOk.value = true;
     }
 
-    // ── Delete ──
+    // -- Delete --
     const confirmingDelete = ref(false);
     const deleting = ref(false);
     const deleteError = ref('');
@@ -437,7 +437,7 @@ export default {
 
   <div v-else class="manage-page">
 
-    <!-- ── Page header ── -->
+    <!-- -- Page header -- -->
     <div class="page-header">
       <RouterLink to="/oauthapps" class="back-btn" :title="$t('back-to-apps')" :aria-label="$t('back-to-apps')">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
@@ -454,7 +454,7 @@ export default {
       </div>
     </div>
 
-    <!-- ── Tabs ── -->
+    <!-- -- Tabs -- -->
     <div class="tabs" role="tablist">
       <button
         v-for="tab in tabs"
@@ -470,7 +470,7 @@ export default {
       </button>
     </div>
 
-    <!-- ── Overview ── -->
+    <!-- -- Overview -- -->
     <div v-show="activeTab === 'overview'" class="tab-panel" role="tabpanel">
 
       <div class="panel">
@@ -534,7 +534,7 @@ export default {
 
     </div>
 
-    <!-- ── Economy ── -->
+    <!-- -- Economy -- -->
     <div v-if="economyEnabled" v-show="activeTab === 'economy'" class="tab-panel" role="tabpanel">
       <div class="panel">
         <div class="panel-head">
@@ -543,7 +543,7 @@ export default {
             <p class="panel-subtitle">{{ $t('app-balance-subtitle') }}</p>
           </div>
           <button class="ghost-btn" :disabled="balanceLoading" @click="loadBalance">
-            {{ balanceLoading ? '…' : $t('reload') }}
+            {{ balanceLoading ? '...' : $t('reload') }}
           </button>
         </div>
 
@@ -553,7 +553,7 @@ export default {
             <span class="balance-box-label">{{ $t('app-balance') }}</span>
             <div class="balance-display">
               <CoinIcon :size="22" />
-              <span v-if="balanceLoading" class="balance-value">…</span>
+              <span v-if="balanceLoading" class="balance-value">...</span>
               <span v-else-if="balanceError" class="balance-value balance-err">{{ $t('unknown-error') }}</span>
               <span v-else class="balance-value"><CoinAmount :value="balanceCoins" /> {{ $t('coins') }}</span>
             </div>
@@ -562,7 +562,7 @@ export default {
             <span class="balance-box-label">{{ $t('your-balance') }}</span>
             <div class="balance-display">
               <CoinIcon :size="22" />
-              <span v-if="balanceLoading" class="balance-value">…</span>
+              <span v-if="balanceLoading" class="balance-value">...</span>
               <span v-else-if="userCoins === null" class="balance-value balance-err">{{ $t('unknown-error') }}</span>
               <span v-else class="balance-value"><CoinAmount :value="userCoins" /> {{ $t('coins') }}</span>
             </div>
@@ -662,7 +662,7 @@ export default {
       </div>
     </div>
 
-    <!-- ── Settings ── -->
+    <!-- -- Settings -- -->
     <div v-show="activeTab === 'settings'" class="tab-panel" role="tabpanel">
       <div v-if="formError" class="banner banner-error" role="alert">{{ $t(formError) }}</div>
       <div v-else-if="formSuccess" class="banner banner-ok" role="status">{{ $t('save-changes-success') }}</div>
@@ -734,21 +734,21 @@ export default {
       <div class="form-actions">
         <button class="ghost-btn" :disabled="!dirty || saving" @click="resetForm">{{ $t('discard') }}</button>
         <button class="add-btn" :disabled="!dirty || saving" @click="submit">
-          {{ saving ? '…' : $t('save-changes') }}
+          {{ saving ? '...' : $t('save-changes') }}
         </button>
       </div>
     </div>
 
-    <!-- ── API keys ── -->
+    <!-- -- API keys -- -->
     <div v-show="activeTab === 'keys'" class="tab-panel" role="tabpanel">
       <div class="panel">
         <div class="panel-head">
           <div>
             <h4 class="panel-title">{{ $t('api-keys') }}</h4>
-            <p class="panel-subtitle">{{ $t('api-keys-subtitle') }} <code>SerbleAuth: ApiKey sap_…</code></p>
+            <p class="panel-subtitle">{{ $t('api-keys-subtitle') }} <code>SerbleAuth: ApiKey sap_...</code></p>
           </div>
           <button class="ghost-btn" :disabled="keysLoading" @click="loadKeys">
-            {{ keysLoading ? '…' : $t('reload') }}
+            {{ keysLoading ? '...' : $t('reload') }}
           </button>
         </div>
 
@@ -776,7 +776,7 @@ export default {
             @keydown.enter.prevent="createKey"
           >
           <button type="button" class="add-btn" :disabled="creatingKey" @click="createKey">
-            {{ creatingKey ? '…' : $t('create-key') }}
+            {{ creatingKey ? '...' : $t('create-key') }}
           </button>
         </div>
 
@@ -801,14 +801,14 @@ export default {
       </div>
     </div>
 
-    <!-- ── Webhooks ──
+    <!-- -- Webhooks --
          Gated on the economy flag: the events it carries are tax events only for now, so there's
          nothing to manage while the economy is switched off. -->
     <div v-if="economyEnabled" v-show="activeTab === 'webhooks'" class="tab-panel" role="tabpanel">
       <AppWebhooksPanel v-if="webhooksOpened" :app-id="appId" />
     </div>
 
-    <!-- ── Danger zone ── -->
+    <!-- -- Danger zone -- -->
     <div v-show="activeTab === 'danger'" class="tab-panel" role="tabpanel">
       <div class="panel panel-danger">
         <div class="panel-head">
@@ -828,7 +828,7 @@ export default {
           <div class="confirm-actions">
             <button class="ghost-btn" :disabled="deleting" @click="confirmingDelete = false">{{ $t('cancel') }}</button>
             <button class="danger-btn danger-btn-solid" :disabled="deleting" @click="confirmDelete">
-              {{ deleting ? '…' : $t('confirm-delete') }}
+              {{ deleting ? '...' : $t('confirm-delete') }}
             </button>
           </div>
         </div>
@@ -845,7 +845,7 @@ export default {
   padding: 40px 24px 60px;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .page-header {
   display: flex;
   align-items: center;
@@ -910,7 +910,7 @@ export default {
   margin: 2px 0 0;
 }
 
-/* ── Tabs ── */
+/* -- Tabs -- */
 .tabs {
   display: flex;
   align-items: center;
@@ -958,7 +958,7 @@ export default {
   background: var(--accent);
 }
 
-/* ── Panels ── */
+/* -- Panels -- */
 .tab-panel { padding-top: 4px; }
 
 .panel {
@@ -1005,7 +1005,7 @@ export default {
 
 .panel-state-error { color: var(--danger); }
 
-/* ── Banners ── */
+/* -- Banners -- */
 .banner {
   font-size: 0.85rem;
   border-radius: 9px;
@@ -1031,7 +1031,7 @@ export default {
   color: var(--text-secondary);
 }
 
-/* ── Fields ── */
+/* -- Fields -- */
 .field-label {
   display: block;
   font-size: 0.7rem;
@@ -1044,7 +1044,7 @@ export default {
 
 .field-label:first-of-type { margin-top: 0; }
 
-/* …unless a hint introduces it, in which case it needs its usual breathing room back. */
+/* ...unless a hint introduces it, in which case it needs its usual breathing room back. */
 .field-hint + .field-label { margin-top: 16px; }
 
 .field-hint {
@@ -1065,7 +1065,7 @@ export default {
 
 .inline-row .input { flex-grow: 1; }
 
-/* ── Copy chips ── */
+/* -- Copy chips -- */
 .copy-chip {
   display: flex;
   align-items: center;
@@ -1122,7 +1122,7 @@ export default {
 
 .secret-row .copy-chip { min-width: 0; }
 
-/* ── Facts ── */
+/* -- Facts -- */
 .facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -1153,7 +1153,7 @@ export default {
   color: var(--text);
 }
 
-/* ── Buttons ── */
+/* -- Buttons -- */
 .ghost-btn,
 .add-btn,
 .danger-btn {
@@ -1225,7 +1225,7 @@ export default {
   color: #fff;
 }
 
-/* ── Redirect URIs ── */
+/* -- Redirect URIs -- */
 .uri-list {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1251,7 +1251,7 @@ export default {
   font-size: 0.85rem;
 }
 
-/* ── Settings actions ── */
+/* -- Settings actions -- */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -1259,7 +1259,7 @@ export default {
   margin-top: 20px;
 }
 
-/* ── API keys ── */
+/* -- API keys -- */
 .reveal-card {
   background: var(--danger-bg);
   border: 1px solid var(--danger-border-mid);
@@ -1334,7 +1334,7 @@ export default {
 
 .key-confirm-text { font-size: 0.78rem; color: var(--danger); }
 
-/* ── Balance ── */
+/* -- Balance -- */
 .balance-display {
   display: flex;
   align-items: center;
@@ -1375,7 +1375,7 @@ export default {
   color: var(--text-faint);
 }
 
-/* ── Move coins ── */
+/* -- Move coins -- */
 .direction-toggle {
   display: inline-flex;
   background: var(--surface-sunken);
@@ -1420,7 +1420,7 @@ export default {
 
 .inline-msg-error { color: var(--danger); }
 
-/* ── Danger zone ── */
+/* -- Danger zone -- */
 .confirm-row {
   display: flex;
   align-items: center;

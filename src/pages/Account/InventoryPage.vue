@@ -57,7 +57,7 @@ export default {
       searchTimer = setTimeout(load, 300);
     }
 
-    // Side panel — selecting an item opens an overlay drawer with its full info, so the grid
+    // Side panel - selecting an item opens an overlay drawer with its full info, so the grid
     // never reflows and we don't navigate away.
     const selectedId = ref(null);
     function openItem(id) { selectedId.value = id; }
@@ -85,7 +85,7 @@ export default {
     <p class="inv-subtitle">{{ $t('inventory-subtitle') }}</p>
 
     <!-- Two-column layout: the grid and a docked detail panel. Selecting another item just swaps
-         the panel content — no need to close first. -->
+         the panel content - no need to close first. -->
     <div class="inv-layout" :class="{ 'has-selection': selectedId }">
       <div class="inv-main">
         <input class="inv-search" type="search" v-model="search" @input="onSearchInput"
@@ -208,7 +208,7 @@ export default {
   padding: 48px 20px;
 }
 .panel-empty p { margin: 0; font-size: 0.85rem; }
-/* On narrow screens the empty placeholder reserves no space — the panel only appears once an
+/* On narrow screens the empty placeholder reserves no space - the panel only appears once an
    item is selected, rendering below the grid. */
 @media (max-width: 919px) {
   .panel-empty { display: none; }

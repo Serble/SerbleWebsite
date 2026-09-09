@@ -1,7 +1,9 @@
 <script>
 import { inject, computed } from 'vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
+  components: { Icon },
   setup() {
     const userStore = inject('userStore');
     const user = computed(() => userStore?.state?.user ?? null);
@@ -29,12 +31,12 @@ export default {
           <div class="plan-price">$0 <span class="plan-period">{{ $t('per-month') }}</span></div>
         </div>
         <ul class="plan-features">
-          <li><span class="check">✓</span> {{ $t('feature-link-shortener') }}</li>
-          <li><span class="check">✓</span> {{ $t('feature-file-hosting') }}</li>
-          <li><span class="check">✓</span> {{ $t('feature-chat-api') }}</li>
-          <li><span class="check">✓</span> {{ $t('feature-email-support') }}</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
+          <li><Icon name="check" class="check" /> {{ $t('feature-link-shortener') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('feature-file-hosting') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('feature-chat-api') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('feature-email-support') }}</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
         </ul>
         <RouterLink to="/register" class="plan-btn plan-btn-outline">{{ $t('sign-up-for-free') }}</RouterLink>
       </div>
@@ -47,12 +49,12 @@ export default {
           <div class="plan-price">$5 <span class="plan-period">{{ $t('per-month') }}</span></div>
         </div>
         <ul class="plan-features">
-          <li><span class="check">✓</span> {{ $t('everything-from-free') }}</li>
-          <li><span class="check">✓</span> {{ $t('feature-increased-upload') }}</li>
-          <li><span class="check muted">–</span> {{ $t('more-coming-soon') }}</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
+          <li><Icon name="check" class="check" /> {{ $t('everything-from-free') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('feature-increased-upload') }}</li>
+          <li><Icon name="dash" class="check muted" /> {{ $t('more-coming-soon') }}</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
         </ul>
         <RouterLink
           :to="user ? '/store/purchase?product=premium' : '/store/purchaseanon?product=premium'"
@@ -67,7 +69,7 @@ export default {
           <div class="plan-price">$?? <span class="plan-period">{{ $t('per-month') }}</span></div>
         </div>
         <ul class="plan-features">
-          <li v-for="n in 6" :key="n"><span class="check muted">–</span> &nbsp;</li>
+          <li v-for="n in 6" :key="n"><Icon name="dash" class="check muted" /> &nbsp;</li>
         </ul>
         <button class="plan-btn plan-btn-disabled" disabled>{{ $t('subscribe') }}</button>
       </div>
@@ -90,27 +92,27 @@ export default {
           <tbody>
             <tr>
               <td class="feature-name">{{ $t('feature-increased-upload') }}</td>
-              <td class="muted-cell">—</td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="muted-cell">—</td>
+              <td class="muted-cell">-</td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="muted-cell">-</td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('feature-link-shortener') }}</td>
-              <td><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="muted-cell">—</td>
+              <td><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="muted-cell">-</td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('feature-chat-api') }}</td>
-              <td><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="muted-cell">—</td>
+              <td><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="muted-cell">-</td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('feature-email-support') }}</td>
-              <td><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="muted-cell">—</td>
+              <td><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="muted-cell">-</td>
             </tr>
           </tbody>
         </table>

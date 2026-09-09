@@ -4,9 +4,10 @@ import { useRoute } from 'vue-router';
 import { getCheckoutUrlAnon } from '@/assets/js/serble.js';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import LinkedText from '@/components/LinkedText.vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
-  components: { LoadingSpinner, LinkedText },
+  components: { LoadingSpinner, LinkedText, Icon },
   setup() {
     const route = useRoute();
 
@@ -61,7 +62,7 @@ export default {
       </div>
       <h4 class="mb-2">{{ $t('an-error-occured') }}</h4>
       <p class="text-muted mb-4" style="font-size:0.9rem;">{{ $t('unknown-error-occured') }}</p>
-      <RouterLink to="/store" class="btn btn-ghost">← {{ $t('store') }}</RouterLink>
+      <RouterLink to="/store" class="btn btn-ghost"><Icon name="arrowLeft" /> {{ $t('store') }}</RouterLink>
     </div>
 
   </div>

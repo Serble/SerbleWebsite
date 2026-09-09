@@ -2,7 +2,7 @@
  * Generates the joke locales that don't need a human translator.
  *
  * bin (binary), lol (LOLCat) and tes (gibberish) are all mechanical transforms
- * of default.json, so they live outside src/assets/locales — Weblate watches
+ * of default.json, so they live outside src/assets/locales - Weblate watches
  * that folder and would otherwise offer them up for translation. The output
  * goes to src/assets/locales-generated, which is gitignored and rebuilt by the
  * predev/prebuild npm scripts.
@@ -71,7 +71,7 @@ function generateBinary(message) {
         .filter(part => part !== '')
         .join(' ')
         // Octets are only ones, zeroes and spaces, so the only brackets here are
-        // the link markup — close the gap the join left so the space doesn't end
+        // the link markup - close the gap the join left so the space doesn't end
         // up inside the link text.
         .replace(/\[ /g, '[')
         .replace(/ \]/g, ']')
@@ -111,7 +111,7 @@ const LOWER = 'abcdefghijklmnopqrstuvwxyz';
 
 /**
  * Deterministic PRNG so regenerating doesn't produce a fresh set of nonsense
- * every time — the same key always gets the same gibberish.
+ * every time - the same key always gets the same gibberish.
  */
 function makeRandom(seedText) {
     let seed = 0x811c9dc5;

@@ -241,7 +241,7 @@ export default {
                   <code v-if="createdApp.readableId" class="owner-fp" :title="$t('readable-id-label')">{{ createdApp.readableId }}</code>
                 </span>
               </template>
-              <span v-else>—</span>
+              <span v-else>-</span>
             </span>
           </div>
 
@@ -257,7 +257,7 @@ export default {
                   <code v-if="currentOwner.kind === 'app' && currentOwner.readableId" class="owner-fp" :title="$t('readable-id-label')">{{ currentOwner.readableId }}</code>
                 </span>
               </template>
-              <span v-else>—</span>
+              <span v-else>-</span>
             </span>
           </div>
 
@@ -302,16 +302,16 @@ export default {
                     <OfficialBadge v-if="e.to?.isOfficial" icon-only />
                   </template>
                   <template v-else>
-                    <span class="flow-owner">{{ e.from?.label ?? '—' }}</span>
+                    <span class="flow-owner">{{ e.from?.label ?? '-' }}</span>
                     <OfficialBadge v-if="e.from?.isOfficial" icon-only />
                     <span class="flow-arrow">&rarr;</span>
-                    <span class="flow-owner">{{ e.to?.label ?? '—' }}</span>
+                    <span class="flow-owner">{{ e.to?.label ?? '-' }}</span>
                     <OfficialBadge v-if="e.to?.isOfficial" icon-only />
                   </template>
                 </div>
                 <div class="history-meta">
                   <span>{{ formatDate(e.date) }}</span>
-                  <span v-if="e.proposalId" class="history-proposal" :title="e.proposalId">· {{ $t('proposal') }}</span>
+                  <span v-if="e.proposalId" class="history-proposal" :title="e.proposalId">- {{ $t('proposal') }}</span>
                 </div>
               </div>
             </li>

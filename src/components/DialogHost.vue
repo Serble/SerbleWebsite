@@ -23,7 +23,7 @@ function onKeydown(e) {
     return;
   }
 
-  // Keep Tab inside the dialog — without this, focus walks off into the page
+  // Keep Tab inside the dialog - without this, focus walks off into the page
   // behind the backdrop, which is invisible but still interactive.
   if (e.key === 'Tab') {
     const focusable = e.currentTarget.querySelectorAll?.('button, [href], input, select, textarea');

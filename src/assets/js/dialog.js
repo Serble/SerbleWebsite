@@ -5,7 +5,7 @@ import i18n from '@/assets/js/i18n.js';
  * Promise-based replacement for window.confirm / window.alert.
  *
  * The browser's own dialogs can't be styled or translated, block the whole tab,
- * and look nothing like the rest of the site — which was especially bad given
+ * and look nothing like the rest of the site - which was especially bad given
  * they guarded the destructive admin actions. These render in-page instead.
  *
  * Usage mirrors the old calls closely enough to be a drop-in:

@@ -8,7 +8,7 @@ import i18n from '@/assets/js/i18n.js';
 
 const ECONOMY_FEATURE = 'economy';
 
-// The site name is localised too — the joke locales rewrite it. Resolved per
+// The site name is localised too - the joke locales rewrite it. Resolved per
 // call rather than once at module load, so it follows a locale change.
 const siteName = () => i18n.global.t('serble');
 
@@ -23,7 +23,7 @@ const siteName = () => i18n.global.t('serble');
  * the same words as a link or heading follow that component's own casing. One
  * shared key would force the two to change together.
  *
- * Keep the translations short — ` · Serble` is appended, and a browser tab only
+ * Keep the translations short - ` | Serble` is appended, and a browser tab only
  * shows around 20 characters before truncating. Aim for two words.
  *
  * These are titles, so they are written in Title Case: every word capitalised,
@@ -136,7 +136,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      // The edit page became a tab of the manage page — keep old links (and bookmarks) working.
+      // The edit page became a tab of the manage page - keep old links (and bookmarks) working.
       path: '/oauthapps/edit',
       redirect: to => ({ path: '/oauthapps/manage', query: { ...to.query, tab: 'settings' } }),
     },
@@ -313,7 +313,7 @@ function applyTitle(route) {
   if (!route?.name || route.meta.embed) return;
   const key = ROUTE_TITLES[route.name];
   const site = siteName();
-  document.title = key ? `${i18n.global.t(key)} · ${site}` : site;
+  document.title = key ? `${i18n.global.t(key)} | ${site}` : site;
 }
 
 router.afterEach(applyTitle);

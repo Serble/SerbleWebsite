@@ -2,13 +2,13 @@
 /**
  * Account settings.
  *
- * Layout: a fixed left rail — who you are, where you can go, and the read-only
- * facts about the account — beside a single pane that shows one section at a
+ * Layout: a fixed left rail - who you are, where you can go, and the read-only
+ * facts about the account - beside a single pane that shows one section at a
  * time. One spine down the page instead of a scatter of cards, and the pane
  * never grows past a screen, so nothing scrolls.
  *
  * Inside a pane the unit is a panel: an optional head (what this is and how it
- * stands), a body of stacked fields, and — when the panel can be acted on — a
+ * stands), a body of stacked fields, and - when the panel can be acted on - a
  * recessed foot holding its status message and its buttons. Every action lives
  * in a foot, so "where do I click to apply this" has one answer everywhere.
  * Fields stack vertically at a readable measure rather than sitting in a fixed
@@ -17,7 +17,7 @@
  * Saving: every panel owns its own action, and the action lives in the same
  * panel as the fields it writes. The old page had one "Save changes" button at
  * the very bottom that silently applied to the profile fields and the password
- * only — 2FA and passkeys saved themselves the moment you touched them, which
+ * only - 2FA and passkeys saved themselves the moment you touched them, which
  * made the button's scope impossible to guess.
  *
  * The open section lives in the URL, matching the manage-app page, so a refresh
@@ -36,8 +36,8 @@ import Icon from '@/components/Icon.vue';
 
 const SECTIONS = ['profile', 'security'];
 
-// Passkeys used to be a section of its own — one panel plus a heading, saying
-// the same thing about signing in that the security panels do — so it now sits
+// Passkeys used to be a section of its own - one panel plus a heading, saying
+// the same thing about signing in that the security panels do - so it now sits
 // under security. Links handed out while it was separate still land there.
 const LEGACY_SECTIONS = { passkeys: 'security' };
 
@@ -47,7 +47,7 @@ function normalizeSection(id) {
 }
 
 // The rail is a vertical list beside the pane above this width and a horizontal
-// strip above it below — which changes both the arrow keys the tablist should
+// strip above it below - which changes both the arrow keys the tablist should
 // answer to and what it reports as its orientation. Kept in sync with the
 // media queries at the bottom of this file.
 const RAIL_STACKS_AT = '(max-width: 900px)';
@@ -61,7 +61,7 @@ export default {
     const route = useRoute();
     const router = useRouter();
 
-    // ── Sections ────────────────────────────────────────────────────────────
+    // -- Sections ------------------------------------------------------------
     const section = ref(normalizeSection(route.query.tab));
     const tabNav = ref(null);
     const railHorizontal = ref(false);
@@ -88,7 +88,7 @@ export default {
       nextTick(() => tabNav.value?.querySelectorAll('[role="tab"]')[next]?.focus());
     }
 
-    // ── Profile ─────────────────────────────────────────────────────────────
+    // -- Profile -------------------------------------------------------------
     const username = ref('');
     const email = ref('');
     const selectedLanguage = ref(getSupportedLocale(locale.value) || 'en');
@@ -116,7 +116,7 @@ export default {
         && toServerLocale(getSupportedLocale(selectedLanguage.value)) !== savedServerLocale.value)
     );
 
-    // Changing the picker switches the site over straight away — the setting is
+    // Changing the picker switches the site over straight away - the setting is
     // about the language you're reading right now, so waiting for a save would
     // feel broken. Only the server copy waits for "Save changes".
     watch(selectedLanguage, (next) => {
@@ -209,7 +209,7 @@ export default {
       profileSaved.value = true;
     }
 
-    // ── Password ────────────────────────────────────────────────────────────
+    // -- Password ------------------------------------------------------------
     const password = ref('');
     const confirmPassword = ref('');
     const passwordError = ref('');
@@ -247,7 +247,7 @@ export default {
       passwordSaved.value = true;
     }
 
-    // ── Two-factor ──────────────────────────────────────────────────────────
+    // -- Two-factor ----------------------------------------------------------
     const disabling2fa = ref(false);
 
     async function disable2fa() {
@@ -268,7 +268,7 @@ export default {
       }
     }
 
-    // ── Passkeys ────────────────────────────────────────────────────────────
+    // -- Passkeys ------------------------------------------------------------
     const passkeys = ref([]);
     // Starts true: the list is fetched on mount, and opening straight onto
     // ?tab=passkeys would otherwise flash "no passkeys" before the answer lands.
@@ -333,7 +333,7 @@ export default {
       passkeyError.value = '';
       renamingPasskey.value = name;
       renameValue.value = name;
-      // The row swaps its contents for an input, so move the caret there —
+      // The row swaps its contents for an input, so move the caret there -
       // otherwise focus is left on a button that no longer exists.
       nextTick(() => renameInput.value?.select());
     }
@@ -362,7 +362,7 @@ export default {
       }
     }
 
-    // ── Identity rail ───────────────────────────────────────────────────────
+    // -- Identity rail -------------------------------------------------------
     // The security tab covers two things worth advertising at a glance, and
     // only has room for one: 2FA wins because it's the stronger claim about the
     // account, and the passkey count stands in when there's no 2FA to report.
@@ -409,14 +409,14 @@ export default {
       copyTimer = setTimeout(() => { idCopied.value = false; }, 2000);
     }
 
-    // ── Lifecycle ───────────────────────────────────────────────────────────
+    // -- Lifecycle -----------------------------------------------------------
     let railQuery = null;
     const syncRail = (event) => { railHorizontal.value = event.matches; };
 
     onMounted(() => {
       loadPasskeys();
       // A retired or misspelled ?tab= still opens the right pane, but the URL
-      // would keep the old name — rewrite it so a link copied from here is
+      // would keep the old name - rewrite it so a link copied from here is
       // written the way the page names its sections now.
       if (route.query.tab && route.query.tab !== section.value) {
         router.replace({ path: route.path, query: { ...route.query, tab: section.value } });
@@ -451,7 +451,7 @@ export default {
 <template>
   <div class="account-page">
 
-    <!-- ── Identity + navigation rail ── -->
+    <!-- -- Identity + navigation rail -- -->
     <aside class="rail">
       <div class="identity">
         <!-- The initial only restates the username sitting next to it. -->
@@ -497,7 +497,7 @@ export default {
       </nav>
     </aside>
 
-    <!-- ── Read-only account facts ── -->
+    <!-- -- Read-only account facts -- -->
     <aside class="facts" aria-labelledby="facts-title">
       <h2 id="facts-title" class="facts-title">{{ $t('account-details') }}</h2>
       <dl class="fact-list">
@@ -536,7 +536,7 @@ export default {
       </dl>
     </aside>
 
-    <!-- ── Section pane ── -->
+    <!-- -- Section pane -- -->
     <main class="pane">
 
       <!-- Profile -->
@@ -660,7 +660,7 @@ export default {
               <!--
                 Password managers only offer to update a saved login when the
                 form says which login it belongs to. Kept out of the tab order
-                and out of the accessibility tree — it is machine-facing only.
+                and out of the accessibility tree - it is machine-facing only.
               -->
               <input
                 class="sr-only"
@@ -866,7 +866,7 @@ export default {
 </template>
 
 <style scoped>
-/* ── Page frame ──────────────────────────────────────────────────────────────
+/* -- Page frame --------------------------------------------------------------
    Rail and facts stack down the left, the pane spans both of their rows on the
    right. Below 900px the three become one column, facts last. */
 .account-page {
@@ -910,7 +910,7 @@ export default {
   .pane { max-width: none; }
 }
 
-/* ── Identity ── */
+/* -- Identity -- */
 .identity {
   display: flex;
   align-items: center;
@@ -953,7 +953,7 @@ export default {
   flex-wrap: wrap;
 }
 
-/* ── Rail navigation ─────────────────────────────────────────────────────────
+/* -- Rail navigation ---------------------------------------------------------
    The selected tab is marked by a filled bar rather than colour alone, so it
    still reads when the accent is hard to pick out. */
 .rail-nav {
@@ -1050,7 +1050,7 @@ export default {
   }
 }
 
-/* ── Account facts ── */
+/* -- Account facts -- */
 .facts {
   display: flex;
   flex-direction: column;
@@ -1144,7 +1144,7 @@ export default {
   }
 }
 
-/* ── Pane heading ── */
+/* -- Pane heading -- */
 .pane-head {
   display: flex;
   align-items: flex-start;
@@ -1172,7 +1172,7 @@ export default {
   max-width: 60ch;
 }
 
-/* ── Panels ──────────────────────────────────────────────────────────────────
+/* -- Panels ------------------------------------------------------------------
    One panel per topic: what it is (head), what you change (body), and what you
    press (foot). The foot is recessed to the page colour so the action bar reads
    as a tray under the fields rather than another row of them. */
@@ -1224,7 +1224,7 @@ export default {
 .panel-head + .panel-foot { margin-top: var(--space-5); }
 
 /* Content that fills the panel edge to edge rather than sitting in a padded
-   body — the passkey list and the two states that stand in for it — takes a
+   body - the passkey list and the two states that stand in for it - takes a
    rule under the head, so the first row doesn't read as part of the heading. */
 .panel-head + .pk-list,
 .panel-head + .empty,
@@ -1286,7 +1286,7 @@ export default {
   padding: var(--space-5);
 }
 
-/* ── Fields ──────────────────────────────────────────────────────────────────
+/* -- Fields ------------------------------------------------------------------
    Stacked, not columned: a fixed label column has to be sized for the longest
    translation, and every other language then sits in a trench of dead space.
    Width is held by the pane instead, so every control lines up on one edge. */
@@ -1320,7 +1320,7 @@ export default {
 .inline-note-ok { color: var(--success); }
 .inline-note-warn { color: var(--warning); }
 
-/* ── Passkeys ── */
+/* -- Passkeys -- */
 .pk-list {
   list-style: none;
   margin: 0;
@@ -1383,7 +1383,7 @@ export default {
   margin-inline-start: auto;
 }
 
-/* ── Empty state ── */
+/* -- Empty state -- */
 .empty {
   display: flex;
   flex-direction: column;
@@ -1424,7 +1424,7 @@ export default {
 @media (max-width: 620px) {
   .panel-foot { align-items: stretch; }
   .panel-actions { margin-inline-start: 0; }
-  /* The row stays on one line at every width — wrapping it puts the icon, the
+  /* The row stays on one line at every width - wrapping it puts the icon, the
      name and the buttons on three lines each and the list stops being a list.
      The name truncates instead. */
   .pk-row { padding-inline: var(--space-3); }

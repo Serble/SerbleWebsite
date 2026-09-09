@@ -1,6 +1,6 @@
 <script>
 // Deliberately not localised. This is internal tooling, and most of its copy is
-// jargon that maps onto server-side and Stripe concepts — translating it would
+// jargon that maps onto server-side and Stripe concepts - translating it would
 // make it harder to follow, not easier.
 import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue';
 import { useRouter } from 'vue-router';
@@ -75,10 +75,11 @@ import { formatCoins, formatCoinsPlain, parseCoinsToRaw, isValidCoinAmount, isNo
 import { FEATURES } from '@/assets/js/featureFlags.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
+import Icon from '@/components/Icon.vue';
 import { confirmDialog } from '@/assets/js/dialog.js';
 
 export default {
-  components: { OfficialBadge, CoinAmount },
+  components: { OfficialBadge, CoinAmount, Icon },
   setup() {
     const TAX_PERCENT_KEYS = new Set([
       'economy.tax.fixed_rate',
@@ -271,12 +272,12 @@ export default {
     }
 
     function formatDate(value) {
-      if (!value) return '—';
+      if (!value) return '-';
       const d = new Date(value);
       return isNaN(d.getTime()) ? String(value) : d.toLocaleString();
     }
 
-    // ── User coins ──
+    // -- User coins --
     const userCoins = ref(null);
     const userCoinsAmount = ref('');
     const userCoinsBusy = ref(false);
@@ -480,7 +481,7 @@ export default {
         confirmLabel: 'Continue',
         danger: false,
       })) return;
-      const r = await withBusy(() => adminLoginAsUser(selected.value.id), 'Switching user…');
+      const r = await withBusy(() => adminLoginAsUser(selected.value.id), 'Switching user...');
       if (r?.success && r.data?.token) {
         setLocalStorage('access_token', r.data.token);
         window.location = '/account';
@@ -499,7 +500,7 @@ export default {
       if (r?.success) loadPasskeys(selected.value.id);
     }
 
-    // ── App management ──
+    // -- App management --
     const activeTab = ref('users'); // users|apps
 
     const appStats = ref(null);
@@ -605,7 +606,7 @@ export default {
       }
     }
 
-    // ── App coins ──
+    // -- App coins --
     const appCoins = ref(null);
     const appCoinsAmount = ref('');
     const appCoinsBusy = ref(false);
@@ -763,7 +764,7 @@ export default {
       selectApp(appId);
     }
 
-    // ── Product management ──
+    // -- Product management --
     function emptyProduct() {
       return {
         id: '',
@@ -906,7 +907,7 @@ export default {
       }
     }
 
-    // ── OIDC: per-app client config + access policy ──
+    // -- OIDC: per-app client config + access policy --
     const appOidcClient = ref(null);
     const appOidcClientForm = ref({ additionalRedirectUris: [], isPublicClient: false, requirePkce: true });
     const appOidcLoading = ref(false);
@@ -926,7 +927,7 @@ export default {
     const appAccessLoading = ref(false);
     const appAccessError = ref(null);
 
-    // Local form representation of the groupId→claim string map.
+    // Local form representation of the groupId->claim string map.
     // Stored as an array of {groupId, value} so v-for keys are stable.
     const claimMappingsForm = ref([]);
 
@@ -1091,7 +1092,7 @@ export default {
       return g ? g.name : id;
     }
 
-    // ── Service catalog management ──
+    // -- Service catalog management --
     function emptyService() {
       return {
         id: '',
@@ -1243,7 +1244,7 @@ export default {
       return 'Public';
     }
 
-    // ── Groups management ──
+    // -- Groups management --
     const groups = ref([]);
     const groupsLoading = ref(false);
     const groupsError = ref(null);
@@ -1403,7 +1404,7 @@ export default {
       return 'User';
     }
 
-    // ── Transaction audit log ──
+    // -- Transaction audit log --
     const txFilters = ref({ user: '', from: '', to: '' });
     const txLimit = ref(50);
     const txOffset = ref(0);
@@ -1449,7 +1450,7 @@ export default {
       loadTransactions(false);
     }
 
-    // ── Economy total (coins in circulation) ──
+    // -- Economy total (coins in circulation) --
     const economy = ref(null);
     const economyLoading = ref(false);
     const economyError = ref(null);
@@ -1464,7 +1465,7 @@ export default {
       else economyError.value = r.error ?? 'unknown';
     }
 
-    // ── Server-wide settings ──
+    // -- Server-wide settings --
     const configLoaded = ref(false);
     const configLoading = ref(false);
     const configError = ref(null);
@@ -1615,10 +1616,10 @@ export default {
       }
     }
 
-    // ── Webhooks: subscriptions + the delivery outbox ──
+    // -- Webhooks: subscriptions + the delivery outbox --
     //
     // Two independent views. Subscriptions answer "who is listening"; deliveries answer "what
-    // actually got sent, and what came back" — the only server-side place a failing integration is
+    // actually got sent, and what came back" - the only server-side place a failing integration is
     // diagnosable. Filtering deliveries by cycleId joins this to the tax run history.
 
     const WEBHOOK_STATUSES = ['Pending', 'InFlight', 'Delivered', 'DeadLettered'];
@@ -1697,7 +1698,7 @@ export default {
       const r = await adminRedeliverWebhook(id);
       delRedeliverBusy.value = null;
       if (r.success) {
-        whMessage.value = 'Delivery requeued — it will be sent within a few seconds.';
+        whMessage.value = 'Delivery requeued - it will be sent within a few seconds.';
         whMessageType.value = 'success';
         await loadWebhookDeliveries(delOffset.value);
       } else {
@@ -1853,19 +1854,19 @@ export default {
         <div class="col-md-4">
           <div class="stat-card">
             <div class="stat-label">Total users</div>
-            <div class="stat-value">{{ stats ? stats.totalUsers : '—' }}</div>
+            <div class="stat-value">{{ stats ? stats.totalUsers : '-' }}</div>
           </div>
         </div>
         <div class="col-md-4">
           <div class="stat-card">
             <div class="stat-label">Verified emails</div>
-            <div class="stat-value">{{ stats ? stats.verifiedEmailUsers : '—' }}</div>
+            <div class="stat-value">{{ stats ? stats.verifiedEmailUsers : '-' }}</div>
           </div>
         </div>
         <div class="col-md-4">
           <div class="stat-card">
             <div class="stat-label">Verified %</div>
-            <div class="stat-value">{{ stats ? (stats.verifiedEmailPercent.toFixed(1) + '%') : '—' }}</div>
+            <div class="stat-value">{{ stats ? (stats.verifiedEmailPercent.toFixed(1) + '%') : '-' }}</div>
           </div>
         </div>
         <div v-if="statsError" class="col-12">
@@ -1886,7 +1887,7 @@ export default {
           </div>
           <div class="col-md-3">
             <button type="submit" class="btn btn-primary w-full" :disabled="searching">
-              {{ searching ? 'Searching…' : 'Search' }}
+              {{ searching ? 'Searching...' : 'Search' }}
             </button>
           </div>
         </form>
@@ -1964,8 +1965,8 @@ export default {
                 >
                   <td v-if="userTableColumnVisible('username')" class="user-table-cell">{{ u.username }}</td>
                   <td v-if="userTableColumnVisible('email')" class="user-table-cell">
-                    {{ u.email || '—' }}
-                    <span v-if="u.email && u.verifiedEmail" class="badge badge-success ms-1">✓</span>
+                    {{ u.email || '-' }}
+                    <span v-if="u.email && u.verifiedEmail" class="badge badge-success ms-1"><Icon name="check" :size="12" label="verified" /></span>
                     <span v-else-if="u.email" class="badge badge-warning ms-1">unverified</span>
                   </td>
                   <td v-if="userTableColumnVisible('id')" class="user-table-cell">
@@ -1981,13 +1982,13 @@ export default {
                   <td v-if="userTableColumnVisible('lastLogin')" class="user-table-cell">{{ formatDate(u.lastLogin) }}</td>
                   <td class="text-end">
                     <button class="btn btn-sm btn-ghost" :disabled="selectedLoadingId === u.id" @click.stop="selectUser(u.id)">
-                      {{ selectedRowId === u.id && selected ? 'Refresh' : selectedLoadingId === u.id ? 'Loading…' : 'Manage' }}
+                      {{ selectedRowId === u.id && selected ? 'Refresh' : selectedLoadingId === u.id ? 'Loading...' : 'Manage' }}
                     </button>
                   </td>
                 </tr>
                 <tr v-if="selectedLoadingId === u.id" class="inline-user-row">
                   <td :colspan="userTableColspan">
-                    <div class="user-selected-state text-center text-muted py-4">Loading user…</div>
+                    <div class="user-selected-state text-center text-muted py-4">Loading user...</div>
                   </td>
                 </tr>
                 <tr v-else-if="selectedErrorId === u.id" class="inline-user-row">
@@ -2009,11 +2010,11 @@ export default {
                       <div v-if="actionMessage" :class="`alert alert-${actionMessageType} py-2`">{{ actionMessage }}</div>
 
                       <div class="user-info-grid mb-4">
-                        <div class="info-row"><span class="info-label">Email</span><span>{{ selected.email || '—' }}</span></div>
+                        <div class="info-row"><span class="info-label">Email</span><span>{{ selected.email || '-' }}</span></div>
                         <div class="info-row"><span class="info-label">Email verified</span><span>{{ selected.verifiedEmail ? 'Yes' : 'No' }}</span></div>
                         <div class="info-row"><span class="info-label">Role</span><span>{{ permLabel(selected.permLevel) }} ({{ selected.permLevel }})</span></div>
                         <div class="info-row"><span class="info-label">TOTP enabled</span><span>{{ selected.totpEnabled ? 'Yes' : 'No' }}</span></div>
-                        <div class="info-row"><span class="info-label">Language</span><span>{{ selected.language || '—' }}</span></div>
+                        <div class="info-row"><span class="info-label">Language</span><span>{{ selected.language || '-' }}</span></div>
                         <div class="info-row"><span class="info-label">Password salted</span><span>{{ selected.hasPasswordSalt ? 'Yes' : 'No (pre-migration)' }}</span></div>
                         <div v-if="economyEnabled" class="info-row"><span class="info-label">Coins</span><span><CoinAmount :value="userCoins ?? selected.coins" /></span></div>
                         <div class="info-row"><span class="info-label">Created</span><span>{{ formatDate(selected.dateCreated) }}</span></div>
@@ -2063,7 +2064,7 @@ export default {
                       </form>
 
                       <h6 class="section-heading">Passkeys</h6>
-                      <div v-if="passkeysLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+                      <div v-if="passkeysLoading" class="text-muted" style="font-size:0.9rem;">Loading...</div>
                       <div v-else-if="!passkeys || passkeys.length === 0" class="text-muted mb-3" style="font-size:0.9rem;">No passkeys.</div>
                       <ul v-else class="list mb-3">
                         <li v-for="pk in passkeys" :key="pk.name ?? pk" class="list-item flex justify-between items-center px-0">
@@ -2078,7 +2079,7 @@ export default {
                           {{ userApps === null ? 'Load apps' : 'Refresh' }}
                         </button>
                       </h6>
-                      <div v-if="userAppsLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+                      <div v-if="userAppsLoading" class="text-muted" style="font-size:0.9rem;">Loading...</div>
                       <div v-else-if="userApps === null" class="text-muted" style="font-size:0.9rem;">Click "Load apps" to view this user's OAuth applications.</div>
                       <div v-else-if="userApps.length === 0" class="text-muted" style="font-size:0.9rem;">This user has no apps.</div>
                       <ul v-else class="list mb-3">
@@ -2113,7 +2114,7 @@ export default {
           <div class="col-md-4">
             <div class="stat-card">
               <div class="stat-label">Total apps</div>
-              <div class="stat-value">{{ appStats ? appStats.totalApps : '—' }}</div>
+              <div class="stat-value">{{ appStats ? appStats.totalApps : '-' }}</div>
             </div>
           </div>
           <div v-if="appStatsError" class="col-12">
@@ -2134,7 +2135,7 @@ export default {
             </div>
             <div class="col-md-3">
               <button type="submit" class="btn btn-primary w-full" :disabled="appSearching">
-                {{ appSearching ? 'Searching…' : 'Search' }}
+                {{ appSearching ? 'Searching...' : 'Search' }}
               </button>
             </div>
           </form>
@@ -2176,7 +2177,7 @@ export default {
           </div>
         </div>
 
-        <div v-if="selectedAppLoading" class="text-center text-muted py-4">Loading app…</div>
+        <div v-if="selectedAppLoading" class="text-center text-muted py-4">Loading app...</div>
         <div v-if="selectedAppError" class="alert alert-danger">Failed to load app: {{ selectedAppError }}</div>
 
         <div v-if="selectedApp" class="user-panel">
@@ -2260,7 +2261,7 @@ export default {
             <label class="field-label-plain mb-1" style="font-size:0.8rem;">Target balance for tax payouts</label>
             <div class="flex flex-wrap gap-2 items-center mb-2">
               <span class="badge badge-accent" style="font-size:0.85rem;">
-                <template v-if="appTaxTargetLoading">Loading…</template>
+                <template v-if="appTaxTargetLoading">Loading...</template>
                 <template v-else><CoinAmount :value="appTaxTarget" /> coins</template>
               </span>
               <span class="text-muted-light" style="font-size:0.8rem;">This app will receive tax payouts until it reaches this balance.</span>
@@ -2299,7 +2300,7 @@ export default {
           <h6 class="section-heading">Client secret</h6>
           <div class="flex flex-wrap gap-2 items-center mb-4">
             <code v-if="showSecret" class="secret-box">{{ selectedApp.clientSecret }}</code>
-            <code v-else class="secret-box">••••••••••••••••</code>
+            <code v-else class="secret-box">****************</code>
             <button class="btn btn-sm btn-ghost" @click="showSecret = !showSecret">
               {{ showSecret ? 'Hide' : 'Show' }}
             </button>
@@ -2320,10 +2321,10 @@ export default {
             <button class="btn btn-sm btn-danger" :disabled="actionBusy" @click="actDeleteApp">Delete app</button>
           </div>
 
-          <!-- ── OIDC Client Config ── -->
+          <!-- -- OIDC Client Config -- -->
           <hr class="my-4 oidc-sep" />
           <h6 class="section-heading">OIDC Client Configuration</h6>
-          <div v-if="appOidcLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+          <div v-if="appOidcLoading" class="text-muted" style="font-size:0.9rem;">Loading...</div>
           <div v-else-if="appOidcError" class="alert alert-danger py-2">Failed to load OIDC config: {{ appOidcError }}</div>
           <form v-else class="row g-3 mb-4" @submit.prevent="actSaveAppOidcClient">
             <div class="col-12">
@@ -2354,10 +2355,10 @@ export default {
             </div>
           </form>
 
-          <!-- ── Access Policy ── -->
+          <!-- -- Access Policy -- -->
           <hr class="my-4 oidc-sep" />
           <h6 class="section-heading">Access Policy (login gate)</h6>
-          <div v-if="appAccessLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+          <div v-if="appAccessLoading" class="text-muted" style="font-size:0.9rem;">Loading...</div>
           <div v-else-if="appAccessError" class="alert alert-danger py-2">Failed to load access policy: {{ appAccessError }}</div>
           <template v-else>
             <form class="row g-3 mb-4" @submit.prevent="actSaveAccessPolicy">
@@ -2383,7 +2384,7 @@ export default {
               <label class="field-label-plain mb-2" style="font-size:0.8rem;">
                 Group access
                 <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
-                  — denied always overrides allowed. Allowed list only used when policy is "Require membership in an allowed group".
+                  - denied always overrides allowed. Allowed list only used when policy is "Require membership in an allowed group".
                 </span>
               </label>
               <div v-if="!groups || groups.length === 0" class="text-muted-light" style="font-size:0.85rem;">
@@ -2431,7 +2432,7 @@ export default {
                 <label class="field-label-plain m-0" style="font-size:0.8rem;">
                   Group claim mappings
                   <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
-                    — what value the app sees in the <code>groups</code> claim for users in each Serble group.
+                    - what value the app sees in the <code>groups</code> claim for users in each Serble group.
                   </span>
                 </label>
                 <button type="button" class="btn btn-sm btn-ghost" @click="addClaimMapping">+ Add</button>
@@ -2442,7 +2443,7 @@ export default {
               <div v-for="(row, i) in claimMappingsForm" :key="'cm-'+i" class="row g-2 mb-2">
                 <div class="col-md-6">
                   <select v-model="row.groupId" class="select">
-                    <option value="" disabled>Choose a group…</option>
+                    <option value="" disabled>Choose a group...</option>
                     <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }} ({{ g.id }})</option>
                   </select>
                 </div>
@@ -2450,7 +2451,7 @@ export default {
                   <input v-model="row.value" type="text" class="input" placeholder="claim value, e.g. admins" />
                 </div>
                 <div class="col-md-1 flex">
-                  <button type="button" class="btn btn-sm btn-danger-ghost w-full" @click="removeClaimMapping(i)">×</button>
+                  <button type="button" class="btn btn-sm btn-danger-ghost w-full" @click="removeClaimMapping(i)"><Icon name="close" /></button>
                 </div>
               </div>
               <button class="btn btn-primary mt-2" :disabled="actionBusy" @click="actSaveClaimMappings">Save claim mappings</button>
@@ -2463,7 +2464,7 @@ export default {
       <div v-show="activeTab === 'products'">
         <div class="flex justify-between items-center mb-3">
           <div class="text-muted-light" style="font-size:0.9rem;">
-            {{ products ? `${products.length} products` : 'Loading…' }}
+            {{ products ? `${products.length} products` : 'Loading...' }}
           </div>
           <div class="flex gap-2">
             <button class="btn btn-sm btn-ghost" :disabled="productsLoading" @click="loadProducts">Refresh</button>
@@ -2473,7 +2474,7 @@ export default {
 
         <div v-if="productsError" class="alert alert-danger py-2">Failed to load products: {{ productsError }}</div>
 
-        <div v-if="productsLoading" class="text-muted text-center py-4">Loading…</div>
+        <div v-if="productsLoading" class="text-muted text-center py-4">Loading...</div>
         <div v-else-if="products && products.length === 0 && !productPanelOpen" class="text-muted text-center py-4" style="font-size:0.9rem;">
           No products yet. Click "New product" to create one.
         </div>
@@ -2557,7 +2558,7 @@ export default {
 
             <div class="col-12">
               <div class="flex justify-between items-center mb-2">
-                <label class="field-label-plain m-0" style="font-size:0.8rem;">Price lookup IDs (key → Stripe price ID)</label>
+                <label class="field-label-plain m-0" style="font-size:0.8rem;">Price lookup IDs (key -> Stripe price ID)</label>
                 <button type="button" class="btn btn-sm btn-ghost" @click="addPriceLookup">+ Add</button>
               </div>
               <div v-if="productForm.priceLookupIds.length === 0" class="text-muted-light" style="font-size:0.85rem;">No lookups.</div>
@@ -2569,7 +2570,7 @@ export default {
                   <input v-model="entry.value" type="text" class="input" placeholder="price_..." />
                 </div>
                 <div class="col-md-1 flex">
-                  <button type="button" class="btn btn-sm btn-danger-ghost w-full" @click="removePriceLookup(i)">×</button>
+                  <button type="button" class="btn btn-sm btn-danger-ghost w-full" @click="removePriceLookup(i)"><Icon name="close" /></button>
                 </div>
               </div>
             </div>
@@ -2606,7 +2607,7 @@ export default {
       <div v-show="activeTab === 'services'">
         <div class="flex justify-between items-center mb-3">
           <div class="text-muted-light" style="font-size:0.9rem;">
-            {{ services ? `${services.length} services` : 'Loading…' }}
+            {{ services ? `${services.length} services` : 'Loading...' }}
           </div>
           <div class="flex gap-2">
             <button class="btn btn-sm btn-ghost" :disabled="servicesLoading" @click="loadServicesAdmin">Refresh</button>
@@ -2616,7 +2617,7 @@ export default {
 
         <div v-if="servicesError" class="alert alert-danger py-2">Failed to load services: {{ servicesError }}</div>
 
-        <div v-if="servicesLoading" class="text-muted text-center py-4">Loading…</div>
+        <div v-if="servicesLoading" class="text-muted text-center py-4">Loading...</div>
         <div v-else-if="services && services.length === 0 && !servicePanelOpen" class="text-muted text-center py-4" style="font-size:0.9rem;">
           No services yet. Click "New service" to create one.
         </div>
@@ -2736,7 +2737,7 @@ export default {
       <div v-show="activeTab === 'groups'">
         <div class="flex justify-between items-center mb-3">
           <div class="text-muted-light" style="font-size:0.9rem;">
-            {{ groups ? `${groups.length} groups` : 'Loading…' }}
+            {{ groups ? `${groups.length} groups` : 'Loading...' }}
           </div>
           <div class="flex gap-2">
             <button class="btn btn-sm btn-ghost" :disabled="groupsLoading" @click="loadGroups">Refresh</button>
@@ -2746,7 +2747,7 @@ export default {
 
         <div v-if="groupsError" class="alert alert-danger py-2">Failed to load groups: {{ groupsError }}</div>
 
-        <div v-if="groupsLoading" class="text-muted text-center py-4">Loading…</div>
+        <div v-if="groupsLoading" class="text-muted text-center py-4">Loading...</div>
         <div v-else-if="groups && groups.length === 0 && !groupPanelOpen" class="text-muted text-center py-4" style="font-size:0.9rem;">
           No groups yet. Click "New group" to create one.
         </div>
@@ -2809,14 +2810,14 @@ export default {
                 <button type="submit" class="btn btn-ghost w-full" :disabled="actionBusy">Add member</button>
               </div>
             </form>
-            <div v-if="groupMembersLoading" class="text-muted" style="font-size:0.9rem;">Loading…</div>
+            <div v-if="groupMembersLoading" class="text-muted" style="font-size:0.9rem;">Loading...</div>
             <div v-else-if="groupMembers.length === 0" class="text-muted" style="font-size:0.9rem;">No members.</div>
             <ul v-else class="list mb-3">
               <li v-for="uid in groupMembers" :key="uid" class="list-item flex justify-between items-center px-0">
                 <div>
                   <div v-if="memberDetails[uid]?.username">
                     {{ memberDetails[uid].username }}
-                    <span v-if="memberDetails[uid].email" class="text-muted-light" style="font-size:0.8rem;">— {{ memberDetails[uid].email }}</span>
+                    <span v-if="memberDetails[uid].email" class="text-muted-light" style="font-size:0.8rem;">- {{ memberDetails[uid].email }}</span>
                   </div>
                   <code style="font-size:0.75rem;">{{ uid }}</code>
                 </div>
@@ -2855,7 +2856,7 @@ export default {
               </div>
               <div class="economy-stat">
                 <span class="economy-stat-label">Balances</span>
-                <span class="economy-stat-value">{{ economy ? economy.balanceCount : '—' }}</span>
+                <span class="economy-stat-value">{{ economy ? economy.balanceCount : '-' }}</span>
               </div>
             </div>
           </template>
@@ -2869,14 +2870,14 @@ export default {
             </div>
             <div class="tax-admin-actions">
               <button class="btn btn-sm btn-ghost" :disabled="taxPreviewLoading" @click="loadTaxPreview">
-                {{ taxPreviewLoading ? 'Refreshing…' : 'Refresh preview' }}
+                {{ taxPreviewLoading ? 'Refreshing...' : 'Refresh preview' }}
               </button>
               <button
                 class="btn btn-sm btn-primary"
                 :disabled="taxRunBusy || taxPreviewLoading || !taxPreview?.canRun"
                 @click="runTaxNow"
               >
-                {{ taxRunBusy ? 'Running…' : 'Collect tax now' }}
+                {{ taxRunBusy ? 'Running...' : 'Collect tax now' }}
               </button>
             </div>
           </div>
@@ -2924,7 +2925,7 @@ export default {
               </div>
               <div class="tax-preview-item">
                 <div class="tax-preview-label">BOSS app id</div>
-                <div class="tax-preview-value tax-preview-id">{{ taxPreview.bossAppId || '—' }}</div>
+                <div class="tax-preview-value tax-preview-id">{{ taxPreview.bossAppId || '-' }}</div>
               </div>
               <div class="tax-preview-item">
                 <div class="tax-preview-label">BOSS start balance</div>
@@ -2970,7 +2971,7 @@ export default {
 
         <div v-if="txError" class="alert alert-danger py-2">{{ txError }}</div>
 
-        <div v-if="txLoading" class="text-muted py-3">Loading…</div>
+        <div v-if="txLoading" class="text-muted py-3">Loading...</div>
 
         <template v-else>
           <div v-if="txList.length === 0 && txLoaded" class="text-muted py-3">No transactions found.</div>
@@ -3005,7 +3006,7 @@ export default {
                     <span v-else class="text-muted">deleted</span>
                   </td>
                   <td class="text-end fw-semibold" style="white-space:nowrap;"><CoinAmount :value="tx.amount" /></td>
-                  <td>{{ tx.description || '—' }}</td>
+                  <td>{{ tx.description || '-' }}</td>
                   <td><code style="font-size:0.75rem;">{{ tx.id }}</code></td>
                 </tr>
               </tbody>
@@ -3053,7 +3054,7 @@ export default {
         </div>
 
         <div v-if="whError" class="alert alert-danger py-2">Failed to load webhooks: {{ whError }}</div>
-        <div v-else-if="whLoading" class="text-muted py-3">Loading…</div>
+        <div v-else-if="whLoading" class="text-muted py-3">Loading...</div>
         <div v-else-if="whList.length === 0 && whLoaded" class="text-muted py-3">No webhooks registered.</div>
 
         <div v-else-if="whList.length" class="table-wrap mb-2">
@@ -3137,7 +3138,7 @@ export default {
         </div>
 
         <div v-if="delError" class="alert alert-danger py-2">Failed to load deliveries: {{ delError }}</div>
-        <div v-else-if="delLoading" class="text-muted py-3">Loading…</div>
+        <div v-else-if="delLoading" class="text-muted py-3">Loading...</div>
         <div v-else-if="delList.length === 0 && delLoaded" class="text-muted py-3">No deliveries found.</div>
 
         <template v-else-if="delList.length">
@@ -3170,22 +3171,22 @@ export default {
                     <td>{{ d.attempts }}</td>
                     <td style="white-space:nowrap;">
                       <span v-if="d.lastResponseCode">HTTP {{ d.lastResponseCode }}</span>
-                      <span v-else class="text-muted">—</span>
+                      <span v-else class="text-muted">-</span>
                       <div v-if="d.lastError" class="text-danger" style="font-size:0.75rem; max-width:260px; word-break:break-word;">{{ d.lastError }}</div>
                     </td>
-                    <td>{{ d.cycleId ?? '—' }}</td>
+                    <td>{{ d.cycleId ?? '-' }}</td>
                     <td class="text-end" style="white-space:nowrap;">
                       <button class="btn btn-sm btn-ghost me-1" @click="toggleDeliveryPayload(d.id)">
                         {{ delOpenPayload === d.id ? 'Hide' : 'Payload' }}
                       </button>
                       <button class="btn btn-sm btn-ghost" :disabled="delRedeliverBusy === d.id" @click="redeliverWebhook(d.id)">
-                        {{ delRedeliverBusy === d.id ? '…' : 'Redeliver' }}
+                        {{ delRedeliverBusy === d.id ? '...' : 'Redeliver' }}
                       </button>
                     </td>
                   </tr>
                   <tr v-if="delOpenPayload === d.id">
                     <td colspan="8">
-                      <div class="text-muted mb-1" style="font-size:0.75rem;">Event ID <code>{{ d.id }}</code> · webhook <code>{{ d.webhookId }}</code></div>
+                      <div class="text-muted mb-1" style="font-size:0.75rem;">Event ID <code>{{ d.id }}</code> for webhook <code>{{ d.webhookId }}</code></div>
                       <pre class="delivery-payload mb-0">{{ prettyJson(d.payload) }}</pre>
                     </td>
                   </tr>
@@ -3196,7 +3197,7 @@ export default {
 
           <div class="flex justify-between items-center mt-3">
             <span class="text-muted" style="font-size:0.85rem;">
-              Showing {{ delOffset + 1 }}–{{ delOffset + delList.length }} of {{ delTotal }}
+              Showing {{ delOffset + 1 }}-{{ delOffset + delList.length }} of {{ delTotal }}
             </span>
             <div class="flex gap-2">
               <button class="btn btn-sm btn-ghost" :disabled="delLoading || delOffset === 0" @click="loadWebhookDeliveries(Math.max(0, delOffset - delLimit))">Previous</button>
@@ -3224,7 +3225,7 @@ export default {
         </div>
 
         <div v-if="configError" class="alert alert-danger py-2">Failed to load settings: {{ configError }}</div>
-        <div v-else-if="configLoading" class="text-muted py-3">Loading…</div>
+        <div v-else-if="configLoading" class="text-muted py-3">Loading...</div>
         <div v-else-if="configGroups.length === 0" class="text-muted py-3">No matching settings.</div>
 
         <div v-else class="config-list">
@@ -3236,7 +3237,7 @@ export default {
               @click="toggleConfigGroup(group.name)"
             >
               <span class="config-group-title-wrap">
-                <span class="config-group-chevron" :class="{ collapsed: isConfigGroupCollapsed(group.name) }">⌄</span>
+                <Icon name="chevronDown" :size="12" class="config-group-chevron" :class="{ collapsed: isConfigGroupCollapsed(group.name) }" />
                 <span class="config-group-title">{{ group.name }}</span>
               </span>
               <span class="config-group-count">{{ group.rows.length }} setting{{ group.rows.length === 1 ? '' : 's' }}</span>
@@ -3319,7 +3320,7 @@ export default {
                       class="btn btn-sm btn-primary"
                       :disabled="row.busy || !configDirty(row)"
                       @click="saveConfig(row)"
-                    >{{ row.busy ? 'Saving…' : 'Save' }}</button>
+                    >{{ row.busy ? 'Saving...' : 'Save' }}</button>
                   </div>
                   <div v-if="row.message" class="config-msg" :class="row.messageType === 'error' ? 'text-danger' : 'text-success'">
                     {{ row.message }}
@@ -3425,10 +3426,7 @@ export default {
   min-width: 0;
 }
 .config-group-chevron {
-  display: inline-block;
   color: #9ca3af;
-  font-size: 1rem;
-  line-height: 1;
   transition: transform 0.15s ease;
 }
 .config-group-chevron.collapsed {
@@ -3800,7 +3798,7 @@ code { color: var(--text-secondary); }
   padding: 0;
   border-bottom: 1px solid var(--border);
   gap: 4px;
-  /* Nine tabs don't fit on a phone — scroll them rather than wrapping into
+  /* Nine tabs don't fit on a phone - scroll them rather than wrapping into
      a second row that pushes the panel down. */
   overflow-x: auto;
   scrollbar-width: thin;
@@ -3837,7 +3835,7 @@ code { color: var(--text-secondary); }
   max-width: 100%;
 }
 
-/* Webhook delivery payload — the exact bytes that were signed and sent, so it is shown verbatim. */
+/* Webhook delivery payload - the exact bytes that were signed and sent, so it is shown verbatim. */
 .delivery-payload {
   background: rgb(28, 28, 28);
   border: 1px solid #444;

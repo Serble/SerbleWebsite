@@ -1,12 +1,14 @@
 <script>
 import { ref, onMounted, inject, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getPublicAppInfo, deauthorizeApp } from '@/assets/js/serble.js';
 import { SCOPES, isSensitiveScope } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingBlock from '@/components/LoadingBlock.vue';
+import { confirmDialog, alertDialog } from '@/assets/js/dialog.js';
 
-// The scope string is one bit per scope, in the order the API's ScopeHandler declares them —
+// The scope string is one bit per scope, in the order the API's ScopeHandler declares them -
 // SCOPES is that list, so it stays the single source of truth for what each position means.
 // Names and descriptions come from the locale files, keyed by scope id.
 function parseScopeString(scopeString) {
@@ -19,6 +21,7 @@ function parseScopeString(scopeString) {
 export default {
   components: { OfficialBadge, LoadingBlock },
   setup() {
+    const { t } = useI18n();
     const user = ensureLoggedIn();
     const userStore = inject('userStore');
 
@@ -73,11 +76,32 @@ export default {
       );
     }
 
-    async function revoke(appId) {
+    // Revoking cuts an app off from the account, so it asks first and says so
+    // when the API refuses - it used to do both silently.
+    const revoking = ref('');
+
+    async function revoke(appId, appName) {
+      if (revoking.value) return;
+      const name = appName || appId;
+      if (!await confirmDialog({
+        title: t('revoke-access'),
+        message: t('revoke-access-confirm', { app: name }),
+        confirmLabel: t('revoke'),
+        danger: true,
+      })) return;
+
+      revoking.value = appId;
       const result = await deauthorizeApp(appId);
-      if (result.success) {
-        entries.value = entries.value.filter(e => e.appId !== appId);
+      revoking.value = '';
+
+      if (!result.success) {
+        await alertDialog({
+          title: t('revoke-failed'),
+          message: t('revoke-failed-detail', { app: name }),
+        });
+        return;
       }
+      entries.value = entries.value.filter(e => e.appId !== appId);
     }
 
     const parsedEntries = computed(() =>
@@ -87,7 +111,7 @@ export default {
       }))
     );
 
-    return { pageLoading, parsedEntries, revoke };
+    return { pageLoading, parsedEntries, revoke, revoking };
   }
 };
 </script>
@@ -133,7 +157,7 @@ export default {
             </div>
           </div>
           <div class="card-footer">
-            <button class="revoke-btn" @click="revoke(entry.appId)">{{ $t('revoke-access') }}</button>
+            <button class="revoke-btn" :disabled="revoking === entry.appId" @click="revoke(entry.appId)">{{ $t('revoke-access') }}</button>
           </div>
         </template>
 
@@ -171,7 +195,11 @@ export default {
 
           <div class="card-footer">
             <span class="app-id-muted">{{ $t('id') }}: {{ entry.appId }}</span>
-            <button class="revoke-btn" @click="revoke(entry.appId)">
+            <button
+              class="revoke-btn"
+              :disabled="revoking === entry.appId"
+              @click="revoke(entry.appId, entry.publicApp?.Name ?? entry.publicApp?.name)"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
                 <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
                 <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
@@ -193,7 +221,7 @@ export default {
   padding: 40px 24px 60px;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .authorized-header {
   margin-bottom: 28px;
 }
@@ -211,7 +239,7 @@ export default {
   margin: 0;
 }
 
-/* ── Shared state blocks (loading / empty) ── */
+/* -- Shared state blocks (loading / empty) -- */
 .state-block {
   display: flex;
   flex-direction: column;
@@ -242,7 +270,7 @@ export default {
   margin: 0;
 }
 
-/* ── Cards grid ── */
+/* -- Cards grid -- */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -271,7 +299,7 @@ export default {
   font-size: 0.9rem;
 }
 
-/* ── Card header ── */
+/* -- Card header -- */
 .card-header {
   display: flex;
   align-items: flex-start;
@@ -320,7 +348,7 @@ export default {
   line-height: 1.45;
 }
 
-/* ── Card body / scopes ── */
+/* -- Card body / scopes -- */
 .card-body {
   padding: 16px 20px;
   flex-grow: 1;
@@ -412,7 +440,7 @@ export default {
   vertical-align: middle;
 }
 
-/* ── Card footer ── */
+/* -- Card footer -- */
 .card-footer {
   display: flex;
   align-items: center;

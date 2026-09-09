@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n';
 import { setCookie } from '@/assets/js/utils.js';
 import { getSupportedLocale, languageOptions } from '@/assets/js/languages.js';
 import { computed } from 'vue';
+import Icon from '@/components/Icon.vue';
 
 const { locale } = useI18n({ useScope: 'global' });
 
@@ -37,7 +38,7 @@ function changeLanguage(e) {
           <li><RouterLink to="/notes">{{ $t('vault') }}</RouterLink></li>
           <li><RouterLink to="/wordmaster">{{ $t('games') }}</RouterLink></li>
           <li><RouterLink to="/contact">{{ $t('contact') }}</RouterLink></li>
-          <li><a href="https://status.serble.net" target="_blank" rel="noopener">{{ $t('status') }} ↗</a></li>
+          <li><a href="https://status.serble.net" target="_blank" rel="noopener">{{ $t('status') }} <Icon name="arrowUpRight" :size="12" /></a></li>
         </ul>
       </div>
 
@@ -71,7 +72,7 @@ function changeLanguage(e) {
     </div>
 
     <div class="footer-bottom">
-      <span>&copy; 2020–{{ new Date().getFullYear() }} CoPokBl &middot; <a href="/">{{ $t('serble') }}</a></span>
+      <span>&copy; 2020-{{ new Date().getFullYear() }} CoPokBl &middot; <a href="/">{{ $t('serble') }}</a></span>
       <span class="footer-discord">
         <a href="/discord/" class="footer-discord-link">
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">

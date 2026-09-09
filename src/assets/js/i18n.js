@@ -2,13 +2,13 @@
  * The shared i18n instance.
  *
  * This lives in its own module rather than in main.js because the router needs
- * it to translate document titles, and main.js already imports the router —
+ * it to translate document titles, and main.js already imports the router -
  * building it there would make the two import each other in a cycle.
  *
  * Every locale is bundled statically, so `i18n.global.t` is usable the moment
  * this module is evaluated; nothing has to wait for a translation to load.
  *
- * bin, lol and tes come from locales-generated instead of locales — they're
+ * bin, lol and tes come from locales-generated instead of locales - they're
  * derived from default.json by scripts/generate-locales.mjs, which the
  * predev/prebuild npm scripts run for you.
  */

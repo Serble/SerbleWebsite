@@ -78,7 +78,7 @@ export default {
       return key ? t(key) : status;
     }
 
-    // The server advertises only the events that can actually reach this app — an official app
+    // The server advertises only the events that can actually reach this app - an official app
     // never pays tax, a non-official one never receives a payout. A stored subscription can still
     // name the other slug (subscribed through the API, or the app changed official status), so
     // filter it out of the display too rather than showing an event that can never fire.
@@ -281,9 +281,9 @@ export default {
     }
 
     function formatDate(value) {
-      if (!value) return '—';
+      if (!value) return '-';
       const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString();
+      return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString();
     }
 
     function statusClass(status) {
@@ -321,7 +321,7 @@ export default {
           <template #event><code>tax.collected</code></template>
         </i18n-t>
       </div>
-      <button class="ghost-btn" :disabled="loading" @click="load">{{ loading ? '…' : $t('reload') }}</button>
+      <button class="ghost-btn" :disabled="loading" @click="load">{{ loading ? '...' : $t('reload') }}</button>
     </div>
 
     <!-- Reveal-once secret -->
@@ -377,7 +377,7 @@ export default {
       <div class="create-actions">
         <button class="reveal-dismiss" @click="cancelCreate">{{ $t('cancel') }}</button>
         <button class="add-btn" :disabled="creating" @click="submitCreate">
-          {{ creating ? '…' : $t('create-webhook') }}
+          {{ creating ? '...' : $t('create-webhook') }}
         </button>
       </div>
     </div>
@@ -453,7 +453,7 @@ export default {
             <div class="deliveries-head">
               <h5 class="deliveries-title">{{ $t('recent-deliveries') }}</h5>
               <button class="ghost-btn" :disabled="deliveriesLoading" @click="loadDeliveries(hook, 0)">
-                {{ deliveriesLoading ? '…' : $t('load') }}
+                {{ deliveriesLoading ? '...' : $t('load') }}
               </button>
             </div>
 
@@ -568,7 +568,7 @@ export default {
 
 .panel-state-error { color: var(--danger); }
 
-/* ── Buttons ── */
+/* -- Buttons -- */
 .ghost-btn,
 .add-btn,
 .danger-btn,
@@ -635,7 +635,7 @@ export default {
   cursor: pointer;
 }
 
-/* ── Inputs ── */
+/* -- Inputs -- */
 
 
 
@@ -657,7 +657,7 @@ export default {
   margin: 6px 0 0;
 }
 
-/* ── Create ── */
+/* -- Create -- */
 .create-row { margin-bottom: 4px; }
 
 .create-card {
@@ -675,7 +675,7 @@ export default {
   margin-top: 16px;
 }
 
-/* ── Event checkboxes ── */
+/* -- Event checkboxes -- */
 .event-list {
   display: flex;
   flex-direction: column;
@@ -706,7 +706,7 @@ export default {
   margin-top: 2px;
 }
 
-/* ── Webhook list ── */
+/* -- Webhook list -- */
 .hook-list {
   margin-top: 14px;
   display: flex;
@@ -809,7 +809,7 @@ export default {
   margin-top: 16px;
 }
 
-/* ── Deliveries ── */
+/* -- Deliveries -- */
 .deliveries {
   margin-top: 18px;
   padding-top: 14px;
@@ -904,7 +904,7 @@ export default {
 
 .pager-buttons { display: flex; gap: 8px; }
 
-/* ── Reveal-once secret ── */
+/* -- Reveal-once secret -- */
 .reveal-card {
   background: var(--danger-bg);
   border: 1px solid var(--danger-border-mid);

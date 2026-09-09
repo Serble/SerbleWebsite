@@ -86,7 +86,7 @@ export default {
           type="password"
           class="input"
           :class="{ 'input-invalid': error > 0 }"
-          placeholder="••••••••••••"
+          placeholder="************"
           v-model="password"
           autocomplete="new-password"
         />

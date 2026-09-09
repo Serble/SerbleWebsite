@@ -3,15 +3,16 @@ import { ref, inject, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { submitTotpCode } from '@/assets/js/serble.js';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
-  components: { LoadingSpinner },
+  components: { LoadingSpinner, Icon },
   setup() {
     const userStore = inject('userStore');
     const router  = useRouter();
     const route   = useRoute();
 
-    // Already logged in → redirect home
+    // Already logged in -> redirect home
     if (userStore?.state?.user) {
       router.replace('/');
     }
@@ -24,7 +25,6 @@ export default {
     }
 
     const code        = ref('');
-    const rememberMe  = ref(false);
     const error       = ref('');   // '' | 'invalid-code'
     const working     = ref(false);
 
@@ -41,12 +41,6 @@ export default {
       }
 
       // submitTotpCode already sets access_token in localStorage.
-      // If remember-me, also persist in a long-lived cookie.
-      if (rememberMe.value) {
-        const token = resp.token ?? resp;
-        document.cookie = `access_token=${token}; max-age=${60 * 60 * 24 * 365}; path=/`;
-      }
-
       window.location.href = returnUrl;
     }
 
@@ -54,7 +48,7 @@ export default {
       if (e.key === 'Enter') login();
     }
 
-    return { code, rememberMe, error, working, login, handleKey };
+    return { code, error, working, login, handleKey };
   }
 };
 </script>
@@ -96,12 +90,6 @@ export default {
         />
       </div>
 
-      <!-- Remember me -->
-      <label class="mfa-remember">
-        <input type="checkbox" v-model="rememberMe" class="mfa-checkbox" />
-        <span>{{ $t('remember-me') }}</span>
-      </label>
-
       <!-- Submit -->
       <button
         class="mfa-submit"
@@ -112,7 +100,7 @@ export default {
         {{ $t('sign-in') }}
       </button>
 
-      <RouterLink to="/login" class="mfa-back">← {{ $t('login') }}</RouterLink>
+      <RouterLink to="/login" class="mfa-back"><Icon name="arrowLeft" /> {{ $t('login') }}</RouterLink>
     </div>
   </div>
 </template>
@@ -218,23 +206,6 @@ export default {
 
 .mfa-input:focus { border-color: var(--accent-light); }
 .mfa-input-error { border-color: var(--danger) !important; }
-
-.mfa-remember {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
-}
-
-.mfa-checkbox {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
 
 .mfa-submit {
   width: 100%;

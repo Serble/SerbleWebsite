@@ -1,23 +1,41 @@
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getBalance, transferCoins, getTransactions } from '@/assets/js/serble.js';
-import { parseCoinsToRaw, isValidCoinAmount } from '@/assets/js/coins.js';
+import { parseCoinsToRaw, isValidCoinAmount, formatCoins } from '@/assets/js/coins.js';
 import CoinIcon from '@/components/CoinIcon.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import RefreshButton from '@/components/RefreshButton.vue';
+import Icon from '@/components/Icon.vue';
 
-function formatDate(value) {
-  if (!value) return '';
+function toDate(value) {
+  if (!value) return null;
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleString();
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
+
+// The API returns coin amounts as fixed-point integers that can exceed Number
+// precision, so every total is summed as a BigInt and handed to CoinAmount as a
+// raw string.
+function sumRaw(values) {
+  let total = 0n;
+  for (const v of values) {
+    const s = String(v ?? '').trim();
+    if (/^\d+$/.test(s)) total += BigInt(s);
+  }
+  return total.toString();
 }
 
 export default {
-  components: { CoinIcon, CoinAmount, LoadingSpinner, RefreshButton },
+  components: { CoinIcon, CoinAmount, LoadingSpinner, RefreshButton, Icon },
   setup() {
     ensureLoggedIn();
 
@@ -42,6 +60,8 @@ export default {
     const txLoadingMore = ref(false);
     const txHasMore = ref(false);
     const transactions = ref([]);
+    const txFilter = ref('all');
+    const expandedId = ref('');
 
     async function load() {
       loading.value = true;
@@ -59,6 +79,7 @@ export default {
     async function loadTransactions() {
       txLoading.value = true;
       txError.value = false;
+      expandedId.value = '';
       const r = await getTransactions(TX_PAGE_SIZE, 0);
       txLoading.value = false;
       if (r.success) {
@@ -128,21 +149,115 @@ export default {
       }
     }
 
+    // 'sent' | 'received' | '' while the balance id is still unknown, in which
+    // case the row stays neutral rather than guessing a direction.
+    function direction(tx) {
+      if (!balanceId.value) return '';
+      if (tx.fromBalanceId === balanceId.value) return 'sent';
+      if (tx.toBalanceId === balanceId.value) return 'received';
+      return '';
+    }
+
+    function dayLabel(date) {
+      const now = new Date();
+      if (sameDay(date, now)) return t('today');
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      if (sameDay(date, yesterday)) return t('yesterday');
+      return date.toLocaleDateString(undefined, {
+        year: 'numeric', month: 'long', day: 'numeric',
+      });
+    }
+
+    function timeLabel(date) {
+      return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // One view model per transaction, so the template never has to reach into
+    // the raw API shape or format anything itself.
+    const txView = computed(() => transactions.value.map((tx) => {
+      const date = toDate(tx.dateCreated);
+      const dir = direction(tx);
+      return {
+        id: String(tx.id ?? ''),
+        dir,
+        amount: String(tx.amount ?? '0'),
+        amountTitle: formatCoins(tx.amount),
+        note: (tx.description ?? '').trim(),
+        fromBalanceId: tx.fromBalanceId ?? '',
+        toBalanceId: tx.toBalanceId ?? '',
+        date,
+        dayKey: date ? `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` : 'unknown',
+        dayLabel: date ? dayLabel(date) : t('unknown'),
+        time: date ? timeLabel(date) : '',
+        fullDate: date ? date.toLocaleString() : t('unknown'),
+      };
+    }));
+
+    const filteredTx = computed(() => (
+      txFilter.value === 'all'
+        ? txView.value
+        : txView.value.filter((tx) => tx.dir === txFilter.value)
+    ));
+
+    // The list arrives newest first, so grouping in order keeps that ordering.
+    const txDays = computed(() => {
+      const days = [];
+      let current = null;
+      for (const tx of filteredTx.value) {
+        if (!current || current.key !== tx.dayKey) {
+          current = { key: tx.dayKey, label: tx.dayLabel, items: [] };
+          days.push(current);
+        }
+        current.items.push(tx);
+      }
+      return days;
+    });
+
+    const totalReceived = computed(() => sumRaw(
+      txView.value.filter((tx) => tx.dir === 'received').map((tx) => tx.amount)
+    ));
+    const totalSent = computed(() => sumRaw(
+      txView.value.filter((tx) => tx.dir === 'sent').map((tx) => tx.amount)
+    ));
+
+    const emptyMessage = computed(() => {
+      if (txView.value.length === 0) return t('no-transactions');
+      if (txFilter.value === 'sent') return t('no-transactions-sent');
+      if (txFilter.value === 'received') return t('no-transactions-received');
+      return t('no-transactions');
+    });
+
+    function toggleExpanded(id) {
+      expandedId.value = expandedId.value === id ? '' : id;
+    }
+
+    const copied = ref('');
+    let copyTimer = null;
+    async function copy(value, key) {
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch {
+        return; // Clipboard unavailable; the value is still selectable.
+      }
+      copied.value = key;
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => { copied.value = ''; }, 2000);
+    }
+
     onMounted(() => {
       load();
       loadTransactions();
     });
-
-    function isSent(tx) {
-      return balanceId.value && tx.fromBalanceId === balanceId.value;
-    }
 
     return {
       loading, error, coins, balanceId, load,
       recipient, amount, description, sending, sendError, sendSuccess, send,
       txLoading, txError, transactions, loadTransactions,
       txLoadingMore, txHasMore, loadMoreTransactions,
-      formatDate, isSent,
+      txFilter, txDays, filteredTx, totalReceived, totalSent, emptyMessage,
+      expandedId, toggleExpanded, copied, copy,
     };
   }
 };
@@ -162,10 +277,24 @@ export default {
         <CoinIcon :size="64" class="coin-badge-icon" />
         <div class="coin-amount"><CoinAmount :value="coins" /></div>
         <div class="coin-label">{{ $t('coins') }}</div>
+
+        <button
+          v-if="balanceId"
+          type="button"
+          class="id-chip balance-id-chip"
+          :class="{ copied: copied === 'balanceId' }"
+          :title="$t('copy-value')"
+          @click="copy(balanceId, 'balanceId')"
+        >
+          <span class="id-chip-label">{{ $t('your-balance-id') }}</span>
+          <code class="id-chip-value">{{ balanceId }}</code>
+          <Icon :name="copied === 'balanceId' ? 'check' : 'copy'" :size="12" />
+          <span class="sr-only">{{ copied === 'balanceId' ? $t('copied') : $t('copy-value') }}</span>
+        </button>
       </template>
     </div>
 
-    <!-- ── Send coins ── -->
+    <!-- -- Send coins -- -->
     <div class="panel">
       <h4 class="panel-title">{{ $t('send-coins') }}</h4>
       <p class="panel-subtitle">{{ $t('send-coins-subtitle') }}</p>
@@ -212,14 +341,12 @@ export default {
 
       <button class="send-btn" :disabled="sending" @click="send">
         <LoadingSpinner v-if="sending" class="me-1" />
-        <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-          <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z"/>
-        </svg>
+        <Icon v-else name="send" class="me-1" />
         {{ $t('send') }}
       </button>
     </div>
 
-    <!-- ── Transaction history ── -->
+    <!-- -- Transaction history -- -->
     <div class="panel">
       <div class="panel-head">
         <h4 class="panel-title">{{ $t('transaction-history') }}</h4>
@@ -229,40 +356,179 @@ export default {
       <div v-if="txLoading" class="tx-state">{{ $t('loading') }}</div>
       <div v-else-if="txError" class="tx-state tx-error">{{ $t('unknown-error') }}</div>
       <div v-else-if="transactions.length === 0" class="tx-state">{{ $t('no-transactions') }}</div>
-      <ul v-else class="tx-list">
-        <li v-for="tx in transactions" :key="tx.id" class="tx-item">
-          <div class="tx-icon" :class="isSent(tx) ? 'tx-sent' : 'tx-received'">
-            <svg v-if="isSent(tx)" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
-            </svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
-            </svg>
-          </div>
-          <div class="tx-body">
-            <div class="tx-top">
-              <span class="tx-type">{{ isSent(tx) ? $t('sent') : $t('received') }}</span>
-              <span class="tx-amount" :class="isSent(tx) ? 'tx-amount-sent' : 'tx-amount-received'">
-                <CoinAmount :value="tx.amount" :sign="isSent(tx) ? '-' : '+'" />
-              </span>
-            </div>
-            <div class="tx-meta">
-              <span class="tx-date">{{ formatDate(tx.dateCreated) }}</span>
-              <span v-if="tx.description" class="tx-desc">— {{ tx.description }}</span>
-            </div>
-          </div>
-        </li>
-      </ul>
 
-      <button
-        v-if="!txLoading && !txError && txHasMore"
-        class="load-more-btn"
-        :disabled="txLoadingMore"
-        @click="loadMoreTransactions"
-      >
-        <LoadingSpinner v-if="txLoadingMore" class="me-1" />
-        {{ $t('load-more') }}
-      </button>
+      <template v-else>
+        <!-- Totals across everything loaded so far, not the whole account. -->
+        <div class="tx-summary">
+          <div class="tx-stat tx-stat-in">
+            <span class="tx-stat-label">{{ $t('total-received') }}</span>
+            <span class="tx-stat-value"><CoinAmount :value="totalReceived" sign="+" /></span>
+          </div>
+          <div class="tx-stat tx-stat-out">
+            <span class="tx-stat-label">{{ $t('total-sent') }}</span>
+            <span class="tx-stat-value"><CoinAmount :value="totalSent" sign="-" /></span>
+          </div>
+        </div>
+        <p class="tx-summary-note">{{ $t('tx-summary-note', { n: transactions.length }) }}</p>
+
+        <div class="tx-filter" role="group" :aria-label="$t('transaction-history')">
+          <button
+            type="button"
+            class="tx-filter-btn"
+            :class="{ on: txFilter === 'all' }"
+            :aria-pressed="txFilter === 'all'"
+            @click="txFilter = 'all'"
+          >{{ $t('tx-filter-all') }}</button>
+          <button
+            type="button"
+            class="tx-filter-btn"
+            :class="{ on: txFilter === 'received' }"
+            :aria-pressed="txFilter === 'received'"
+            @click="txFilter = 'received'"
+          >{{ $t('received') }}</button>
+          <button
+            type="button"
+            class="tx-filter-btn"
+            :class="{ on: txFilter === 'sent' }"
+            :aria-pressed="txFilter === 'sent'"
+            @click="txFilter = 'sent'"
+          >{{ $t('sent') }}</button>
+        </div>
+
+        <p v-if="filteredTx.length === 0" class="tx-state">{{ emptyMessage }}</p>
+
+        <div v-for="day in txDays" :key="day.key" class="tx-day">
+          <p class="tx-day-label">{{ day.label }}</p>
+
+          <ul class="tx-list">
+            <li v-for="tx in day.items" :key="tx.id" class="tx-item">
+              <button
+                type="button"
+                class="tx-row"
+                :aria-expanded="expandedId === tx.id"
+                :aria-controls="`tx-details-${tx.id}`"
+                @click="toggleExpanded(tx.id)"
+              >
+                <span class="tx-icon" :class="`tx-${tx.dir || 'unknown'}`">
+                  <Icon :name="tx.dir === 'sent' ? 'arrowUpRight' : 'arrowDownLeft'" :size="15" />
+                </span>
+
+                <span class="tx-body">
+                  <span class="tx-top">
+                    <span class="tx-type">
+                      {{ tx.dir === 'sent' ? $t('sent') : tx.dir === 'received' ? $t('received') : $t('transaction') }}
+                    </span>
+                    <span class="tx-time">{{ tx.time }}</span>
+                  </span>
+                  <span class="tx-note" :class="{ 'tx-note-empty': !tx.note }">
+                    {{ tx.note || $t('no-note') }}
+                  </span>
+                </span>
+
+                <span class="tx-right">
+                  <span class="tx-amount" :class="`tx-amount-${tx.dir || 'unknown'}`" :title="tx.amountTitle">
+                    <CoinAmount :value="tx.amount" :sign="tx.dir === 'sent' ? '-' : tx.dir === 'received' ? '+' : ''" />
+                  </span>
+                  <Icon
+                    name="chevronDown"
+                    :size="11"
+                    class="tx-chevron"
+                    :class="{ open: expandedId === tx.id }"
+                  />
+                </span>
+              </button>
+
+              <div v-show="expandedId === tx.id" :id="`tx-details-${tx.id}`" class="tx-details">
+                <dl class="tx-detail-list">
+                  <div class="tx-detail">
+                    <dt class="tx-detail-label">{{ $t('date-and-time') }}</dt>
+                    <dd class="tx-detail-value">{{ tx.fullDate }}</dd>
+                  </div>
+
+                  <div class="tx-detail">
+                    <dt class="tx-detail-label">{{ $t('amount') }}</dt>
+                    <dd class="tx-detail-value">{{ tx.amountTitle }} {{ $t('coins-lower') }}</dd>
+                  </div>
+
+                  <div class="tx-detail tx-detail-full">
+                    <dt class="tx-detail-label">{{ $t('note') }}</dt>
+                    <dd class="tx-detail-value" :class="{ 'tx-detail-empty': !tx.note }">
+                      {{ tx.note || $t('no-note') }}
+                    </dd>
+                  </div>
+
+                  <div class="tx-detail">
+                    <dt class="tx-detail-label">{{ $t('from') }}</dt>
+                    <dd class="tx-detail-value">
+                      <span v-if="tx.fromBalanceId === balanceId" class="tx-you">{{ $t('you') }}</span>
+                      <button
+                        v-else-if="tx.fromBalanceId"
+                        type="button"
+                        class="id-chip"
+                        :class="{ copied: copied === `from-${tx.id}` }"
+                        :title="$t('copy-value')"
+                        @click="copy(tx.fromBalanceId, `from-${tx.id}`)"
+                      >
+                        <code class="id-chip-value">{{ tx.fromBalanceId }}</code>
+                        <Icon :name="copied === `from-${tx.id}` ? 'check' : 'copy'" :size="12" />
+                        <span class="sr-only">{{ $t('copy-value') }}</span>
+                      </button>
+                      <span v-else class="tx-detail-empty">{{ $t('unknown') }}</span>
+                    </dd>
+                  </div>
+
+                  <div class="tx-detail">
+                    <dt class="tx-detail-label">{{ $t('to') }}</dt>
+                    <dd class="tx-detail-value">
+                      <span v-if="tx.toBalanceId === balanceId" class="tx-you">{{ $t('you') }}</span>
+                      <button
+                        v-else-if="tx.toBalanceId"
+                        type="button"
+                        class="id-chip"
+                        :class="{ copied: copied === `to-${tx.id}` }"
+                        :title="$t('copy-value')"
+                        @click="copy(tx.toBalanceId, `to-${tx.id}`)"
+                      >
+                        <code class="id-chip-value">{{ tx.toBalanceId }}</code>
+                        <Icon :name="copied === `to-${tx.id}` ? 'check' : 'copy'" :size="12" />
+                        <span class="sr-only">{{ $t('copy-value') }}</span>
+                      </button>
+                      <span v-else class="tx-detail-empty">{{ $t('unknown') }}</span>
+                    </dd>
+                  </div>
+
+                  <div class="tx-detail tx-detail-full">
+                    <dt class="tx-detail-label">{{ $t('transaction-id') }}</dt>
+                    <dd class="tx-detail-value">
+                      <button
+                        type="button"
+                        class="id-chip"
+                        :class="{ copied: copied === `id-${tx.id}` }"
+                        :title="$t('copy-value')"
+                        @click="copy(tx.id, `id-${tx.id}`)"
+                      >
+                        <code class="id-chip-value">{{ tx.id }}</code>
+                        <Icon :name="copied === `id-${tx.id}` ? 'check' : 'copy'" :size="12" />
+                        <span class="sr-only">{{ $t('copy-value') }}</span>
+                      </button>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <button
+          v-if="txHasMore"
+          class="load-more-btn"
+          :disabled="txLoadingMore"
+          @click="loadMoreTransactions"
+        >
+          <LoadingSpinner v-if="txLoadingMore" class="me-1" />
+          {{ $t('load-more') }}
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -291,8 +557,8 @@ export default {
 .balance-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 40px 24px;
+  border-radius: var(--radius-lg);
+  padding: 40px 24px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -328,11 +594,64 @@ export default {
   color: var(--text-faint);
 }
 
-/* ── Panels (send / history) ── */
+/* -- Copyable id chips (balance ids, transaction ids) -- */
+.id-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background var(--t), border-color var(--t), color var(--t);
+}
+
+.id-chip:hover {
+  background: var(--border);
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+
+.id-chip.copied {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+
+.id-chip-value {
+  min-width: 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.id-chip.copied .id-chip-value { color: var(--success); }
+
+.balance-id-chip {
+  margin-top: 14px;
+}
+
+.id-chip-label {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+/* -- Panels (send / history) -- */
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 24px;
   margin-top: 24px;
 }
@@ -378,9 +697,6 @@ export default {
   color: var(--text-muted);
 }
 
-
-
-
 .form-message {
   font-size: 0.82rem;
   font-weight: 600;
@@ -388,7 +704,7 @@ export default {
 }
 
 .form-error { color: var(--danger); }
-.form-success { color: var(--success, #4ade80); }
+.form-success { color: var(--success); }
 
 .send-btn {
   display: inline-flex;
@@ -409,7 +725,7 @@ export default {
 .send-btn:hover:not(:disabled) { opacity: 0.9; }
 .send-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* ── Transaction list ── */
+/* -- Transaction history -- */
 .tx-state {
   color: var(--text-dim);
   font-size: 0.9rem;
@@ -419,28 +735,122 @@ export default {
 
 .tx-error { color: var(--danger); }
 
-.tx-list {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+.tx-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
 }
 
-.tx-item {
+.tx-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.tx-stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.tx-stat-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.tx-stat-in .tx-stat-value { color: var(--success); }
+.tx-stat-out .tx-stat-value { color: var(--danger); }
+
+.tx-summary-note {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  margin: 8px 0 0;
+}
+
+.tx-filter {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+
+.tx-filter-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t), color var(--t);
+}
+
+.tx-filter-btn:hover:not(.on) { color: var(--text); }
+
+.tx-filter-btn.on {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.tx-day {
+  margin-top: 18px;
+}
+
+/* The date is the group heading, so it carries the eye down the list instead of
+   repeating on every row. */
+.tx-day-label {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+}
+
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tx-item + .tx-item {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.tx-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
+  width: 100%;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t);
 }
 
-.tx-item:first-child { border-top: none; }
+.tx-row:hover { background: var(--surface-sunken); }
 
 .tx-icon {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -453,20 +863,27 @@ export default {
 }
 
 .tx-received {
-  background: rgba(74, 222, 128, 0.12);
-  color: var(--success, #4ade80);
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.tx-unknown {
+  background: var(--border);
+  color: var(--text-muted);
 }
 
 .tx-body {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+  gap: 1px;
 }
 
 .tx-top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .tx-type {
@@ -475,27 +892,98 @@ export default {
   color: var(--text);
 }
 
+.tx-time {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+/* The note is the one piece of free text a person wrote, so it gets its own
+   line rather than being tacked onto the timestamp. */
+.tx-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-note-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.tx-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .tx-amount {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .tx-amount-sent { color: var(--danger); }
-.tx-amount-received { color: var(--success, #4ade80); }
+.tx-amount-received { color: var(--success); }
+.tx-amount-unknown { color: var(--text-muted); }
 
-.tx-meta {
-  display: flex;
-  gap: 6px;
-  font-size: 0.76rem;
+.tx-chevron {
   color: var(--text-faint);
-  margin-top: 2px;
+  transition: transform var(--t);
 }
 
-.tx-desc {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.tx-chevron.open { transform: rotate(180deg); }
+
+.tx-details {
+  padding: 4px 14px 14px 58px;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.tx-detail-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin: 10px 0 0;
+}
+
+.tx-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tx-detail-full { grid-column: 1 / -1; }
+
+.tx-detail-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.tx-detail-value {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.tx-detail-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* Lines up with the id chip opposite it, which carries border and padding. */
+.tx-you {
+  padding: 5px 0;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .load-more-btn {
@@ -503,7 +991,7 @@ export default {
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin-top: 14px;
+  margin-top: 16px;
   padding: 10px 16px;
   background: var(--surface-sunken);
   color: var(--text-muted);
@@ -524,5 +1012,8 @@ export default {
 
 @media (max-width: 520px) {
   .form-grid { grid-template-columns: 1fr; }
+  .tx-summary { grid-template-columns: 1fr; }
+  .tx-detail-list { grid-template-columns: 1fr; }
+  .tx-details { padding-left: 14px; }
 }
 </style>

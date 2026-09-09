@@ -9,9 +9,10 @@ import { parseCoinsToRaw } from '@/assets/js/coins.js';
 import CoinAmount from '@/components/CoinAmount.vue';
 import ItemCard from '@/components/ItemCard.vue';
 import RefreshButton from '@/components/RefreshButton.vue';
-import { alertDialog } from '@/assets/js/dialog.js';
+import Icon from '@/components/Icon.vue';
+import { alertDialog, confirmDialog } from '@/assets/js/dialog.js';
 
-// Status → message key + style. The API uses Approved/Denied; users think
+// Status -> message key + style. The API uses Approved/Denied; users think
 // "complete"/"rejected".
 const STATUS_META = {
   Pending:    { key: 'trade-status-pending',    cls: 'pending' },
@@ -27,12 +28,12 @@ function formatDate(value) {
   if (!value) return '';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default {
   name: 'TradesPage',
-  components: { CoinAmount, ItemCard, RefreshButton },
+  components: { CoinAmount, ItemCard, RefreshButton, Icon },
   setup() {
     const { t } = useI18n();
     ensureLoggedIn();
@@ -57,7 +58,7 @@ export default {
 
     const PICKER_PAGE = 12;
 
-    // Offered-items picker (your inventory) — server-side search + pagination.
+    // Offered-items picker (your inventory) - server-side search + pagination.
     const pickerSearch = ref('');
     const pickerItems = ref([]);
     const pickerPage = ref(0);
@@ -66,7 +67,7 @@ export default {
     const pickerLoaded = ref(false);
     let searchTimer = null;
 
-    // Requested-items picker (the recipient's inventory) — so you select what you want instead of
+    // Requested-items picker (the recipient's inventory) - so you select what you want instead of
     // typing ids. Loaded for whoever is in the recipient field.
     const reqSearch = ref('');
     const reqItems = ref([]);
@@ -260,9 +261,20 @@ export default {
       }
     }
 
-    // Named `trade`, not `t` — `t` is the i18n translate function in this scope.
+    // Named `trade`, not `t` - `t` is the i18n translate function in this scope.
     async function act(trade, action) {
       if (busyId.value) return;
+
+      // Approving moves coins and items immediately and cannot be undone, and
+      // denying or cancelling ends the trade for both sides.
+      const other = (trade.direction === 'incoming' ? trade.fromUsername : trade.toUsername) || t('unknown');
+      if (!await confirmDialog({
+        title: t(`trade-confirm-${action}-title`),
+        message: t(`trade-confirm-${action}`, { user: other }),
+        confirmLabel: t(action),
+        danger: action !== 'approve',
+      })) return;
+
       busyId.value = trade.id;
       const fn = action === 'approve' ? approveUserTrade : action === 'deny' ? denyUserTrade : cancelUserTrade;
       const r = await fn(trade.id);
@@ -323,7 +335,7 @@ export default {
           <div v-if="selectedOfferList.length" class="chips">
             <span v-for="it in selectedOfferList" :key="it.id" class="chip" :title="it.name">
               {{ it.name }}
-              <button type="button" class="chip-x" @click="removeOffer(it.id)" :aria-label="$t('remove')">×</button>
+              <button type="button" class="chip-x" @click="removeOffer(it.id)" :aria-label="$t('remove')"><Icon name="close" /></button>
             </span>
           </div>
 
@@ -342,9 +354,9 @@ export default {
             <p v-else class="hint">{{ $t('you-own-no-items') }}</p>
 
             <div v-if="pickerItems.length && (pickerPage > 0 || pickerHasMore)" class="pager">
-              <button type="button" class="pg-btn" :disabled="pickerPage === 0" @click="pickerPrev">‹ {{ $t('previous') }}</button>
+              <button type="button" class="pg-btn" :disabled="pickerPage === 0" @click="pickerPrev"><Icon name="chevronLeft" /> {{ $t('previous') }}</button>
               <span class="pg-info">{{ $t('page-n', { n: pickerPage + 1 }) }}</span>
-              <button type="button" class="pg-btn" :disabled="!pickerHasMore" @click="pickerNext">{{ $t('next') }} ›</button>
+              <button type="button" class="pg-btn" :disabled="!pickerHasMore" @click="pickerNext">{{ $t('next') }} <Icon name="chevronRight" /></button>
             </div>
           </template>
         </div>
@@ -362,7 +374,7 @@ export default {
           <div v-if="selectedRequestList.length" class="chips">
             <span v-for="it in selectedRequestList" :key="it.id" class="chip" :title="it.name">
               {{ it.name }}
-              <button type="button" class="chip-x" @click="removeRequest(it.id)" :aria-label="$t('remove')">×</button>
+              <button type="button" class="chip-x" @click="removeRequest(it.id)" :aria-label="$t('remove')"><Icon name="close" /></button>
             </span>
           </div>
 
@@ -383,9 +395,9 @@ export default {
               <p v-else class="hint">{{ $t('user-has-no-items') }}</p>
 
               <div v-if="reqItems.length && (reqPage > 0 || reqHasMore)" class="pager">
-                <button type="button" class="pg-btn" :disabled="reqPage === 0" @click="reqPrev">‹ {{ $t('previous') }}</button>
+                <button type="button" class="pg-btn" :disabled="reqPage === 0" @click="reqPrev"><Icon name="chevronLeft" /> {{ $t('previous') }}</button>
                 <span class="pg-info">{{ $t('page-n', { n: reqPage + 1 }) }}</span>
-                <button type="button" class="pg-btn" :disabled="!reqHasMore" @click="reqNext">{{ $t('next') }} ›</button>
+                <button type="button" class="pg-btn" :disabled="!reqHasMore" @click="reqNext">{{ $t('next') }} <Icon name="chevronRight" /></button>
               </div>
             </template>
           </template>
@@ -435,7 +447,7 @@ export default {
             <ItemCard v-for="it in sides(t).giveItems" :key="it.id" :item="it" :minimal="true" />
             <p v-if="rawStr(sides(t).giveCoins) === '0' && sides(t).giveItems.length === 0" class="nothing">{{ $t('nothing-lower') }}</p>
           </div>
-          <div class="swap-arrow">⇄</div>
+          <Icon name="arrowSwap" :size="20" class="swap-arrow" />
           <div class="swap-col">
             <p class="swap-head">{{ $t('you-get') }}</p>
             <p v-if="rawStr(sides(t).getCoins) !== '0'" class="coins"><CoinAmount :value="rawStr(sides(t).getCoins)" /> {{ $t('coins-lower') }}</p>
@@ -444,7 +456,7 @@ export default {
           </div>
         </div>
 
-        <p v-if="t.description" class="note">“{{ t.description }}”</p>
+        <p v-if="t.description" class="note">"{{ t.description }}"</p>
         <p v-if="t.status === 'Failed' && t.failureReason" class="fail">{{ t.failureReason }}</p>
 
         <div class="trade-foot">
@@ -501,7 +513,7 @@ export default {
   border: 1px solid var(--border); border-radius: 999px; padding: 3px 6px 3px 10px; font-size: 0.8rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.chip-x { border: 0; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 2px; }
+.chip-x { display: inline-flex; align-items: center; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 0 2px; }
 .chip-x:hover { color: var(--text); }
 .pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; }
 .pg-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 0.85rem; }
@@ -553,7 +565,7 @@ export default {
 .swap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; }
 .swap-col { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .swap-head { font-size: 0.76rem; color: var(--text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
-.swap-arrow { align-self: center; color: var(--text-muted); font-size: 1.2rem; }
+.swap-arrow { align-self: center; color: var(--text-muted); }
 .coins { margin: 0; font-weight: 700; color: var(--text); }
 .nothing { margin: 0; color: var(--text-muted); font-size: 0.85rem; }
 

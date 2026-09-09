@@ -9,17 +9,20 @@ import {
 import {
   encrypt, decrypt, loadPasswords, savePasswords
 } from '@/assets/js/vaultCrypto.js';
+import LinkedText from '@/components/LinkedText.vue';
+import Icon from '@/components/Icon.vue';
 
 const ENCRYPTION_HEADER = '------BEGIN ENCRYPTED NOTE-----\n';
 
 export default {
+  components: { LinkedText, Icon },
   setup() {
     const { t } = useI18n();
     ensureLoggedIn();
     const route = useRoute();
     const router = useRouter();
 
-    // ── State ──
+    // -- State --
     const noteIds       = ref([]);        // ordered list of note IDs
     const noteTitles    = ref({});        // { id: title }
     const noteSummaries = ref({});        // { id: summary }
@@ -38,7 +41,7 @@ export default {
     const loading   = ref(true);
     const sidebarOpen = ref(false);
 
-    // ── Helpers ──
+    // -- Helpers --
     function titleFromContent(content) {
       const plain = content.startsWith(ENCRYPTION_HEADER)
         ? content.slice(ENCRYPTION_HEADER.length)
@@ -53,7 +56,7 @@ export default {
         ? content.slice(ENCRYPTION_HEADER.length)
         : content;
       const flat = plain.replace(/\n/g, ' ').trim();
-      return flat.length > 80 ? flat.slice(0, 80) + '…' : (flat || t('empty-note'));
+      return flat.length > 80 ? flat.slice(0, 80) + '...' : (flat || t('empty-note'));
     }
 
     function setMeta(id, rawOrDecrypted) {
@@ -62,7 +65,7 @@ export default {
       noteSummaries.value = { ...noteSummaries.value, [id]: summaryFromContent(rawOrDecrypted) };
     }
 
-    // ── Load all notes ──
+    // -- Load all notes --
     async function loadAll(activateId = null) {
       const res = await getNotes();
       if (!res.success) return;
@@ -99,7 +102,7 @@ export default {
       setMeta(id, raw);
     }
 
-    // ── Open a note ──
+    // -- Open a note --
     async function openNote(id) {
       saveState.value = 'idle';
       decryptedContent.value = null;
@@ -133,7 +136,7 @@ export default {
       setMeta(id, decryptedContent.value ?? raw);
     }
 
-    // ── Decrypt ──
+    // -- Decrypt --
     async function tryDecrypt(password, fromInput = true) {
       try {
         const cipher = currentRaw.value.slice(ENCRYPTION_HEADER.length);
@@ -153,7 +156,7 @@ export default {
       await tryDecrypt(passwordInput.value, true);
     }
 
-    // ── Set password (new encrypted note) ──
+    // -- Set password (new encrypted note) --
     async function setPassword() {
       const pw = passwordInput.value;
       if (!pw) return;
@@ -165,7 +168,7 @@ export default {
       await openNote(currentId.value);
     }
 
-    // ── Save ──
+    // -- Save --
     function markDirty() {
       if (saveState.value === 'idle' || saveState.value === 'saved') {
         saveState.value = 'dirty';
@@ -192,7 +195,7 @@ export default {
       setMeta(currentId.value, decryptedContent.value ?? text);
     }
 
-    // ── New note ──
+    // -- New note --
     async function newNote(encrypted) {
       const res = await createNote();
       if (!res.success) return;
@@ -216,7 +219,7 @@ export default {
       await loadAll(id);
     }
 
-    // ── Delete note ──
+    // -- Delete note --
     async function removeNote(id, e) {
       e.stopPropagation();
       const res = await deleteNote(id);
@@ -233,9 +236,9 @@ export default {
       }
     }
 
-    // ── Computed ──
+    // -- Computed --
     const saveLabel = computed(() => {
-      if (saveState.value === 'saving') return 'Saving…';
+      if (saveState.value === 'saving') return 'Saving...';
       if (saveState.value === 'saved')  return 'Saved!';
       if (saveState.value === 'dirty')  return 'Save';
       return 'Save';
@@ -341,6 +344,12 @@ export default {
     <!-- Editor area -->
     <div class="notes-editor">
 
+      <!-- This page is superseded by notes.serble.net. -->
+      <div class="deprecated-banner" role="status">
+        <Icon name="alert" :size="15" />
+        <LinkedText :text="$t('notes-deprecated')" href="https://notes.serble.net" target="_blank" />
+      </div>
+
       <!-- No note selected -->
       <div v-if="!currentId" class="editor-empty">
         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="opacity-25 mb-3" viewBox="0 0 16 16">
@@ -431,7 +440,7 @@ export default {
 </template>
 
 <style scoped>
-/* ── Layout ── */
+/* -- Layout -- */
 .notes-layout {
   display: flex;
   height: calc(100vh - 57px); /* subtract navbar height */
@@ -439,7 +448,7 @@ export default {
   position: relative;
 }
 
-/* ── Sidebar ── */
+/* -- Sidebar -- */
 .notes-sidebar {
   width: 280px;
   min-width: 280px;
@@ -588,13 +597,33 @@ export default {
   color: var(--text);
 }
 
-/* ── Editor ── */
+/* -- Editor -- */
 .notes-editor {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #0f0f11;
+}
+
+/* Sits above every editor state, so it is on screen whichever note is open. */
+.deprecated-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 16px;
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--warning-border);
+  color: var(--warning);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.deprecated-banner a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 /* Empty state */
@@ -762,7 +791,7 @@ export default {
 
 .editor-textarea::placeholder { color: var(--border-strong); }
 
-/* ── Mobile sidebar toggle ── */
+/* -- Mobile sidebar toggle -- */
 .sidebar-toggle {
   display: none;
   position: fixed;

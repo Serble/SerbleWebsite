@@ -4,9 +4,10 @@ import { useRouter } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getTotpQrCode, checkTotpCode, editUser } from '@/assets/js/serble.js';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
-  components: { LoadingSpinner },
+  components: { LoadingSpinner, Icon },
   setup() {
     const user    = ensureLoggedIn();
     const router  = useRouter();
@@ -166,7 +167,7 @@ export default {
           {{ $t('submit') }}
         </button>
 
-        <RouterLink to="/account" class="cancel-link">← {{ $t('back-to-account') }}</RouterLink>
+        <RouterLink to="/account" class="cancel-link"><Icon name="arrowLeft" /> {{ $t('back-to-account') }}</RouterLink>
       </div>
 
     </div>

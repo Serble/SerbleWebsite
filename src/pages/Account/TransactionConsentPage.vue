@@ -13,6 +13,7 @@ import CoinAmount from '@/components/CoinAmount.vue';
 import ItemCard from '@/components/ItemCard.vue';
 import LoadingCard from '@/components/LoadingCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 function formatDate(value) {
   if (!value) return '';
@@ -22,7 +23,7 @@ function formatDate(value) {
 }
 
 export default {
-  components: { CoinAmount, ItemCard, LoadingCard, LoadingSpinner },
+  components: { CoinAmount, ItemCard, LoadingCard, LoadingSpinner, Icon },
   setup() {
     const { t } = useI18n();
     ensureLoggedIn();
@@ -46,7 +47,7 @@ export default {
       'unknown':      'txc-err-unknown',
     };
 
-    // Non-pending statuses returned by GET — already resolved, no buttons.
+    // Non-pending statuses returned by GET - already resolved, no buttons.
     const resolvedMessages = {
       Approved:   'txc-resolved-approved',
       Denied:     'txc-resolved-denied',
@@ -141,7 +142,7 @@ export default {
       try { return new URL(uri).host; } catch { return uri; }
     });
 
-    // ── Item-trade fields ──
+    // -- Item-trade fields --
     const offeredCoins = computed(() => proposal.value?.offeredCoins ?? '0');
     const offeredItems = computed(() => proposal.value?.offeredItems ?? []);
     const requestedItems = computed(() => proposal.value?.requestedItems ?? []);
@@ -156,7 +157,7 @@ export default {
     const hasRequestCoins = computed(() => rawPositive(amount.value));
     const hasOfferCoins = computed(() => rawPositive(offeredCoins.value));
 
-    // Either side carries an item — drives the two-column swap layout.
+    // Either side carries an item - drives the two-column swap layout.
     const involvesItems = computed(() =>
       proposal.value?.involvesItems === true ||
       offeredItems.value.length > 0 ||
@@ -221,7 +222,7 @@ export default {
         </div>
       </div>
 
-      <RouterLink to="/" class="txc-back-link">← {{ $t('back-to-home') }}</RouterLink>
+      <RouterLink to="/" class="txc-back-link"><Icon name="arrowLeft" /> {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Result -->
@@ -256,7 +257,7 @@ export default {
         <code class="error-detail-value">{{ transactionId }}</code>
       </div>
 
-      <RouterLink to="/" class="txc-back-link txc-back-center">← {{ $t('back-to-home') }}</RouterLink>
+      <RouterLink to="/" class="txc-back-link txc-back-center"><Icon name="arrowLeft" /> {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Already resolved (non-pending status from GET) -->
@@ -268,7 +269,7 @@ export default {
       </div>
       <h2 class="txc-result-title">{{ $t('already-handled') }}</h2>
       <p class="txc-result-sub">{{ $t(resolvedMessage) }}</p>
-      <RouterLink to="/" class="txc-back-link txc-back-center">← {{ $t('back-to-home') }}</RouterLink>
+      <RouterLink to="/" class="txc-back-link txc-back-center"><Icon name="arrowLeft" /> {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Consent UI (pending) -->
@@ -609,7 +610,7 @@ export default {
 .txc-btn-deny { background: var(--danger-strong); color: #fff; }
 .txc-btn-deny:hover:not(:disabled) { background: var(--danger-stronger); }
 
-/* ── Item trades ── */
+/* -- Item trades -- */
 .txc-coin-row {
   font-size: 1.3rem;
   font-weight: 800;

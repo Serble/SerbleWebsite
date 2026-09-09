@@ -8,6 +8,7 @@ import { filterInvalidScopes, scopeIdsToString, isSensitiveScope } from '@/asset
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingCard from '@/components/LoadingCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 // Note: `response_type` is intentionally NOT required. The legacy Serble OAuth
 // flow always issues an authorization code and never reads response_type, so
@@ -15,7 +16,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue';
 const REQUIRED_PARAMS = ['redirect_uri', 'client_id', 'scope', 'state'];
 
 export default {
-  components: { OfficialBadge, LoadingCard, LoadingSpinner },
+  components: { OfficialBadge, LoadingCard, LoadingSpinner, Icon },
   setup() {
     const user = ensureLoggedIn();
     const route  = useRoute();
@@ -79,7 +80,7 @@ export default {
       const validIds     = filterInvalidScopes(requestedIds);
       scopeIds.value     = validIds;
 
-      // 4. Check if already authorized — auto-allow only if no new scopes are requested.
+      // 4. Check if already authorized - auto-allow only if no new scopes are requested.
       //    The authorized-app entry's appId is the OAuth client_id, so match on that
       //    rather than the public app payload (which may not include an id field).
       const currentUser = user.value ?? userStore?.state?.user;
@@ -204,7 +205,7 @@ export default {
         </div>
       </div>
 
-      <RouterLink to="/" class="oauth-back-link">← {{ $t('back-to-home') }}</RouterLink>
+      <RouterLink to="/" class="oauth-back-link"><Icon name="arrowLeft" /> {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Ready: show authorize UI -->
@@ -302,7 +303,7 @@ export default {
   padding: 40px 20px;
 }
 
-/* ── Card ── */
+/* -- Card -- */
 .oauth-card {
   width: 100%;
   max-width: 480px;
@@ -324,7 +325,7 @@ export default {
   border-color: var(--danger-border);
 }
 
-/* ── Error state ── */
+/* -- Error state -- */
 .oauth-error-icon {
   color: var(--danger);
   display: flex;
@@ -453,7 +454,7 @@ export default {
 
 .oauth-back-link:hover { color: var(--text-muted); }
 
-/* ── Auth UI ── */
+/* -- Auth UI -- */
 .oauth-app-header {
   display: flex;
   flex-direction: column;
@@ -555,7 +556,7 @@ export default {
   margin: 0;
 }
 
-/* ── Sensitive scope highlighting ── */
+/* -- Sensitive scope highlighting -- */
 .sensitive-ack {
   display: flex;
   align-items: flex-start;

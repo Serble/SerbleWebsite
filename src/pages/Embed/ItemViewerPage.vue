@@ -8,9 +8,10 @@ import { userStore, authReadyPromise } from '@/assets/js/user.js';
 import ItemCard from '@/components/ItemCard.vue';
 import ItemDetails from '@/components/ItemDetails.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 // An embeddable, self-contained item viewer. It runs on the user's own Serble session, so an app
-// can iframe it without holding any OAuth scopes — Serble (not the app) reads the inventory.
+// can iframe it without holding any OAuth scopes - Serble (not the app) reads the inventory.
 //
 // Query params:
 //   app=<appId>   only show items created by this app (the common case for an app embedding it)
@@ -19,7 +20,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue';
 //   title=...     custom heading
 export default {
   name: 'EmbedItemViewer',
-  components: { ItemCard, ItemDetails, LoadingSpinner },
+  components: { ItemCard, ItemDetails, LoadingSpinner, Icon },
   setup() {
     const route = useRoute();
     const { t } = useI18n();
@@ -225,12 +226,12 @@ export default {
 
     <div v-else class="state">{{ $t('loading-ellipsis') }}</div>
 
-    <!-- Detail drawer — reuses the shared ItemDetails component, re-themed to the embed palette. -->
+    <!-- Detail drawer - reuses the shared ItemDetails component, re-themed to the embed palette. -->
     <div v-if="selected" class="drawer-backdrop" @click.self="closeItem">
       <div class="drawer">
         <button class="drawer-close" @click="closeItem" :aria-label="$t('close')">&times;</button>
         <ItemDetails :item-id="selected.id" class="embed-details" />
-        <button class="btn ghost" @click="openFullPage(selected)">{{ $t('open-full-item-page') }} ↗</button>
+        <button class="btn ghost" @click="openFullPage(selected)">{{ $t('open-full-item-page') }} <Icon name="arrowUpRight" :size="12" /></button>
       </div>
     </div>
   </div>

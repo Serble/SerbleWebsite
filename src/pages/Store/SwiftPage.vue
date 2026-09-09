@@ -1,7 +1,9 @@
 <script>
 import { inject, computed } from 'vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
+  components: { Icon },
   setup() {
     const userStore = inject('userStore');
     const user = computed(() => userStore?.state?.user ?? null);
@@ -34,11 +36,11 @@ export default {
           <div class="plan-price">$0 <span class="plan-period">{{ $t('per-month') }}</span></div>
         </div>
         <ul class="plan-features">
-          <li><span class="check">✓</span> {{ $t('voting') }}</li>
-          <li><span class="check">✓</span> {{ $t('view-trust-rating') }}</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
+          <li><Icon name="check" class="check" /> {{ $t('voting') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('view-trust-rating') }}</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
         </ul>
         <RouterLink to="/register" class="plan-btn plan-btn-outline">{{ $t('sign-up-for-free') }}</RouterLink>
       </div>
@@ -51,11 +53,11 @@ export default {
           <div class="plan-price">$1.99 <span class="plan-period">{{ $t('per-month') }}</span></div>
         </div>
         <ul class="plan-features">
-          <li><span class="check">✓</span> {{ $t('everything-from-free') }}</li>
-          <li><span class="check">✓</span> {{ $t('warnings-for-risky-pages') }}</li>
-          <li><span class="check">✓</span> {{ $t('higher-vote-importance') }}</li>
-          <li><span class="check">✓</span> {{ $t('extremely-cool') }}</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
+          <li><Icon name="check" class="check" /> {{ $t('everything-from-free') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('warnings-for-risky-pages') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('higher-vote-importance') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('extremely-cool') }}</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
         </ul>
         <RouterLink
           :to="user ? '/store/purchase?product=swiftpremium&price_id=monthly' : '/store/purchaseanon?product=swiftpremium&price_id=monthly'"
@@ -69,14 +71,14 @@ export default {
         <div class="plan-top">
           <span class="plan-name">{{ $t('yearly-plan') }}</span>
           <div class="plan-price">$19.99 <span class="plan-period">{{ $t('per-year') }}</span></div>
-          <div class="plan-equiv">≈ $1.67/month</div>
+          <div class="plan-equiv">~$1.67/month</div>
         </div>
         <ul class="plan-features">
-          <li><span class="check">✓</span> {{ $t('everything-from-free') }}</li>
-          <li><span class="check">✓</span> {{ $t('warnings-for-risky-pages') }}</li>
-          <li><span class="check">✓</span> {{ $t('higher-vote-importance') }}</li>
-          <li><span class="check">✓</span> {{ $t('extremely-cool') }}</li>
-          <li><span class="check muted">–</span> &nbsp;</li>
+          <li><Icon name="check" class="check" /> {{ $t('everything-from-free') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('warnings-for-risky-pages') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('higher-vote-importance') }}</li>
+          <li><Icon name="check" class="check" /> {{ $t('extremely-cool') }}</li>
+          <li><Icon name="dash" class="check muted" /> &nbsp;</li>
         </ul>
         <RouterLink
           :to="user ? '/store/purchase?product=swiftpremium&price_id=yearly' : '/store/purchaseanon?product=swiftpremium&price_id=yearly'"
@@ -102,33 +104,33 @@ export default {
           <tbody>
             <tr>
               <td class="feature-name">{{ $t('voting') }}</td>
-              <td><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
+              <td><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('view-trust-rating') }}</td>
-              <td><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
+              <td><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('warnings-for-risky-pages') }}</td>
-              <td class="muted-cell">—</td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
+              <td class="muted-cell">-</td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('higher-vote-importance') }}</td>
-              <td class="muted-cell">—</td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
+              <td class="muted-cell">-</td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('extremely-cool') }}</td>
-              <td class="muted-cell">—</td>
-              <td class="td-featured"><span class="tick">✓</span></td>
-              <td class="td-featured"><span class="tick">✓</span></td>
+              <td class="muted-cell">-</td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
+              <td class="td-featured"><Icon name="check" class="tick" /></td>
             </tr>
             <tr>
               <td class="feature-name">{{ $t('price') }}</td>
@@ -151,7 +153,7 @@ export default {
   padding: 48px 24px 72px;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .swift-header {
   text-align: center;
   margin-bottom: 52px;
@@ -192,7 +194,7 @@ export default {
   margin: 0;
 }
 
-/* ── Plan cards ── */
+/* -- Plan cards -- */
 .plans-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -336,7 +338,7 @@ export default {
   color: var(--text);
 }
 
-/* ── Compare table ── */
+/* -- Compare table -- */
 .compare-section { text-align: center; }
 
 .compare-title {

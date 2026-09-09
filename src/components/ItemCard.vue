@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 
 // A single tradeable / inventory item tile. Purely presentational.
-//  - default: icon + name + (optional) description — used on the trade consent screen.
-//  - minimal: icon + name only — used on the inventory grid, where each tile links to the
+//  - default: icon + name + (optional) description - used on the trade consent screen.
+//  - minimal: icon + name only - used on the inventory grid, where each tile links to the
 //    item's info page for the full detail + ownership history.
 export default {
   name: 'ItemCard',

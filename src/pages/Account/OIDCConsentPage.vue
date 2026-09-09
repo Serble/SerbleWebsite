@@ -11,13 +11,14 @@ import {
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingCard from '@/components/LoadingCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 // The standard OIDC scopes we can describe in plain language. Anything else the
 // server asks for is listed by its raw name with no description.
 const DESCRIBED_SCOPES = ['openid', 'profile', 'email', 'groups', 'offline_access'];
 
 export default {
-  components: { OfficialBadge, LoadingCard, LoadingSpinner },
+  components: { OfficialBadge, LoadingCard, LoadingSpinner, Icon },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -94,7 +95,7 @@ export default {
         }
       }
 
-      // Backend says user is denied — bounce back without showing UI.
+      // Backend says user is denied - bounce back without showing UI.
       if (r.session?.denied) {
         followRedirect(r.session.redirect);
         return;
@@ -165,7 +166,7 @@ export default {
         </div>
       </div>
 
-      <RouterLink to="/" class="oidc-back-link">← {{ $t('back-to-home') }}</RouterLink>
+      <RouterLink to="/" class="oidc-back-link"><Icon name="arrowLeft" /> {{ $t('back-to-home') }}</RouterLink>
     </div>
 
     <!-- Consent UI -->

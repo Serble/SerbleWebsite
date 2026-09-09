@@ -120,7 +120,7 @@ export default {
           type="password"
           class="input"
           :class="{ 'input-invalid': error === 2 }"
-          placeholder="••••••••••••"
+          placeholder="************"
           v-model="password"
           autocomplete="current-password"
         />
@@ -137,7 +137,7 @@ export default {
     </div>
 
     <div v-if="passkeyError" class="alert alert-danger">
-      <AlertIcon /> {{ passkeyError }}
+      <Icon name="alert" />{{ passkeyError }}
     </div>
 
     <button class="btn btn-secondary btn-block" :disabled="passkeyWorking" @click="passkeyLogin">

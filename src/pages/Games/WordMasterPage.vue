@@ -2,13 +2,14 @@
 import { ref, computed, onUnmounted } from 'vue';
 import axios from 'axios';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const MAX_STRIKES = 3;
 const TIMER_START = 30;
 
 export default {
-  components: { LoadingSpinner },
+  components: { LoadingSpinner, Icon },
   setup() {
     // Game state
     const words = ref([]);         // { text, correct }[]
@@ -180,7 +181,7 @@ export default {
           <div class="stat-chip" :class="{ 'stat-chip-danger': finished }">
             <span class="stat-label">{{ finished ? $t('game-over') : $t('time-left') }}</span>
             <span class="stat-value" :style="{ color: finished ? 'var(--danger)' : timerColour }">
-              {{ finished ? '—' : secondsLeft + 's' }}
+              {{ finished ? '-' : secondsLeft + 's' }}
             </span>
           </div>
         </div>
@@ -200,7 +201,7 @@ export default {
         <!-- Last word display -->
         <div class="word-display">
           <div v-if="lastWord" class="word-bubble" :class="lastWord.correct ? 'word-correct' : 'word-wrong'">
-            <span class="word-icon">{{ lastWord.correct ? '✓' : '✗' }}</span>
+            <Icon :name="lastWord.correct ? 'check' : 'close'" :size="18" class="word-icon" />
             {{ lastWord.text }}
           </div>
           <div v-else class="word-placeholder">
@@ -216,7 +217,7 @@ export default {
             class="history-item"
             :class="w.correct ? 'history-correct' : 'history-wrong'"
           >
-            <span class="history-icon">{{ w.correct ? '✓' : '✗' }}</span>
+            <Icon :name="w.correct ? 'check' : 'close'" :size="12" class="history-icon" />
             {{ w.text }}
           </div>
         </div>
@@ -250,10 +251,10 @@ export default {
         <!-- Record -->
         <div class="record-row">
           <span v-if="newRecord" class="record-badge record-new">
-            🏆 {{ $t('new-record') }} {{ record }}
+            <Icon name="trophy" :size="13" /> {{ $t('new-record') }} {{ record }}
           </span>
           <span v-else class="record-badge">
-            {{ $t('record') }} {{ record === 0 ? '—' : record }}
+            {{ $t('record') }} {{ record === 0 ? '-' : record }}
           </span>
         </div>
 
@@ -425,7 +426,7 @@ export default {
 }
 
 .word-icon {
-  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 @keyframes popIn {
@@ -453,9 +454,7 @@ export default {
 }
 
 .history-icon {
-  font-size: 0.75rem;
   width: 14px;
-  text-align: center;
   flex-shrink: 0;
 }
 

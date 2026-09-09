@@ -206,7 +206,7 @@ export default {
               {{ $t('inventory') }}
             </RouterLink>
             <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-dropdown-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H9a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3A.5.5 0 0 1 0 3.5m16 9a.5.5 0 0 1-.5.5H7a.5.5 0 0 1 0-1h7.793l-2.147-2.146a.5.5 0 0 1 .708-.708l3 3a.5.5 0 0 1 .146.354"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-2 opacity-50"><path d="M1.6 3.6h8.4v2H1.6zM9.4 1.5 14.6 4.6 9.4 7.7zM6 10.4h8.4v2H6zM6.6 14.5 1.4 11.4 6.6 8.3z"/></svg>
               {{ $t('trades') }}
             </RouterLink>
             <RouterLink to="/account/paymentportal" class="nav-dropdown-item">
@@ -268,7 +268,7 @@ export default {
 </template>
 
 <style scoped>
-/* ── Base ── */
+/* -- Base -- */
 .site-nav {
   position: sticky;
   top: 0;
@@ -290,7 +290,7 @@ export default {
   gap: 8px;
 }
 
-/* ── Brand ── */
+/* -- Brand -- */
 .nav-brand {
   display: flex;
   align-items: center;
@@ -310,7 +310,7 @@ export default {
   letter-spacing: -0.01em;
 }
 
-/* ── Centre links ── */
+/* -- Centre links -- */
 .nav-links {
   display: flex;
   align-items: center;
@@ -347,7 +347,7 @@ export default {
   color: #fff;
 }
 
-/* ── Dropdowns ── */
+/* -- Dropdowns -- */
 .nav-dropdown-wrap {
   position: relative;
 }
@@ -377,7 +377,7 @@ export default {
   box-shadow: var(--shadow-popover);
   opacity: 0;
   /* visibility (not just opacity) so the links leave the tab order when
-     closed — otherwise keyboard users tab through an invisible menu. */
+     closed - otherwise keyboard users tab through an invisible menu. */
   visibility: hidden;
   pointer-events: none;
   transform: translateY(-4px);
@@ -444,7 +444,7 @@ export default {
   margin: 4px 0;
 }
 
-/* ── Right side ── */
+/* -- Right side -- */
 .nav-right {
   display: flex;
   align-items: center;
@@ -531,7 +531,7 @@ export default {
   background: var(--accent-hover);
 }
 
-/* ── Hamburger ── */
+/* -- Hamburger -- */
 .nav-hamburger {
   display: none;
   flex-direction: column;
@@ -563,7 +563,7 @@ export default {
   background: var(--text);
 }
 
-/* ── Mobile menu ── */
+/* -- Mobile menu -- */
 .nav-mobile {
   display: none;
   flex-direction: column;
@@ -606,7 +606,7 @@ export default {
   margin: 6px 0;
 }
 
-/* ── Responsive ── */
+/* -- Responsive -- */
 @media (max-width: 768px) {
   .nav-links {
     display: none;

@@ -29,7 +29,7 @@ export default {
       return `/oauthapps/manage?appid=${encodeURIComponent(appId)}`;
     }
 
-    // The whole ID row is the copy target — an app id is needed far more often than it's read.
+    // The whole ID row is the copy target - an app id is needed far more often than it's read.
     async function copyId(appId) {
       try {
         await navigator.clipboard.writeText(appId);
@@ -71,7 +71,7 @@ export default {
 
     <!-- Empty state -->
     <div v-else-if="apps.length === 0" class="state-block empty-state">
-      <!-- Apps grid — mirrors the tiled cards this page shows once apps exist. -->
+      <!-- Apps grid - mirrors the tiled cards this page shows once apps exist. -->
       <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
         <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
       </svg>
@@ -83,7 +83,7 @@ export default {
     <div v-else class="cards-grid">
       <div v-for="app in apps" :key="app.id" class="app-card">
 
-        <!-- Card header — the primary action sits top-right so the card stays short -->
+        <!-- Card header - the primary action sits top-right so the card stays short -->
         <div class="card-top">
           <div class="app-icon">{{ initial(app) }}</div>
           <div class="app-heading">
@@ -137,7 +137,7 @@ export default {
   padding: 40px 24px 60px;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .apps-header {
   display: flex;
   align-items: flex-end;
@@ -177,7 +177,7 @@ export default {
 
 .new-btn:hover { background: var(--accent-hover); }
 
-/* ── Shared state blocks ── */
+/* -- Shared state blocks -- */
 .state-block {
   display: flex;
   flex-direction: column;
@@ -204,7 +204,7 @@ export default {
   margin: 0;
 }
 
-/* ── Cards grid ── */
+/* -- Cards grid -- */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -227,7 +227,7 @@ export default {
   transform: translateY(-2px);
 }
 
-/* ── Card header ── */
+/* -- Card header -- */
 .card-top {
   display: flex;
   align-items: flex-start;
@@ -289,7 +289,7 @@ export default {
   font-style: italic;
 }
 
-/* ── App id ── */
+/* -- App id -- */
 .id-chip {
   display: flex;
   align-items: center;
@@ -350,7 +350,7 @@ export default {
 .id-chip.copied .id-text,
 .id-chip.copied .id-status { color: var(--success); }
 
-/* ── Primary action ── */
+/* -- Primary action -- */
 .manage-btn {
   display: inline-flex;
   align-items: center;

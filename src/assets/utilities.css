@@ -3,11 +3,11 @@
 
    Deliberately small: only primitives that are genuinely useful inline. Anything
    with a visual identity (buttons, inputs, cards, alerts) lives in
-   components.css instead. Add to this file sparingly — if a rule is only needed
+   components.css instead. Add to this file sparingly - if a rule is only needed
    once, it belongs in that component's scoped styles.
    ========================================================================== */
 
-/* ── Page containers ────────────────────────────────────────────────────────
+/* -- Page containers --------------------------------------------------------
    Every full-width page uses one of these so edges line up with nav and footer. */
 .container {
     width: 100%;
@@ -23,7 +23,7 @@
     padding-inline: var(--space-6);
 }
 
-/* ── Grid ───────────────────────────────────────────────────────────────────
+/* -- Grid -------------------------------------------------------------------
    12-column CSS grid. Columns are full width below 768px and take their span
    above it, which is the mobile-first behaviour the old markup assumed. */
 .row {
@@ -70,7 +70,7 @@
     .col-md-12 { grid-column: span 12; }
 }
 
-/* ── Flex ── */
+/* -- Flex -- */
 .flex           { display: flex; }
 .inline-flex    { display: inline-flex; }
 .flex-col       { flex-direction: column; }
@@ -92,7 +92,7 @@
 .gap-5 { gap: var(--space-5); }
 .gap-6 { gap: var(--space-6); }
 
-/* ── Display ── */
+/* -- Display -- */
 .hidden { display: none; }
 .block  { display: block; }
 
@@ -101,7 +101,7 @@
     .md\:hidden { display: none; }
 }
 
-/* ── Margin ─────────────────────────────────────────────────────────────────
+/* -- Margin -----------------------------------------------------------------
    Prefer flex/grid `gap` over these; they exist for one-off nudges and for
    text flow, where gap doesn't apply. */
 .m-0  { margin: 0; }
@@ -127,7 +127,7 @@
 .ms-1 { margin-inline-start: var(--space-1); }
 .ms-2 { margin-inline-start: var(--space-2); }
 
-/* ── Padding ── */
+/* -- Padding -- */
 .p-0  { padding: 0; }
 .p-3  { padding: var(--space-3); }
 .p-4  { padding: var(--space-4); }
@@ -139,11 +139,11 @@
 .py-6 { padding-block: var(--space-6); }
 .py-8 { padding-block: var(--space-8); }
 
-/* ── Sizing ── */
+/* -- Sizing -- */
 .w-full { width: 100%; }
 .w-half { width: 50%; }
 
-/* ── Text ── */
+/* -- Text -- */
 .text-center { text-align: center; }
 .text-end    { text-align: right; }
 .text-wrap   { overflow-wrap: anywhere; }
@@ -173,7 +173,7 @@
 /* Digits that line up in columns. */
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* ── Misc ── */
+/* -- Misc -- */
 .opacity-25 { opacity: 0.25; }
 .opacity-50 { opacity: 0.5; }
 

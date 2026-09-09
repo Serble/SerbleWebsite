@@ -6,7 +6,7 @@ export default {
       type: String,
       default: null,
     },
-    // Render just the tick (no pill/text) — for tight spots like the inventory creator line.
+    // Render just the tick (no pill/text) - for tight spots like the inventory creator line.
     iconOnly: {
       type: Boolean,
       default: false,
@@ -49,7 +49,7 @@ export default {
   flex-shrink: 0;
 }
 
-/* Tick only — no pill, just the coloured checkmark. */
+/* Tick only - no pill, just the coloured checkmark. */
 .official-badge.icon-only {
   background-color: transparent;
   padding: 0;

@@ -50,7 +50,7 @@ export function formatCoins(raw) {
 }
 
 // Like formatCoins but without thousands separators, e.g. "1234.5". Use when the
-// text goes back into an input that parseCoinsToRaw has to read again — it rejects
+// text goes back into an input that parseCoinsToRaw has to read again - it rejects
 // commas.
 export function formatCoinsPlain(raw) {
     const { whole, frac } = splitCoinParts(raw);

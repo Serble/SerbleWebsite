@@ -189,7 +189,7 @@ export function logout() {
     setLocalStorage("access_token", "");
 }
 
-// ── OAuth App helpers ──
+// -- OAuth App helpers --
 
 // The owner-facing /app endpoints hand back the raw app model (PascalCase), while the public and
 // admin ones use camelCase. Normalise once here so pages never have to guess which casing they got.
@@ -312,7 +312,7 @@ export async function getPaymentPortalUrl() {    try {
     }
 }
 
-// POST /account/authorizedApps — returns the auth code string
+// POST /account/authorizedApps - returns the auth code string
 export async function authorizeApp(appId, scopeString) {
     try {
         const response = await axios.post(
@@ -362,7 +362,7 @@ export async function deauthorizeApp(appId) {
     }
 }
 
-// ── OIDC consent flow ──
+// -- OIDC consent flow --
 
 export async function getOidcAuthorizeSession(sessionId) {
     try {
@@ -420,7 +420,7 @@ export async function denyOidcAuthorizeSession(sessionId) {
     }
 }
 
-// ── Vault / Notes ──
+// -- Vault / Notes --
 
 export async function getNotes() {
     try {
@@ -706,7 +706,7 @@ export async function loginWithPasskey(username = '') {
         return { success: false, error: error?.response?.data ?? error.message };
     }
 }
-// ── Admin helpers ──
+// -- Admin helpers --
 
 export async function adminGetUserStats() {
     try {
@@ -853,7 +853,7 @@ export async function adminSetAdmin(id, isAdmin) {
     }
 }
 
-// ── Admin App helpers ──
+// -- Admin App helpers --
 
 export async function adminGetAppStats() {
     try {
@@ -989,7 +989,7 @@ export async function adminSetAppTaxTarget(id, targetBalance) {
     }
 }
 
-// ── Admin Product helpers ──
+// -- Admin Product helpers --
 
 export async function adminListProducts() {
     try {
@@ -1051,7 +1051,7 @@ export async function adminDeleteProduct(id) {
     }
 }
 
-// ── Admin Service Catalog helpers ──
+// -- Admin Service Catalog helpers --
 
 export async function adminListServices() {
     try {
@@ -1113,7 +1113,7 @@ export async function adminDeleteService(id) {
     }
 }
 
-// ── Admin Groups (OIDC) ──
+// -- Admin Groups (OIDC) --
 
 export async function adminListGroups() {
     try {
@@ -1227,7 +1227,7 @@ export async function adminGetGroupsByUser(userId) {
     }
 }
 
-// ── Admin App OIDC config & access policy ──
+// -- Admin App OIDC config & access policy --
 
 export async function adminGetAppClient(id) {
     try {
@@ -1309,7 +1309,7 @@ export async function adminSetAppClaimMappings(id, mappings) {
     }
 }
 
-// ── Economy / Balances & App API keys ──
+// -- Economy / Balances & App API keys --
 //
 // Coin amounts are unsigned 64-bit integers that can exceed JS Number precision
 // (2^53). To avoid precision loss we (a) emit request bodies with the amount as
@@ -1347,7 +1347,7 @@ function parseCoinResponse(rawText) {
     return obj;
 }
 
-// Generic balance of the current principal (user) — GET/POST /balance
+// Generic balance of the current principal (user) - GET/POST /balance
 export async function getBalance() {
     try {
         const response = await axios.get(`${API_URL}/balance`, coinGetConfig());
@@ -1381,7 +1381,7 @@ function parseTransferResponse(rawText) {
     return obj;
 }
 
-// Send coins to another user — POST /balance/transfer
+// Send coins to another user - POST /balance/transfer
 export async function transferCoins(recipient, amount, description) {
     try {
         const response = await axios.post(`${API_URL}/balance/transfer`, transferBody(recipient, amount, description), coinReqConfig());
@@ -1404,7 +1404,7 @@ function parseTransactionsResponse(rawText) {
     return arr;
 }
 
-// Transaction history for the current user — GET /balance/transactions
+// Transaction history for the current user - GET /balance/transactions
 // Supports limit/offset pagination. Returns up to `limit` items starting at `offset`.
 export async function getTransactions(limit = 50, offset = 0) {
     try {
@@ -1421,7 +1421,7 @@ export async function getTransactions(limit = 50, offset = 0) {
     }
 }
 
-// App API keys (owner) — /app/{appid}/keys
+// App API keys (owner) - /app/{appid}/keys
 export async function getAppKeys(appId) {
     try {
         const response = await axios.get(`${API_URL}/app/${encodeURIComponent(appId)}/keys`, {
@@ -1458,7 +1458,7 @@ export async function deleteAppKey(appId, keyId) {
     }
 }
 
-// Owner-managed app balance — /app/{appid}/balance
+// Owner-managed app balance - /app/{appid}/balance
 export async function getAppBalance(appId) {
     try {
         const response = await axios.get(`${API_URL}/app/${encodeURIComponent(appId)}/balance`, coinGetConfig());
@@ -1469,7 +1469,7 @@ export async function getAppBalance(appId) {
     }
 }
 
-// Owner ↔ app coin movement. The API resolves the user side from the app's owner, so there's no
+// Owner <-> app coin movement. The API resolves the user side from the app's owner, so there's no
 // recipient to send: the caller only picks a direction and an amount.
 function appTransferBody(amount, description) {
     const digits = String(amount ?? '').trim();
@@ -1505,17 +1505,17 @@ async function appTransfer(appId, direction, amount, description) {
     }
 }
 
-// Your balance → the app's — POST /app/{appid}/balance/deposit
+// Your balance -> the app's - POST /app/{appid}/balance/deposit
 export function depositToApp(appId, amount, description) {
     return appTransfer(appId, 'deposit', amount, description);
 }
 
-// The app's balance → yours — POST /app/{appid}/balance/withdraw
+// The app's balance -> yours - POST /app/{appid}/balance/withdraw
 export function withdrawFromApp(appId, amount, description) {
     return appTransfer(appId, 'withdraw', amount, description);
 }
 
-// ── App webhooks (owner) — /app/{appid}/webhooks ──
+// -- App webhooks (owner) - /app/{appid}/webhooks --
 //
 // The API also exposes these under /app/me/webhooks for an app authenticating with its own API
 // key. The site can't use that surface (it holds a user token, not a key), so it goes through the
@@ -1633,7 +1633,7 @@ export async function getAppWebhookDeliveries(appId, webhookId = null, skip = 0,
     }
 }
 
-// Admin: user coins — /admin/users/{id}/coins
+// Admin: user coins - /admin/users/{id}/coins
 export async function adminGetUserCoins(id) {
     try {
         const response = await axios.get(`${API_URL}/admin/users/${encodeURIComponent(id)}/coins`, coinGetConfig());
@@ -1674,7 +1674,7 @@ export async function adminRemoveUserCoins(id, amount) {
     }
 }
 
-// Admin: app coins — /admin/apps/{id}/coins
+// Admin: app coins - /admin/apps/{id}/coins
 export async function adminGetAppCoins(id) {
     try {
         const response = await axios.get(`${API_URL}/admin/apps/${encodeURIComponent(id)}/coins`, coinGetConfig());
@@ -1715,7 +1715,7 @@ export async function adminRemoveAppCoins(id, amount) {
     }
 }
 
-// Admin: transaction audit log — GET /admin/transactions
+// Admin: transaction audit log - GET /admin/transactions
 export async function adminGetTransactions({ user, from, to, limit = 50, offset = 0 } = {}) {
     try {
         const params = new URLSearchParams();
@@ -1732,7 +1732,7 @@ export async function adminGetTransactions({ user, from, to, limit = 50, offset 
     }
 }
 
-// Admin: total economy value in circulation — GET /admin/economy/total
+// Admin: total economy value in circulation - GET /admin/economy/total
 // Coin totals come back as decimal strings (they can exceed ulong/Number),
 // so leave them as strings and parse with BigInt at the display layer.
 export async function adminGetEconomyTotal() {
@@ -1778,7 +1778,7 @@ export async function adminRunTaxNow() {
     }
 }
 
-// Server-wide config (admin) — list every known setting with its current value.
+// Server-wide config (admin) - list every known setting with its current value.
 export async function adminGetConfig() {
     try {
         const response = await axios.get(`${API_URL}/admin/config`, {
@@ -1807,7 +1807,7 @@ export async function adminSetConfig(key, value) {
     }
 }
 
-// ── Admin: app webhooks — /admin/webhooks ──
+// -- Admin: app webhooks - /admin/webhooks --
 
 // Every subscription on the server, optionally narrowed to one app. Secrets are never included.
 export async function adminGetWebhooks({ appId = null, skip = 0, take = 50 } = {}) {
@@ -1865,10 +1865,10 @@ export async function adminRedeliverWebhook(deliveryId) {
     }
 }
 
-// ── Transaction consent flow ──
+// -- Transaction consent flow --
 
 // Parse a proposal response, keeping the fixed-point coin fields (`amount`,
-// `offeredCoins`) as precision-safe strings — they're ulong raw values that can
+// `offeredCoins`) as precision-safe strings - they're ulong raw values that can
 // exceed Number.MAX_SAFE_INTEGER, so we pull them straight from the raw text
 // instead of trusting JSON.parse's lossy number handling.
 function parseProposalResponse(rawText) {
@@ -1885,7 +1885,7 @@ function parseProposalResponse(rawText) {
     return obj;
 }
 
-// Fetch the proposal info to render the consent screen — GET /transactions/consent/{id}
+// Fetch the proposal info to render the consent screen - GET /transactions/consent/{id}
 export async function getTransactionProposal(proposalId) {
     try {
         const response = await axios.get(
@@ -1900,7 +1900,7 @@ export async function getTransactionProposal(proposalId) {
     }
 }
 
-// User approves the proposal — POST /transactions/consent/{id}/approve
+// User approves the proposal - POST /transactions/consent/{id}/approve
 export async function approveTransactionProposal(proposalId) {
     try {
         const response = await axios.post(
@@ -1918,7 +1918,7 @@ export async function approveTransactionProposal(proposalId) {
     }
 }
 
-// User denies the proposal — POST /transactions/consent/{id}/deny
+// User denies the proposal - POST /transactions/consent/{id}/deny
 export async function denyTransactionProposal(proposalId) {
     try {
         const response = await axios.post(
@@ -1936,9 +1936,9 @@ export async function denyTransactionProposal(proposalId) {
     }
 }
 
-// ── Inventory ──
+// -- Inventory --
 
-// List the logged-in user's items (newest first) — GET /inventory
+// List the logged-in user's items (newest first) - GET /inventory
 export async function getInventory(limit = 50, offset = 0, creatorApp = null, search = null) {
     try {
         const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
@@ -1955,7 +1955,7 @@ export async function getInventory(limit = 50, offset = 0, creatorApp = null, se
     }
 }
 
-// ---- User-to-user trades — /trades ----------------------------------------------------
+// ---- User-to-user trades - /trades ----------------------------------------------------
 // Coin amounts (offeredCoins/requestedCoins) are raw fixed-point ulongs. We build the request
 // body by hand so the raw integers go over the wire without JS-number precision loss.
 function userTradeBody(toUser, offeredCoins, requestedCoins, offeredItemIds, requestedItemIds, description) {
@@ -2020,7 +2020,7 @@ export const approveUserTrade = (id) => tradeAction(id, 'approve');
 export const denyUserTrade = (id) => tradeAction(id, 'deny');
 export const cancelUserTrade = (id) => tradeAction(id, 'cancel');
 
-// Resolve many creator-app ids to their public info in one request — POST /app/public/batch.
+// Resolve many creator-app ids to their public info in one request - POST /app/public/batch.
 // Returns { success, apps } where `apps` is a map keyed by app id with normalised fields
 // { id, name, description, isOfficial, readableId }. Used by the inventory view so every item's
 // creating app can be shown without an N+1 of /app/{id}/public calls.
@@ -2052,7 +2052,7 @@ export async function getPublicAppsBatch(ids) {
     }
 }
 
-// Public item profile (anyone) — GET /items/{id}/public
+// Public item profile (anyone) - GET /items/{id}/public
 export async function getPublicItem(id) {
     try {
         const response = await axios.get(`${API_URL}/items/${encodeURIComponent(id)}/public`, optionalUserAuthConfig());
@@ -2064,7 +2064,7 @@ export async function getPublicItem(id) {
     }
 }
 
-// Public ownership history (anyone), paginated — GET /items/{id}/history.
+// Public ownership history (anyone), paginated - GET /items/{id}/history.
 // Returns { success, total, limit, offset, entries } where each entry is
 // { id, kind, fromOwnerType?, fromOwnerId?, toOwnerType, toOwnerId, proposalId?, dateCreated }.
 export async function getItemHistory(id, limit = 25, offset = 0) {
@@ -2086,7 +2086,7 @@ export async function getItemHistory(id, limit = 25, offset = 0) {
     }
 }
 
-// A single owned item — GET /inventory/{id}
+// A single owned item - GET /inventory/{id}
 export async function getInventoryItem(id) {
     try {
         const response = await axios.get(`${API_URL}/inventory/${encodeURIComponent(id)}`, coinGetConfig());
@@ -2100,7 +2100,7 @@ export async function getInventoryItem(id) {
     }
 }
 
-// Resolve many user ids to their public info (id, username, readableId) in one request — used to
+// Resolve many user ids to their public info (id, username, readableId) in one request - used to
 // name user owners in an item's ownership history without an N+1. Returns { success, users } where
 // `users` is a map keyed by user id.
 export async function getPublicUsersBatch(ids) {

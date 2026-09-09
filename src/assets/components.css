@@ -1,7 +1,7 @@
 /* ============================================================================
    Shared component classes.
 
-   These are global (not scoped) so every page shares one definition — this is
+   These are global (not scoped) so every page shares one definition - this is
    what replaced six copies of `.dark-input` and roughly forty one-off button
    classes. If you need a variant, add it here rather than redefining the
    component in a page's scoped styles.
@@ -37,14 +37,14 @@
     cursor: not-allowed;
 }
 
-/* Solid accent — the primary action. One per view. */
+/* Solid accent - the primary action. One per view. */
 .btn-primary {
     background: var(--accent);
     color: #fff;
 }
 .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 
-/* Neutral fill — secondary actions that still need weight. */
+/* Neutral fill - secondary actions that still need weight. */
 .btn-secondary {
     background: var(--border);
     color: var(--text-secondary);
@@ -55,7 +55,7 @@
     color: var(--text);
 }
 
-/* Transparent with a border — the default for most non-primary actions. */
+/* Transparent with a border - the default for most non-primary actions. */
 .btn-ghost {
     border-color: var(--border-strong);
     color: var(--text-muted);
@@ -265,7 +265,7 @@
     background: var(--surface-sunken);
 }
 
-/* Card in an error state — used by the checkout and payment-portal pages. */
+/* Card in an error state - used by the checkout and payment-portal pages. */
 .card-danger {
     border-color: var(--danger-border-soft);
 }
@@ -412,7 +412,7 @@
 .table-hover tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
 
 /* ============================================================================
-   Lists — a stack of rows separated by hairlines
+   Lists - a stack of rows separated by hairlines
    ========================================================================== */
 
 .list {

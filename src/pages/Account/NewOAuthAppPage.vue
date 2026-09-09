@@ -37,7 +37,7 @@ export default {
     async function submit() {
       error.value = '';
 
-      // The name is the only thing an app can't be created without — a description and redirect
+      // The name is the only thing an app can't be created without - a description and redirect
       // URIs can both be added later from the manage page.
       if (!name.value.trim()) {
         error.value = 'app-name-required';
@@ -163,7 +163,7 @@ export default {
   padding: 40px 24px 60px;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .form-header {
   display: flex;
   align-items: center;
@@ -204,7 +204,7 @@ export default {
   margin: 0;
 }
 
-/* ── Error ── */
+/* -- Error -- */
 .form-error {
   background: var(--danger-bg);
   border: 1px solid var(--danger-border-mid);
@@ -215,7 +215,7 @@ export default {
   margin-bottom: 18px;
 }
 
-/* ── Form card ── */
+/* -- Form card -- */
 .form-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -249,12 +249,12 @@ export default {
   line-height: 1.5;
 }
 
-/* ── Inputs ── */
+/* -- Inputs -- */
 
 
 
 
-/* ── URI list ── */
+/* -- URI list -- */
 .uri-list {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -326,7 +326,7 @@ export default {
   color: var(--text);
 }
 
-/* ── Actions ── */
+/* -- Actions -- */
 .form-actions {
   display: flex;
   justify-content: flex-end;
