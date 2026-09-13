@@ -28,7 +28,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn, setCookie } from '@/assets/js/utils.js';
 import { getSupportedLocale, toServerLocale } from '@/assets/js/languages.js';
-import { editUser, getPasskeys, deletePasskey, registerPasskey, renamePasskey } from '@/assets/js/serble.js';
+import { editUser, getPasskeys, deletePasskey, registerPasskey, renamePasskey, logoutAllSessions } from '@/assets/js/serble.js';
 import { confirmDialog } from '@/assets/js/dialog.js';
 import LanguageDropdown from '@/components/LanguageDropdown.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -247,6 +247,38 @@ export default {
       passwordSaved.value = true;
     }
 
+    // -- Sessions ------------------------------------------------------------
+    // Changing the password ends every session on the account. This one survives
+    // because the API hands back a replacement token that serble.js adopts, but
+    // the other devices are signed out and the user should be told that happened
+    // rather than discovering it on their phone.
+    const signingOutAll = ref(false);
+    const sessionsError = ref('');
+    const sessionsEnded = ref(false);
+
+    async function logoutEverywhere() {
+      if (signingOutAll.value) return;
+      sessionsError.value = '';
+      sessionsEnded.value = false;
+
+      if (!await confirmDialog({
+        title: t('logout-all-sessions'),
+        message: t('logout-all-confirm'),
+        confirmLabel: t('logout-all-confirm-action'),
+        danger: true,
+      })) return;
+
+      signingOutAll.value = true;
+      const result = await logoutAllSessions();
+      signingOutAll.value = false;
+
+      if (!result.success) {
+        sessionsError.value = 'logout-all-failed';
+        return;
+      }
+      sessionsEnded.value = true;
+    }
+
     // -- Two-factor ----------------------------------------------------------
     const disabling2fa = ref(false);
 
@@ -439,6 +471,7 @@ export default {
       touchProfile, resetProfile, saveProfile,
       password, confirmPassword, passwordError, passwordSaving, passwordSaved,
       canChangePassword, touchPassword, changePassword,
+      signingOutAll, sessionsError, sessionsEnded, logoutEverywhere,
       disabling2fa, disable2fa,
       passkeys, passkeysLoading, passkeyError, registeringPasskey, deletingPasskey,
       renamingPasskey, renameValue, savingRename, setRenameInput,
@@ -706,9 +739,12 @@ export default {
                 <p v-if="passwordError" class="status status-error">
                   <Icon name="alert" :size="13" />{{ $t(passwordError) }}
                 </p>
-                <p v-else-if="passwordSaved" class="status status-ok">
-                  <Icon name="check" :size="13" />{{ $t('password-updated') }}
-                </p>
+                <template v-else-if="passwordSaved">
+                  <p class="status status-ok">
+                    <Icon name="check" :size="13" />{{ $t('password-updated') }}
+                  </p>
+                  <p class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
+                </template>
               </div>
               <div class="panel-actions">
                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!canChangePassword || passwordSaving">
@@ -854,6 +890,37 @@ export default {
                   <LoadingSpinner v-if="registeringPasskey" :size="13" />
                   <Icon v-else name="plus" :size="13" />
                   {{ $t('add-passkey') }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-head-text">
+                <h3 class="panel-heading">{{ $t('active-sessions') }}</h3>
+                <p class="panel-note">{{ $t('sessions-section-hint') }}</p>
+              </div>
+            </div>
+
+            <div class="panel-foot">
+              <div class="panel-status" role="status">
+                <p v-if="sessionsError" class="status status-error">
+                  <Icon name="alert" :size="13" />{{ $t(sessionsError) }}
+                </p>
+                <p v-else-if="sessionsEnded" class="status status-ok">
+                  <Icon name="check" :size="13" />{{ $t('logout-all-done') }}
+                </p>
+              </div>
+              <div class="panel-actions">
+                <button
+                  type="button"
+                  class="btn btn-danger-ghost btn-sm"
+                  :disabled="signingOutAll"
+                  @click="logoutEverywhere"
+                >
+                  <LoadingSpinner v-if="signingOutAll" :size="13" />
+                  {{ $t('logout-all-sessions') }}
                 </button>
               </div>
             </div>
@@ -1275,6 +1342,12 @@ export default {
 
 .status-error { color: var(--danger); }
 .status-ok { color: var(--success); }
+/* The consequence of the action, under the confirmation of it - quieter than the
+   result itself, and indented past the icon so the two read as one message. */
+.status-note {
+  color: var(--text-faint);
+  padding-inline-start: calc(13px + var(--space-2));
+}
 
 .panel-state {
   display: flex;

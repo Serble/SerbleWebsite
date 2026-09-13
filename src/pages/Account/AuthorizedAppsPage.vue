@@ -8,14 +8,24 @@ import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingBlock from '@/components/LoadingBlock.vue';
 import { confirmDialog, alertDialog } from '@/assets/js/dialog.js';
 
-// The scope string is one bit per scope, in the order the API's ScopeHandler declares them -
-// SCOPES is that list, so it stays the single source of truth for what each position means.
-// Names and descriptions come from the locale files, keyed by scope id.
-function parseScopeString(scopeString) {
+// Two authorization flows write to this list and they describe permissions differently: the
+// Serble OAuth flow stores one bit per scope, positionally, against the order the API's
+// ScopeHandler declares them, while OIDC stores a space-delimited list of scope names. Reading
+// an OIDC grant as a bitmask finds no '1' anywhere and reports that the app was granted
+// nothing, which is exactly the permission list a user must not be shown.
+//
+// The API resolves both forms for us and sends `scopeIds`. Prefer it; the bitmask path below is
+// only for a response from an API predating that field.
+function entryScopes(entry) {
+  const ids = Array.isArray(entry.scopeIds) ? entry.scopeIds : legacyScopeIds(entry.scopes);
+  return ids.map(id => ({ id, sensitive: isSensitiveScope(id) }));
+}
+
+// SCOPES is the positional order, so it stays the single source of truth for what each bit
+// means. Names and descriptions come from the locale files, keyed by scope id.
+function legacyScopeIds(scopeString) {
   if (!scopeString) return [];
-  return SCOPES
-    .map((id, i) => scopeString[i] === '1' ? { id, sensitive: isSensitiveScope(id) } : null)
-    .filter(Boolean);
+  return SCOPES.filter((_, i) => scopeString[i] === '1');
 }
 
 export default {
@@ -40,6 +50,7 @@ export default {
       entries.value = authorizedApps.map(a => ({
         appId: a.appId ?? a.AppId,
         scopes: a.scopes ?? a.Scopes ?? '',
+        scopeIds: a.scopeIds ?? a.ScopeIds ?? null,
         publicApp: null,
         loading: true,
         error: false,
@@ -107,7 +118,7 @@ export default {
     const parsedEntries = computed(() =>
       entries.value.map(e => ({
         ...e,
-        parsedScopes: parseScopeString(e.scopes),
+        parsedScopes: entryScopes(e),
       }))
     );
 

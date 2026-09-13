@@ -30,6 +30,27 @@ export function getAuthToken() {
     return getLocalStorage("access_token");
 }
 
+/**
+ * Takes the replacement token out of a response body, if it carries one, and makes it the
+ * stored token.
+ *
+ * Some requests invalidate the token they were made with - changing the password ends every
+ * session the account had, including the one asking. The API hands back a replacement so the
+ * device that made the change stays signed in, and without swapping it in here the app would
+ * go on holding a token its own request had just retired: nothing visibly fails until the next
+ * call, which 401s for no reason the user can see.
+ *
+ * Returns the body with the token stripped, so a session credential never reaches the user
+ * store or anything that renders a user.
+ */
+function takeReplacementToken(data) {
+    if (!data || typeof data !== 'object') return data;
+    const { replacementToken, ReplacementToken, ...rest } = data;
+    const token = replacementToken ?? ReplacementToken;
+    if (token) setLocalStorage("access_token", token);
+    return rest;
+}
+
 export async function isFeatureEnabled(feature) {
     try {
         const token = getAuthToken();
@@ -68,7 +89,7 @@ export async function editUser(edits) {
         const response = await axios.patch(`${API_URL}/account`, edits, {
             headers: { SerbleAuth: `User ${getAuthToken()}` }
         });
-        return { success: true, user: response.data };
+        return { success: true, user: takeReplacementToken(response.data) };
     } catch (error) {
         const status = error?.response?.status;
         const responseBody = error?.response?.data;
@@ -208,6 +229,23 @@ function normaliseOwnedApp(a) {
         isOfficial: a.IsOfficial ?? a.isOfficial ?? false,
         dateCreated: a.DateCreated ?? a.dateCreated ?? null,
     };
+}
+
+/**
+ * Ends every session on the account and adopts the replacement token the API returns, so this
+ * device stays signed in while every other one is signed out.
+ */
+export async function logoutAllSessions() {
+    try {
+        const response = await axios.post(`${API_URL}/account/sessions/logoutAll`, null, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        takeReplacementToken(response.data);
+        return { success: true };
+    } catch (error) {
+        console.error('Error signing out other sessions', error);
+        return { success: false, status: error?.response?.status };
+    }
 }
 
 export async function getUserApps() {
