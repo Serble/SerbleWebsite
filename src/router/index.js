@@ -35,7 +35,6 @@ const ROUTE_TITLES = {
   home: null,                          // the home page is just the site name
   login: 'title-sign-in',
   register: 'title-register',
-  MFA: 'title-mfa',
   account: 'title-account',
   SetupTOTP: 'title-setup-totp',
   OAuthApps: 'title-oauth-apps',
@@ -101,9 +100,9 @@ const router = createRouter({
       component: () => import('@/pages/Account/RegisterPage.vue'),
     },
     {
+      // The TOTP step is part of the sign-in page now.
       path: '/mfa',
-      name: 'MFA',
-      component: () => import('@/pages/Account/MfaLoginPage.vue'),
+      redirect: (to) => ({ path: '/login', query: to.query.return_url ? { return_url: to.query.return_url } : {} }),
     },
     {
       path: '/account',

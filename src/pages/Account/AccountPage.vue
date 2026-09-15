@@ -28,7 +28,10 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn, setCookie } from '@/assets/js/utils.js';
 import { getSupportedLocale, toServerLocale } from '@/assets/js/languages.js';
-import { editUser, getPasskeys, deletePasskey, registerPasskey, renamePasskey, logoutAllSessions } from '@/assets/js/serble.js';
+import {
+  editUser, getUser, getAuthToken, getCredentials, setPassword, renameCredential, deleteCredential,
+  setLoginFlows, registerPasskey, logoutAllSessions,
+} from '@/assets/js/serble.js';
 import { confirmDialog } from '@/assets/js/dialog.js';
 import LanguageDropdown from '@/components/LanguageDropdown.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -209,12 +212,48 @@ export default {
       profileSaved.value = true;
     }
 
+    // -- Credentials ---------------------------------------------------------
+    const credentials = ref([]);
+    const flows = ref([]);
+    // Starts true: fetched on mount, and the lists would otherwise flash empty.
+    const credentialsLoading = ref(true);
+
+    const passwordCredential = computed(() => credentials.value.find(c => c.type === 'password') ?? null);
+    const authenticators = computed(() => credentials.value.filter(c => c.type === 'totp'));
+    const passkeys = computed(() => credentials.value.filter(c => c.type === 'passkey'));
+
+    function applyOverview(data) {
+      if (!data) return;
+      credentials.value = data.credentials ?? [];
+      flows.value = data.flows ?? [];
+    }
+
+    async function loadCredentials() {
+      credentialsLoading.value = true;
+      const result = await getCredentials();
+      credentialsLoading.value = false;
+      if (result.success) applyOverview(result.data);
+    }
+
+    // The user's totpEnabled follows the sign-in flows, so it is re-read after they change.
+    async function refreshUser() {
+      const fresh = await getUser(getAuthToken());
+      if (fresh && userStore?.updateUser) userStore.updateUser(fresh);
+    }
+
+    function credentialErrorKey(result) {
+      if (result.error === 'reauth-cancelled') return 'reauth-cancelled';
+      if (result.status === 409) return 'credential-last-way-in';
+      return 'unknown-error';
+    }
+
     // -- Password ------------------------------------------------------------
     const password = ref('');
     const confirmPassword = ref('');
     const passwordError = ref('');
     const passwordSaving = ref(false);
     const passwordSaved = ref(false);
+    const passwordRevoked = ref(false);
 
     const canChangePassword = computed(() => password.value !== '' && confirmPassword.value !== '');
 
@@ -233,18 +272,139 @@ export default {
       }
 
       passwordSaving.value = true;
-      const result = await editUser([{ field: 'Password', newValue: password.value }]);
+      const result = await setPassword(password.value);
       passwordSaving.value = false;
 
       if (!result.success) {
-        passwordError.value = 'unknown-error';
+        passwordError.value = credentialErrorKey(result);
         return;
       }
 
-      if (result.user && userStore?.updateUser) userStore.updateUser(result.user);
+      applyOverview(result.data);
       password.value = '';
       confirmPassword.value = '';
       passwordSaved.value = true;
+      passwordRevoked.value = result.revoked;
+    }
+
+    // -- Ways to sign in -----------------------------------------------------
+    const METHODS = ['password', 'totp', 'passkey'];
+    const availableMethods = computed(() => METHODS.filter(m => credentials.value.some(c => c.type === m)));
+    const newFlow = ref([]);
+    const flowsSaving = ref(false);
+    const flowsError = ref('');
+    // The API explains rejected combinations; shown as it arrives.
+    const flowsMessage = ref('');
+    const flowsSaved = ref(false);
+
+    function isCodeOnly(methods) {
+      return methods.length > 0 && methods.every(m => m === 'totp');
+    }
+
+    // The methods being combined into a new way in, in the canonical order, plus
+    // the checks that let us disable Add and explain why before the server has to.
+    const newFlowOrdered = computed(() => METHODS.filter(m => newFlow.value.includes(m)));
+    const flowKey = methods => [...methods].sort().join('+');
+    const isSubset = (a, b) => a.every(m => b.includes(m));
+    const methodList = methods => methods.map(m => t('method-' + m)).join(' + ');
+
+    const newFlowIsDuplicate = computed(() =>
+      newFlowOrdered.value.length > 0 &&
+      flows.value.some(f => flowKey(f.methods) === flowKey(newFlowOrdered.value)));
+    const newFlowIsCodeOnly = computed(() => isCodeOnly(newFlowOrdered.value));
+
+    // An existing way in that needs fewer of the same methods already covers this
+    // one, so the new one won't be used until that shorter way is removed.
+    const newFlowRedundantVs = computed(() =>
+      newFlowOrdered.value.length > 0 && !newFlowIsDuplicate.value
+        ? flows.value.find(f => f.methods.length < newFlowOrdered.value.length
+            && isSubset(f.methods, newFlowOrdered.value)) ?? null
+        : null);
+
+    // Existing ways the new one would make unused: it gets in with a subset of
+    // their methods.
+    const newFlowSupersedes = computed(() =>
+      newFlowOrdered.value.length > 0 && !newFlowIsDuplicate.value
+        ? flows.value.filter(f => f.methods.length > newFlowOrdered.value.length
+            && isSubset(newFlowOrdered.value, f.methods))
+        : []);
+    const supersededSummary = computed(() =>
+      newFlowSupersedes.value.map(f => methodList(f.methods)).join(', '));
+
+    // The shortest other way in that this one contains, which makes this one unused.
+    function redundantVs(flow) {
+      return flows.value
+        .filter(f => f.id !== flow.id && f.methods.length < flow.methods.length && isSubset(f.methods, flow.methods))
+        .sort((a, b) => a.methods.length - b.methods.length)[0] ?? null;
+    }
+
+    function toggleMethod(m) {
+      const i = newFlow.value.indexOf(m);
+      if (i === -1) newFlow.value.push(m);
+      else newFlow.value.splice(i, 1);
+    }
+
+    // How safe a given way in is, so each one can carry an honest label:
+    // a code on its own is weak, a lone password is basic, and anything with a
+    // second factor or a passkey is strong.
+    function flowStrength(methods) {
+      if (isCodeOnly(methods)) return 'weak';
+      if (methods.length >= 2 || methods.includes('passkey')) return 'strong';
+      return 'basic';
+    }
+
+    // The builder is hidden until asked for, so the panel reads as the list of
+    // ways in first and an editor second, not a permanent form.
+    const showBuilder = ref(false);
+    function openBuilder() {
+      flowsError.value = '';
+      flowsMessage.value = '';
+      flowsSaved.value = false;
+      newFlow.value = [];
+      showBuilder.value = true;
+    }
+    function closeBuilder() {
+      showBuilder.value = false;
+      newFlow.value = [];
+    }
+
+    async function saveFlows(next) {
+      if (flowsSaving.value) return;
+      flowsError.value = '';
+      flowsMessage.value = '';
+      flowsSaved.value = false;
+
+      flowsSaving.value = true;
+      const result = await setLoginFlows(next);
+      flowsSaving.value = false;
+
+      if (!result.success) {
+        if (result.status === 400 && result.message) flowsMessage.value = result.message;
+        else flowsError.value = credentialErrorKey(result);
+        return;
+      }
+
+      applyOverview(result.data);
+      newFlow.value = [];
+      showBuilder.value = false;
+      flowsSaved.value = true;
+      await refreshUser();
+    }
+
+    function addFlow() {
+      const next = newFlowOrdered.value;
+      if (next.length === 0 || newFlowIsDuplicate.value) return;
+      saveFlows([...flows.value.map(f => f.methods), next]);
+    }
+
+    async function removeFlow(flow) {
+      if (!await confirmDialog({
+        title: t('remove-sign-in-way'),
+        message: t('remove-sign-in-way-confirm', { methods: flow.methods.map(m => t('method-' + m)).join(' + ') }),
+        confirmLabel: t('remove'),
+        danger: true,
+      })) return;
+      saveFlows(flows.value.filter(f => f.id !== flow.id).map(f => f.methods));
     }
 
     // -- Sessions ------------------------------------------------------------
@@ -279,39 +439,25 @@ export default {
       sessionsEnded.value = true;
     }
 
-    // -- Two-factor ----------------------------------------------------------
-    const disabling2fa = ref(false);
-
-    async function disable2fa() {
-      if (disabling2fa.value) return;
-      if (!await confirmDialog({
-        title: t('disable-2fa'),
-        message: t('disable-2fa-confirm'),
-        confirmLabel: t('disable'),
-        danger: true,
-      })) return;
-
-      disabling2fa.value = true;
-      const result = await editUser([{ field: 'TotpEnabled', newValue: 'false' }]);
-      disabling2fa.value = false;
-      if (!result.success) return;
-      if (userStore?.state?.user) {
-        userStore.updateUser({ ...userStore.state.user, totpEnabled: false });
-      }
-    }
-
-    // -- Passkeys ------------------------------------------------------------
-    const passkeys = ref([]);
-    // Starts true: the list is fetched on mount, and opening straight onto
-    // ?tab=passkeys would otherwise flash "no passkeys" before the answer lands.
-    const passkeysLoading = ref(true);
+    // -- Authenticator apps and passkeys -------------------------------------
+    const totpError = ref('');
     const passkeyError = ref('');
-    const registeringPasskey = ref(false);
-    const deletingPasskey = ref('');
-    const renamingPasskey = ref('');
+    const removingId = ref('');
+    const renamingId = ref('');
     const renameValue = ref('');
     const savingRename = ref(false);
     const renameInput = ref(null);
+    const registeringPasskey = ref(false);
+    const passkeyAlone = ref(true);
+
+    function setError(type, key) {
+      if (type === 'totp') totpError.value = key;
+      else passkeyError.value = key;
+    }
+
+    function displayName(credential) {
+      return credential.name || t(credential.type === 'totp' ? 'authenticator-app' : 'method-passkey');
+    }
 
     // A template ref written from inside v-for arrives as an array, and the
     // unmount of the previous row can land after the mount of the next one.
@@ -320,78 +466,73 @@ export default {
       if (el) renameInput.value = el;
     }
 
-    async function loadPasskeys() {
-      passkeysLoading.value = true;
-      const result = await getPasskeys();
-      passkeysLoading.value = false;
-      if (result.success) passkeys.value = result.passkeys;
+    function startRename(credential) {
+      if (savingRename.value) return;
+      setError(credential.type, '');
+      renamingId.value = credential.id;
+      renameValue.value = credential.name ?? '';
+      nextTick(() => renameInput.value?.select());
+    }
+
+    function cancelRename() {
+      renamingId.value = '';
+      renameValue.value = '';
+    }
+
+    async function submitRename(credential) {
+      if (savingRename.value) return;
+      const newName = renameValue.value.trim();
+      if (!newName || newName === credential.name) {
+        cancelRename();
+        return;
+      }
+      savingRename.value = true;
+      const result = await renameCredential(credential.id, newName);
+      savingRename.value = false;
+      if (!result.success) {
+        setError(credential.type, credential.type === 'totp' ? 'unknown-error' : 'passkey-rename-failed');
+        return;
+      }
+      applyOverview(result.data);
+      cancelRename();
+    }
+
+    async function removeCredential(credential) {
+      if (removingId.value) return;
+      const name = displayName(credential);
+      if (!await confirmDialog({
+        title: t(credential.type === 'totp' ? 'remove-authenticator' : 'remove-passkey'),
+        message: t(credential.type === 'totp' ? 'remove-authenticator-confirm' : 'passkey-remove-confirm', { name }),
+        confirmLabel: t('remove'),
+        danger: true,
+      })) return;
+
+      setError(credential.type, '');
+      removingId.value = credential.id;
+      const result = await deleteCredential(credential.id);
+      removingId.value = '';
+      if (!result.success) {
+        setError(credential.type, credentialErrorKey(result));
+        return;
+      }
+      applyOverview(result.data);
+      await refreshUser();
     }
 
     async function addPasskey() {
       if (registeringPasskey.value) return;
       passkeyError.value = '';
       registeringPasskey.value = true;
-      const result = await registerPasskey();
+      const result = await registerPasskey({ signInAlone: passkeyAlone.value });
       registeringPasskey.value = false;
       if (!result.success) {
         if (result.error === 'cancelled') passkeyError.value = 'passkey-register-cancelled';
         else if (result.error === 'webauthn-unavailable') passkeyError.value = 'passkey-unavailable';
+        else if (result.error === 'reauth-cancelled') passkeyError.value = 'reauth-cancelled';
         else passkeyError.value = 'passkey-register-failed';
         return;
       }
-      await loadPasskeys();
-    }
-
-    async function removePasskey(name) {
-      if (deletingPasskey.value) return;
-      if (!await confirmDialog({
-        title: t('remove-passkey'),
-        message: t('passkey-remove-confirm', { name }),
-        confirmLabel: t('remove'),
-        danger: true,
-      })) return;
-
-      passkeyError.value = '';
-      deletingPasskey.value = name;
-      const result = await deletePasskey(name);
-      deletingPasskey.value = '';
-      if (result.success) {
-        passkeys.value = passkeys.value.filter(p => p.name !== name);
-      }
-    }
-
-    function startRename(name) {
-      if (savingRename.value) return;
-      passkeyError.value = '';
-      renamingPasskey.value = name;
-      renameValue.value = name;
-      // The row swaps its contents for an input, so move the caret there -
-      // otherwise focus is left on a button that no longer exists.
-      nextTick(() => renameInput.value?.select());
-    }
-
-    function cancelRename() {
-      renamingPasskey.value = '';
-      renameValue.value = '';
-    }
-
-    async function submitRename(oldName) {
-      if (savingRename.value) return;
-      const newName = renameValue.value.trim();
-      if (!newName || newName === oldName) {
-        cancelRename();
-        return;
-      }
-      savingRename.value = true;
-      const result = await renamePasskey(oldName, newName);
-      savingRename.value = false;
-      if (result.success) {
-        const pk = passkeys.value.find(p => p.name === oldName);
-        if (pk) pk.name = newName;
-        cancelRename();
-      } else {
-        passkeyError.value = 'passkey-rename-failed';
-      }
+      await loadCredentials();
     }
 
     // -- Identity rail -------------------------------------------------------
@@ -446,7 +587,7 @@ export default {
     const syncRail = (event) => { railHorizontal.value = event.matches; };
 
     onMounted(() => {
-      loadPasskeys();
+      loadCredentials();
       // A retired or misspelled ?tab= still opens the right pane, but the URL
       // would keep the old name - rewrite it so a link copied from here is
       // written the way the page names its sections now.
@@ -469,13 +610,17 @@ export default {
       username, email, selectedLanguage, languageTouched, savedUsername,
       profileErrors, profileSaving, profileSaved, profileDirty, usernameInvalid, emailInvalid,
       touchProfile, resetProfile, saveProfile,
-      password, confirmPassword, passwordError, passwordSaving, passwordSaved,
+      credentials, flows, credentialsLoading, passwordCredential, authenticators, passkeys,
+      password, confirmPassword, passwordError, passwordSaving, passwordSaved, passwordRevoked,
       canChangePassword, touchPassword, changePassword,
+      availableMethods, newFlow, newFlowOrdered, newFlowIsDuplicate, newFlowIsCodeOnly, toggleMethod,
+      newFlowRedundantVs, newFlowSupersedes, supersededSummary, methodList, redundantVs,
+      flowStrength, showBuilder, openBuilder, closeBuilder,
+      flowsSaving, flowsError, flowsMessage, flowsSaved, isCodeOnly, addFlow, removeFlow,
       signingOutAll, sessionsError, sessionsEnded, logoutEverywhere,
-      disabling2fa, disable2fa,
-      passkeys, passkeysLoading, passkeyError, registeringPasskey, deletingPasskey,
-      renamingPasskey, renameValue, savingRename, setRenameInput,
-      addPasskey, removePasskey, startRename, cancelRename, submitRename,
+      totpError, passkeyError, removingId, renamingId, renameValue, savingRename, setRenameInput,
+      registeringPasskey, passkeyAlone, displayName, startRename, cancelRename, submitRename,
+      removeCredential, addPasskey,
     };
   }
 };
@@ -684,7 +829,7 @@ export default {
           <form class="panel" @submit.prevent="changePassword">
             <div class="panel-head">
               <div class="panel-head-text">
-                <h3 class="panel-heading">{{ $t('change-password') }}</h3>
+                <h3 class="panel-heading">{{ passwordCredential || credentialsLoading ? $t('change-password') : $t('set-password') }}</h3>
                 <p class="panel-note">{{ $t('password-section-hint') }}</p>
               </div>
             </div>
@@ -743,13 +888,13 @@ export default {
                   <p class="status status-ok">
                     <Icon name="check" :size="13" />{{ $t('password-updated') }}
                   </p>
-                  <p class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
+                  <p v-if="passwordRevoked" class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
                 </template>
               </div>
               <div class="panel-actions">
                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!canChangePassword || passwordSaving">
                   <LoadingSpinner v-if="passwordSaving" :size="13" />
-                  {{ passwordSaving ? $t('saving') : $t('update-password') }}
+                  {{ passwordSaving ? $t('saving') : (passwordCredential ? $t('update-password') : $t('set-password')) }}
                 </button>
               </div>
             </div>
@@ -758,7 +903,163 @@ export default {
           <div class="panel">
             <div class="panel-head">
               <div class="panel-head-text">
-                <h3 class="panel-heading">{{ $t('2fa') }}</h3>
+                <h3 class="panel-heading">{{ $t('ways-to-sign-in') }}</h3>
+                <p class="panel-note">{{ $t('ways-to-sign-in-hint') }}</p>
+              </div>
+            </div>
+
+            <p v-if="credentialsLoading" class="panel-state">
+              <LoadingSpinner :size="14" />{{ $t('loading') }}
+            </p>
+
+            <div v-else class="panel-body ways">
+              <!-- Each way in is a card: the methods it needs, chained by "+", with
+                   an honest strength label so a weak one is obvious at a glance. -->
+              <ul class="ways-grid">
+                <li
+                  v-for="flow in flows"
+                  :key="flow.id"
+                  class="way"
+                  :class="'way-' + flowStrength(flow.methods)"
+                >
+                  <button
+                    type="button"
+                    class="way-remove"
+                    :title="$t('remove-sign-in-way')"
+                    :aria-label="$t('remove-sign-in-way')"
+                    :disabled="flowsSaving || flows.length < 2"
+                    @click="removeFlow(flow)"
+                  >
+                    <Icon name="trash" :size="13" />
+                  </button>
+                  <div class="way-chain">
+                    <template v-for="(m, i) in flow.methods" :key="m">
+                      <span v-if="i > 0" class="way-and" aria-hidden="true">
+                        <Icon name="plus" :size="10" />
+                      </span>
+                      <span class="way-method">{{ $t('method-' + m) }}</span>
+                    </template>
+                  </div>
+                  <p v-if="redundantVs(flow)" class="way-redundant">
+                    <Icon name="alert" :size="12" />
+                    {{ $t('sign-in-way-unused', { methods: methodList(redundantVs(flow).methods) }) }}
+                  </p>
+                  <span class="way-strength">
+                    <span class="way-dot" aria-hidden="true" />
+                    {{ $t('strength-' + flowStrength(flow.methods)) }}
+                  </span>
+                </li>
+
+                <!-- The add control lives in the grid as a peer of the ways, so
+                     "make another one" reads as the obvious next tile. -->
+                <li v-if="!showBuilder" class="way-add">
+                  <button type="button" class="way-add-btn" @click="openBuilder">
+                    <span class="way-add-icon" aria-hidden="true"><Icon name="plus" :size="16" /></span>
+                    {{ $t('add-sign-in-way') }}
+                  </button>
+                </li>
+              </ul>
+
+              <!-- Builder: revealed only when adding, so the panel is a list first. -->
+              <div v-if="showBuilder" class="builder">
+                <div class="builder-head">
+                  <p class="builder-title">{{ $t('add-sign-in-way') }}</p>
+                  <button
+                    type="button"
+                    class="way-remove"
+                    :aria-label="$t('cancel')"
+                    :title="$t('cancel')"
+                    @click="closeBuilder"
+                  >
+                    <Icon name="close" :size="14" />
+                  </button>
+                </div>
+                <p class="builder-hint">{{ $t('pick-methods-hint') }}</p>
+
+                <div class="flow-toggles" role="group" :aria-label="$t('add-sign-in-way')">
+                  <button
+                    v-for="m in availableMethods"
+                    :key="m"
+                    type="button"
+                    class="flow-toggle"
+                    role="checkbox"
+                    :class="{ on: newFlow.includes(m) }"
+                    :aria-checked="newFlow.includes(m)"
+                    @click="toggleMethod(m)"
+                  >
+                    <span class="flow-toggle-box" aria-hidden="true">
+                      <Icon v-if="newFlow.includes(m)" name="check" :size="11" />
+                    </span>
+                    {{ $t('method-' + m) }}
+                  </button>
+                </div>
+
+                <div class="builder-foot">
+                  <div class="builder-msgs">
+                    <p v-if="newFlowIsDuplicate" class="builder-msg builder-msg-warn">
+                      <Icon name="alert" :size="13" />{{ $t('sign-in-way-exists') }}
+                    </p>
+                    <template v-else-if="newFlowOrdered.length">
+                      <p class="builder-msg">
+                        {{ $t('new-way-preview') }}
+                        <span class="way-chain way-chain-inline">
+                          <template v-for="(m, i) in newFlowOrdered" :key="m">
+                            <span v-if="i > 0" class="way-and" aria-hidden="true"><Icon name="plus" :size="10" /></span>
+                            <span class="way-method">{{ $t('method-' + m) }}</span>
+                          </template>
+                        </span>
+                      </p>
+                      <p v-if="newFlowRedundantVs" class="builder-msg builder-msg-warn">
+                        <Icon name="alert" :size="13" />{{ $t('sign-in-way-redundant', { methods: methodList(newFlowRedundantVs.methods) }) }}
+                      </p>
+                      <p v-if="newFlowSupersedes.length" class="builder-msg builder-msg-warn">
+                        <Icon name="alert" :size="13" />{{ $t('sign-in-way-replaces', { methods: supersededSummary }) }}
+                      </p>
+                      <p v-if="newFlowIsCodeOnly" class="builder-msg builder-msg-warn">
+                        <Icon name="alert" :size="13" />{{ $t('flow-code-only-warning') }}
+                      </p>
+                    </template>
+                    <p v-else class="builder-msg builder-msg-hint">{{ $t('nothing-picked-yet') }}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm builder-add"
+                    :disabled="flowsSaving || newFlowOrdered.length === 0 || newFlowIsDuplicate"
+                    @click="addFlow"
+                  >
+                    <LoadingSpinner v-if="flowsSaving" :size="13" />
+                    <Icon v-else name="plus" :size="13" />
+                    {{ $t('add') }}
+                  </button>
+                </div>
+              </div>
+
+              <div
+                class="ways-status"
+                :class="{ 'has-msg': flowsMessage || flowsError || flowsSaved }"
+                role="status"
+              >
+                <p v-if="flowsMessage" class="status status-error">
+                  <Icon name="alert" :size="13" />{{ flowsMessage }}
+                </p>
+                <p v-else-if="flowsError" class="status status-error">
+                  <Icon name="alert" :size="13" />{{ $t(flowsError) }}
+                </p>
+                <template v-else-if="flowsSaved">
+                  <p class="status status-ok">
+                    <Icon name="check" :size="13" />{{ $t('sign-in-methods-updated') }}
+                  </p>
+                  <p class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-head-text">
+                <h3 class="panel-heading">{{ $t('authenticator-apps') }}</h3>
                 <p class="panel-note">{{ $t('totp-section-hint') }}</p>
               </div>
               <span class="badge" :class="user?.totpEnabled ? 'badge-success' : 'badge-neutral'">
@@ -766,23 +1067,82 @@ export default {
               </span>
             </div>
 
-            <div class="panel-foot">
-              <div class="panel-status"></div>
-              <div class="panel-actions">
-                <template v-if="user?.totpEnabled">
-                  <RouterLink to="/setuptotp" class="btn btn-ghost btn-sm">{{ $t('setup-totp-app') }}</RouterLink>
-                  <button
-                    type="button"
-                    class="btn btn-danger-ghost btn-sm"
-                    :disabled="disabling2fa"
-                    @click="disable2fa"
+            <p v-if="credentialsLoading" class="panel-state">
+              <LoadingSpinner :size="14" />{{ $t('loading') }}
+            </p>
+
+            <div v-else-if="authenticators.length === 0" class="empty">
+              <span class="empty-icon" aria-hidden="true"><Icon name="lock" :size="18" /></span>
+              <p class="empty-title">{{ $t('no-authenticators') }}</p>
+            </div>
+
+            <ul v-else class="pk-list">
+              <li v-for="cred in authenticators" :key="cred.id" class="pk-row">
+                <template v-if="renamingId === cred.id">
+                  <label class="sr-only" :for="'rename-' + cred.id">{{ $t('authenticator-name') }}</label>
+                  <input
+                    :id="'rename-' + cred.id"
+                    :ref="setRenameInput"
+                    v-model="renameValue"
+                    class="input input-sm pk-input"
+                    maxlength="255"
+                    :disabled="savingRename"
+                    @keyup.enter="submitRename(cred)"
+                    @keyup.esc="cancelRename"
                   >
-                    <LoadingSpinner v-if="disabling2fa" :size="13" />
-                    {{ $t('disable-2fa') }}
-                  </button>
+                  <div class="pk-actions">
+                    <button type="button" class="btn btn-primary btn-sm" :disabled="savingRename" @click="submitRename(cred)">
+                      <LoadingSpinner v-if="savingRename" :size="12" />
+                      {{ $t('save') }}
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" :disabled="savingRename" @click="cancelRename">
+                      {{ $t('cancel') }}
+                    </button>
+                  </div>
                 </template>
-                <RouterLink v-else to="/setuptotp" class="btn btn-primary btn-sm">
-                  <Icon name="lock" :size="13" />{{ $t('setup-2fa') }}
+
+                <template v-else>
+                  <span class="pk-icon" aria-hidden="true"><Icon name="lock" :size="14" /></span>
+                  <div class="pk-text">
+                    <span class="pk-name" :title="displayName(cred)">{{ displayName(cred) }}</span>
+                    <span v-if="formatDay(cred.createdAt)" class="pk-meta">{{ $t('added-on', { date: formatDay(cred.createdAt) }) }}</span>
+                  </div>
+                  <div class="pk-actions">
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-icon"
+                      :title="$t('rename')"
+                      :aria-label="$t('rename')"
+                      :disabled="removingId === cred.id"
+                      @click="startRename(cred)"
+                    >
+                      <Icon name="pencil" :size="13" />
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-danger-ghost btn-sm btn-icon"
+                      :title="$t('remove-authenticator')"
+                      :aria-label="$t('remove-authenticator')"
+                      :disabled="removingId === cred.id"
+                      @click="removeCredential(cred)"
+                    >
+                      <LoadingSpinner v-if="removingId === cred.id" :size="13" />
+                      <Icon v-else name="trash" :size="13" />
+                    </button>
+                  </div>
+                </template>
+              </li>
+            </ul>
+
+            <div class="panel-foot">
+              <div class="panel-status" role="status">
+                <p v-if="totpError" class="status status-error">
+                  <Icon name="alert" :size="13" />{{ $t(totpError) }}
+                </p>
+              </div>
+              <div class="panel-actions">
+                <RouterLink to="/setuptotp" class="btn btn-primary btn-sm">
+                  <Icon name="plus" :size="13" />{{ $t('add-authenticator') }}
                 </RouterLink>
               </div>
             </div>
@@ -797,7 +1157,7 @@ export default {
               <span v-if="passkeys.length" class="badge badge-neutral">{{ passkeys.length }}</span>
             </div>
 
-            <p v-if="passkeysLoading" class="panel-state">
+            <p v-if="credentialsLoading" class="panel-state">
               <LoadingSpinner :size="14" />{{ $t('loading') }}
             </p>
 
@@ -808,25 +1168,21 @@ export default {
             </div>
 
             <ul v-else class="pk-list">
-              <li v-for="pk in passkeys" :key="pk.name" class="pk-row">
-                <template v-if="renamingPasskey === pk.name">
-                  <label class="sr-only" for="pk-rename">{{ $t('passkey-name') }}</label>
+              <li v-for="pk in passkeys" :key="pk.id" class="pk-row">
+                <template v-if="renamingId === pk.id">
+                  <label class="sr-only" :for="'rename-' + pk.id">{{ $t('passkey-name') }}</label>
                   <input
-                    id="pk-rename"
+                    :id="'rename-' + pk.id"
                     :ref="setRenameInput"
                     v-model="renameValue"
                     class="input input-sm pk-input"
+                    maxlength="255"
                     :disabled="savingRename"
-                    @keyup.enter="submitRename(pk.name)"
+                    @keyup.enter="submitRename(pk)"
                     @keyup.esc="cancelRename"
                   >
                   <div class="pk-actions">
-                    <button
-                      type="button"
-                      class="btn btn-primary btn-sm"
-                      :disabled="savingRename"
-                      @click="submitRename(pk.name)"
-                    >
+                    <button type="button" class="btn btn-primary btn-sm" :disabled="savingRename" @click="submitRename(pk)">
                       <LoadingSpinner v-if="savingRename" :size="12" />
                       {{ $t('save') }}
                     </button>
@@ -839,9 +1195,9 @@ export default {
                 <template v-else>
                   <span class="pk-icon" aria-hidden="true"><Icon name="lock" :size="14" /></span>
                   <div class="pk-text">
-                    <span class="pk-name" :title="pk.name">{{ pk.name }}</span>
-                    <span v-if="pk.isBackedUp" class="badge badge-success">{{ $t('passkey-synced') }}</span>
-                    <span v-else-if="pk.isBackupEligible" class="badge badge-accent">
+                    <span class="pk-name" :title="displayName(pk)">{{ displayName(pk) }}</span>
+                    <span v-if="pk.passkey?.isBackedUp" class="badge badge-success">{{ $t('passkey-synced') }}</span>
+                    <span v-else-if="pk.passkey?.isBackupEligible" class="badge badge-accent">
                       {{ $t('passkey-sync-eligible') }}
                     </span>
                   </div>
@@ -850,9 +1206,9 @@ export default {
                       type="button"
                       class="btn btn-ghost btn-sm btn-icon"
                       :title="$t('rename-passkey')"
-                      :aria-label="$t('rename-passkey-named', { name: pk.name })"
-                      :disabled="deletingPasskey === pk.name"
-                      @click="startRename(pk.name)"
+                      :aria-label="$t('rename-passkey-named', { name: displayName(pk) })"
+                      :disabled="removingId === pk.id"
+                      @click="startRename(pk)"
                     >
                       <Icon name="pencil" :size="13" />
                     </button>
@@ -860,11 +1216,11 @@ export default {
                       type="button"
                       class="btn btn-danger-ghost btn-sm btn-icon"
                       :title="$t('remove-passkey')"
-                      :aria-label="$t('remove-passkey-named', { name: pk.name })"
-                      :disabled="deletingPasskey === pk.name"
-                      @click="removePasskey(pk.name)"
+                      :aria-label="$t('remove-passkey-named', { name: displayName(pk) })"
+                      :disabled="removingId === pk.id"
+                      @click="removeCredential(pk)"
                     >
-                      <LoadingSpinner v-if="deletingPasskey === pk.name" :size="13" />
+                      <LoadingSpinner v-if="removingId === pk.id" :size="13" />
                       <Icon v-else name="trash" :size="13" />
                     </button>
                   </div>
@@ -872,26 +1228,37 @@ export default {
               </li>
             </ul>
 
-            <div class="panel-foot">
+            <div class="panel-foot panel-foot-split">
               <!-- Kept in the DOM whether or not it has anything to say, so that
                    a failure that arrives later is announced rather than missed. -->
-              <div class="panel-status" role="status">
+              <div class="panel-status pk-foot-status" :class="{ 'has-msg': passkeyError }" role="status">
                 <p v-if="passkeyError" class="status status-error">
                   <Icon name="alert" :size="13" />{{ $t(passkeyError) }}
                 </p>
               </div>
-              <div class="panel-actions">
-                <button
-                  type="button"
-                  class="btn btn-primary btn-sm"
-                  :disabled="registeringPasskey"
-                  @click="addPasskey"
-                >
-                  <LoadingSpinner v-if="registeringPasskey" :size="13" />
-                  <Icon v-else name="plus" :size="13" />
-                  {{ $t('add-passkey') }}
-                </button>
-              </div>
+              <!-- Option on the left, its action on the right - the switch reads
+                   as a setting for the passkey being added, not a stray control. -->
+              <button
+                type="button"
+                role="switch"
+                class="switch"
+                :class="{ on: passkeyAlone }"
+                :aria-checked="passkeyAlone"
+                @click="passkeyAlone = !passkeyAlone"
+              >
+                <span class="switch-track" aria-hidden="true"><span class="switch-knob" /></span>
+                <span class="switch-label">{{ $t('passkey-sign-in-alone') }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                :disabled="registeringPasskey"
+                @click="addPasskey"
+              >
+                <LoadingSpinner v-if="registeringPasskey" :size="13" />
+                <Icon v-else name="plus" :size="13" />
+                {{ $t('add-passkey') }}
+              </button>
             </div>
           </div>
 
@@ -1501,5 +1868,349 @@ export default {
      name and the buttons on three lines each and the list stops being a list.
      The name truncates instead. */
   .pk-row { padding-inline: var(--space-3); }
+}
+
+/* -- Ways to sign in --------------------------------------------------------
+   A grid of cards, one per way into the account. Each card shows the methods it
+   needs chained by "+", carries an honest strength label, and the add tile is a
+   peer in the same grid so making another reads as the next card. */
+.ways {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.ways-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.way {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 104px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+/* The strength shows as a coloured left edge, so a weak way is spottable
+   without reading the label. */
+.way::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--strength);
+}
+
+.way-strong { --strength: var(--success); }
+.way-basic  { --strength: var(--border-strong); }
+.way-weak   { --strength: var(--warning); }
+
+.way-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-right: 26px; /* clear of the remove button */
+}
+
+.way-method {
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.way-and {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+
+.way-strength {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.way-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--strength);
+}
+
+.way-weak .way-strength { color: var(--warning); }
+
+.way-redundant {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--warning);
+}
+
+.way-redundant svg { flex-shrink: 0; margin-top: 2px; }
+
+/* A ghost trash tucked in the corner - present but quiet until hovered. */
+.way-remove {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.way-remove:hover:not(:disabled) { background: var(--danger-bg); color: var(--danger); }
+.way-remove:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* The add tile: dashed, centred, the same footprint as a way. */
+.way-add { display: flex; }
+
+.way-add-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 104px;
+  padding: var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
+}
+
+.way-add-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-secondary);
+  background: var(--accent-ring);
+}
+
+.way-add-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+/* -- New-way builder --------------------------------------------------------
+   Revealed only when adding. Methods are toggle pills, not bare checkboxes:
+   click to include, and the selected set lights up. */
+.builder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.builder-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.builder-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.builder-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.builder-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-1);
+}
+
+.builder-msgs {
+  flex: 1 1 12ch;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.builder-msg {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.builder-msg-hint { color: var(--text-faint); }
+.builder-msg-warn { color: var(--warning); }
+.way-chain-inline { display: inline-flex; padding-right: 0; }
+.builder-add { margin-inline-start: auto; }
+
+.ways-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ways-status:not(.has-msg) { display: none; }
+
+.flow-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.flow-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 12px 7px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
+}
+
+.flow-toggle:hover { border-color: var(--border-strong); }
+
+.flow-toggle.on {
+  border-color: var(--accent);
+  background: var(--accent-ring);
+  color: var(--text);
+}
+
+/* A custom check square, so the control is dark-themed instead of the browser's
+   light default and stays aligned with its label. */
+.flow-toggle-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: #fff;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.flow-toggle.on .flow-toggle-box {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+/* -- Passkey foot -----------------------------------------------------------
+   The "sign in alone" switch sits on the left as an option, its Add button on
+   the right, and any error takes its own full-width line above the two. The
+   status stays mounted for the live region; with no message it is a zero-height
+   row, so row-gap is off and the gap is added back only when it has content. */
+.panel-foot-split { row-gap: 0; }
+.panel-foot-split .switch { margin-inline-end: auto; }
+
+.pk-foot-status { flex: 1 1 100%; margin: 0; }
+.pk-foot-status.has-msg { margin-bottom: var(--space-2); }
+
+/* -- Switch -----------------------------------------------------------------
+   A dark, self-contained toggle for a persistent setting - replaces the light
+   native checkbox that broke against the dark panel. */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.switch-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  transition: background var(--t-fast);
+}
+
+.switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--t-fast);
+}
+
+.switch.on .switch-track { background: var(--accent); }
+.switch.on .switch-knob { transform: translateX(14px); }
+
+.switch:focus-visible { outline: none; }
+.switch:focus-visible .switch-track { box-shadow: var(--focus-ring); }
+
+.switch-label { line-height: 1.3; text-align: left; }
+
+.pk-meta {
+  font-size: 0.75rem;
+  color: var(--text-faint);
 }
 </style>

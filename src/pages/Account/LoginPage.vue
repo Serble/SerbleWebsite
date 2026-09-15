@@ -1,15 +1,24 @@
 <script>
-import { loginUser, loginWithPasskey } from "@/assets/js/serble.js";
+import { loginPasskey, loginStart } from "@/assets/js/serble.js";
 import { inject, ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import router from "@/router/index.js";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import AuthCard from "@/components/AuthCard.vue";
+import SignInSteps from "@/components/SignInSteps.vue";
 import Icon from "@/components/Icon.vue";
 
+// Only same-site paths, so a crafted link cannot send someone elsewhere after signing in.
+function safeReturnUrl(value) {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) {
+    return '/';
+  }
+  return value;
+}
+
 export default {
-  components: { LoadingSpinner, AuthCard, Icon },
+  components: { LoadingSpinner, AuthCard, SignInSteps, Icon },
   setup() {
     const userStore = inject('userStore');
     const route = useRoute();
@@ -19,57 +28,69 @@ export default {
       router.push('/');
     }
 
-    const username      = ref('');
-    const password      = ref('');
-    const error         = ref(0);
-    const working       = ref(false);
-    const passkeyError  = ref('');
+    const username = ref('');
+    const session = ref(null);   // { loginSession, methods } once the account is known
+    const error = ref('');
+    const working = ref(false);
     const passkeyWorking = ref(false);
 
-    async function login() {
-      if (working.value) return;
-      error.value = 0;
-      working.value = true;
+    const START_ERRORS = {
+      'invalid-credentials': 'invalid-creds-need-account',
+      'rate-limited': 'too-many-attempts',
+      busy: 'server-busy',
+    };
 
-      const resp = await loginUser(username.value, password.value);
+    const PASSKEY_ERRORS = {
+      cancelled: 'passkey-login-cancelled',
+      'webauthn-unavailable': 'passkey-unavailable',
+      'rate-limited': 'too-many-attempts',
+    };
+
+    function finish() {
+      window.location.href = safeReturnUrl(route.query.return_url);
+    }
+
+    async function start() {
+      if (working.value || !username.value.trim()) return;
+      error.value = '';
+      working.value = true;
+      const result = await loginStart(username.value.trim());
       working.value = false;
 
-      if (!resp) {
-        error.value = 2;
+      if (!result.success) {
+        error.value = START_ERRORS[result.error] ?? 'unknown-error-occured';
         return;
       }
-
-      if (resp.mfa_required) {
-        const search = window.location.search;
-        window.location.href = '/mfa?mfa_token=' + resp.mfa_token + (search ? '&' + search.slice(1) : '');
-        return;
-      }
-
-      const returnUrl = route.query.return_url ?? '/';
-      window.location.href = returnUrl;
+      session.value = { loginSession: result.loginSession, methods: result.methods ?? [] };
     }
 
     async function passkeyLogin() {
       if (passkeyWorking.value) return;
-      passkeyError.value = '';
+      error.value = '';
       passkeyWorking.value = true;
-
-      const result = await loginWithPasskey(username.value);
+      const result = await loginPasskey(null);
       passkeyWorking.value = false;
 
-      if (!result.success) {
-        if (result.error === 'cancelled') {
-          passkeyError.value = t('passkey-login-cancelled');
-        } else if (result.error === 'webauthn-unavailable') {
-          passkeyError.value = t('passkey-unavailable');
-        } else {
-          passkeyError.value = t('passkey-login-failed');
-        }
+      if (result.success && result.complete) {
+        finish();
         return;
       }
+      if (result.success) {
+        // The passkey was accepted but this account needs another step.
+        session.value = { loginSession: result.loginSession, methods: result.methods ?? [] };
+        return;
+      }
+      error.value = PASSKEY_ERRORS[result.error] ?? 'passkey-login-failed';
+    }
 
-      const returnUrl = route.query.return_url ?? '/';
-      window.location.href = returnUrl;
+    function changeAccount() {
+      session.value = null;
+      error.value = '';
+    }
+
+    function restart() {
+      session.value = null;
+      error.value = 'sign-in-expired';
     }
 
     const registerLink = computed(() =>
@@ -78,7 +99,10 @@ export default {
         : '/register'
     );
 
-    return { username, password, error, working, login, passkeyLogin, passkeyWorking, passkeyError, registerLink };
+    return {
+      t, username, session, error, working, passkeyWorking,
+      start, passkeyLogin, changeAccount, restart, finish, registerLink,
+    };
   }
 };
 </script>
@@ -86,65 +110,58 @@ export default {
 <template>
   <AuthCard :title="$t('sign-in')" subtitle="Welcome back to Serble.">
 
-    <!-- A real form so Enter submits and password managers behave. -->
-    <form class="auth-form" @submit.prevent="login">
+    <div v-if="error" class="alert alert-danger" role="alert">
+      <Icon name="alert" />{{ $t(error) }}
+      <RouterLink v-if="error === 'invalid-creds-need-account'" :to="registerLink" class="auth-error-link">{{ $t('register') }}</RouterLink>
+    </div>
 
-      <div v-if="error === 1" class="alert alert-danger">
-        <Icon name="alert" />{{ $t('username-password-required') }}
-      </div>
-      <div v-else-if="error === 2" class="alert alert-danger">
-        <Icon name="alert" />{{ $t('invalid-creds-need-account') }}
-        <RouterLink :to="registerLink" class="auth-error-link">{{ $t('register') }}</RouterLink>
-      </div>
-      <div v-else-if="error === 3" class="alert alert-danger">
-        <Icon name="alert" />{{ $t('account-disabled') }}
-      </div>
+    <template v-if="!session">
+      <!-- A real form so Enter submits and password managers behave. -->
+      <form class="auth-form" @submit.prevent="start">
+        <div class="field">
+          <label class="field-label" for="username">{{ $t('username') }}</label>
+          <input
+            id="username"
+            type="text"
+            class="input"
+            :class="{ 'input-invalid': error === 'invalid-creds-need-account' }"
+            :placeholder="$t('username')"
+            v-model="username"
+            autocomplete="username"
+            autofocus
+          />
+        </div>
 
-      <div class="field">
-        <label class="field-label" for="username">{{ $t('username') }}</label>
-        <input
-          id="username"
-          type="text"
-          class="input"
-          :class="{ 'input-invalid': error === 2 }"
-          :placeholder="$t('username')"
-          v-model="username"
-          autocomplete="username"
-        />
-      </div>
+        <button type="submit" class="btn btn-primary btn-block" :disabled="working || !username.trim()">
+          <LoadingSpinner v-if="working" />
+          {{ $t('next') }}
+        </button>
+      </form>
 
-      <div class="field">
-        <label class="field-label" for="password">{{ $t('password') }}</label>
-        <input
-          id="password"
-          type="password"
-          class="input"
-          :class="{ 'input-invalid': error === 2 }"
-          placeholder="************"
-          v-model="password"
-          autocomplete="current-password"
-        />
+      <div class="auth-divider">
+        <span class="auth-divider-text">{{ $t('or') }}</span>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-block" :disabled="working">
-        <LoadingSpinner v-if="working" />
-        {{ $t('sign-in') }}
+      <button class="btn btn-secondary btn-block" :disabled="passkeyWorking" @click="passkeyLogin">
+        <LoadingSpinner v-if="passkeyWorking" />
+        <Icon v-else name="lock" />
+        {{ $t('login-with-passkey') }}
       </button>
-    </form>
+    </template>
 
-    <div class="auth-divider">
-      <span class="auth-divider-text">{{ $t('or') }}</span>
-    </div>
-
-    <div v-if="passkeyError" class="alert alert-danger">
-      <Icon name="alert" />{{ passkeyError }}
-    </div>
-
-    <button class="btn btn-secondary btn-block" :disabled="passkeyWorking" @click="passkeyLogin">
-      <LoadingSpinner v-if="passkeyWorking" />
-      <Icon v-else name="lock" />
-      {{ $t('login-with-passkey') }}
-    </button>
+    <template v-else>
+      <p v-if="username.trim()" class="auth-account">
+        {{ $t('sign-in-as', { name: username.trim() }) }}
+        <button type="button" class="auth-switch-link link-button" @click="changeAccount">{{ $t('not-you') }}</button>
+      </p>
+      <SignInSteps
+        :login-session="session.loginSession"
+        :methods="session.methods"
+        :username="username.trim()"
+        @complete="finish"
+        @restart="restart"
+      />
+    </template>
 
     <p class="auth-switch">
       {{ $t('dont-have-account') }}
@@ -188,6 +205,13 @@ export default {
   letter-spacing: 0.08em;
 }
 
+.auth-account {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-align: center;
+  margin: 0;
+}
+
 .auth-switch {
   font-size: 0.82rem;
   color: var(--text-dim);
@@ -202,4 +226,13 @@ export default {
 }
 
 .auth-switch-link:hover { text-decoration: underline; }
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  font: inherit;
+  cursor: pointer;
+}
 </style>

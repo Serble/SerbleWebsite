@@ -2,7 +2,7 @@
 import { ref, inject, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
-import { getTotpQrCode, checkTotpCode, editUser } from '@/assets/js/serble.js';
+import { beginTotp, verifyTotp, renameCredential, getCredentials, setLoginFlows, getUser, getAuthToken } from '@/assets/js/serble.js';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import Icon from '@/components/Icon.vue';
 
@@ -13,55 +13,83 @@ export default {
     const router  = useRouter();
     const userStore = inject('userStore');
 
-    const qrSrc    = ref(null);
-    const qrError  = ref(false);
+    const enrolment = ref(null);   // { id, secret, qrPng }
+    const loadError = ref(false);
+    const name     = ref('');
     const code     = ref('');
-    const error    = ref('');      // '' | 'invalid-code' | 'enable-failed'
+    const error    = ref('');      // '' | 'invalid-code' | 'enable-failed' | 'too-many-attempts'
     const working  = ref(false);
+    const copied   = ref(false);
+    // Offered when the account signs in with a password alone, which is what enabling 2FA used to mean.
+    const canRequire = ref(false);
+    const requireWithPassword = ref(true);
+    let flows = [];
 
-    // Load QR code asynchronously after mount
     onMounted(async () => {
-      try {
-        qrSrc.value = await getTotpQrCode();
-      } catch {
-        qrError.value = true;
+      const [started, overview] = await Promise.all([beginTotp(), getCredentials()]);
+      if (!started.success) {
+        if (started.error === 'reauth-cancelled') {
+          router.push({ path: '/account', query: { tab: 'security' } });
+          return;
+        }
+        loadError.value = true;
+        return;
+      }
+      enrolment.value = started.data;
+      if (overview.success) {
+        flows = overview.data.flows.map(f => f.methods);
+        canRequire.value = flows.some(f => f.length === 1 && f[0] === 'password');
       }
     });
 
+    async function copySecret() {
+      try {
+        await navigator.clipboard.writeText(enrolment.value?.secret ?? '');
+        copied.value = true;
+        setTimeout(() => { copied.value = false; }, 2000);
+      } catch {
+        // Clipboard unavailable; the key is still visible to copy by hand.
+      }
+    }
+
     async function submit() {
-      if (!code.value.trim() || working.value) return;
+      if (!code.value.trim() || working.value || !enrolment.value) return;
       error.value = '';
       working.value = true;
 
-      // 1. Verify the code is correct
-      const checkRes = await checkTotpCode(code.value.trim());
-      if (!checkRes || !checkRes.valid) {
-        error.value = 'invalid-code';
+      const verified = await verifyTotp(enrolment.value.id, code.value.trim());
+      if (!verified.success) {
         working.value = false;
+        error.value = verified.status === 429 ? 'too-many-attempts' : 'invalid-code';
         return;
       }
 
-      // 2. Persist the enablement on the account (mirrors Enable2Fa() in Razor)
-      const editRes = await editUser([{ field: 'TotpEnabled', newValue: 'true' }]);
-      if (!editRes.success) {
-        error.value = 'enable-failed';
-        working.value = false;
-        return;
+      if (name.value.trim()) await renameCredential(enrolment.value.id, name.value.trim());
+
+      if (canRequire.value && requireWithPassword.value) {
+        const updated = flows.map(f => (f.length === 1 && f[0] === 'password') ? ['password', 'totp'] : f);
+        const result = await setLoginFlows(updated);
+        if (!result.success) {
+          working.value = false;
+          error.value = 'enable-failed';
+          return;
+        }
       }
 
-      // Update in-memory user store so account page badge updates immediately
-      if (userStore?.state?.user) {
-        userStore.updateUser({ ...userStore.state.user, totpEnabled: true });
-      }
+      const fresh = await getUser(getAuthToken());
+      if (fresh && userStore?.updateUser) userStore.updateUser(fresh);
 
-      router.push('/account');
+      router.push({ path: '/account', query: { tab: 'security' } });
     }
 
     function handleKey(e) {
       if (e.key === 'Enter') submit();
     }
 
-    return { user, qrSrc, qrError, code, error, working, submit, handleKey };
+    return {
+      user, enrolment, loadError, name, code, error, working, copied, canRequire, requireWithPassword,
+      copySecret, submit, handleKey,
+    };
   }
 };
 </script>
@@ -86,18 +114,15 @@ export default {
         <!-- QR Code -->
         <div class="qr-wrap">
           <img
-            v-if="qrSrc"
-            :src="qrSrc"
+            v-if="enrolment"
+            :src="'data:image/png;base64,' + enrolment.qrPng"
             class="qr-img"
             width="220"
             height="220"
             :alt="$t('totp-qr-alt')"
           />
-          <div v-else-if="qrError" class="qr-error">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16" class="text-danger mb-2">
-              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-              <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-            </svg>
+          <div v-else-if="loadError" class="qr-error">
+            <Icon name="alert" :size="28" />
             <p class="text-muted" style="font-size:0.82rem;">{{ $t('qr-load-failed') }}</p>
           </div>
           <div v-else class="qr-loading">
@@ -105,12 +130,14 @@ export default {
           </div>
         </div>
 
-        <!-- Warning -->
-        <div class="totp-warning">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="flex-none mt-1">
-            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
-          </svg>
-          <span>{{ $t('totp-warning') }}</span>
+        <div v-if="enrolment" class="manual-key">
+          <span class="code-label">{{ $t('totp-manual-key') }}</span>
+          <div class="manual-key-row">
+            <code class="manual-key-value">{{ enrolment.secret }}</code>
+            <button type="button" class="btn btn-ghost btn-sm" @click="copySecret">
+              {{ copied ? $t('copied') : $t('copy') }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -122,26 +149,20 @@ export default {
           <p class="setup-sub">{{ $t('totp-enter-code-setup') }}</p>
         </div>
 
-        <!-- Error -->
-        <div v-if="error === 'invalid-code'" class="code-error">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 flex-none">
-            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-            <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-          </svg>
-          {{ $t('invalid-code') }}
-        </div>
-        <div v-else-if="error === 'enable-failed'" class="code-error">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 flex-none">
-            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-            <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-          </svg>
-          {{ $t('unknown-error-occured') }}
+        <div v-if="error" class="code-error">
+          <Icon name="alert" :size="13" />
+          {{ $t(error === 'enable-failed' ? 'unknown-error-occured' : error) }}
         </div>
 
-        <!-- OTP input -->
         <div class="code-input-wrap">
-          <label class="code-label">{{ $t('otp-code') }}</label>
+          <label class="code-label" for="totp-name">{{ $t('authenticator-name') }}</label>
+          <input id="totp-name" v-model="name" type="text" class="input" maxlength="255" :placeholder="$t('authenticator-app')">
+        </div>
+
+        <div class="code-input-wrap">
+          <label class="code-label" for="totp-code">{{ $t('otp-code') }}</label>
           <input
+            id="totp-code"
             type="text"
             inputmode="numeric"
             autocomplete="one-time-code"
@@ -155,19 +176,22 @@ export default {
           />
         </div>
 
+        <label v-if="canRequire" class="require-toggle">
+          <input v-model="requireWithPassword" type="checkbox">
+          <span>{{ $t('require-totp-with-password') }}</span>
+        </label>
+
         <button
           class="code-submit"
-          :disabled="!code.trim() || working"
+          :disabled="!code.trim() || working || !enrolment"
           @click="submit"
         >
           <LoadingSpinner v-if="working" class="me-2" />
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
-          </svg>
+          <Icon v-else name="check" :size="14" class="me-2" />
           {{ $t('submit') }}
         </button>
 
-        <RouterLink to="/account" class="cancel-link"><Icon name="arrowLeft" /> {{ $t('back-to-account') }}</RouterLink>
+        <RouterLink :to="{ path: '/account', query: { tab: 'security' } }" class="cancel-link"><Icon name="arrowLeft" /> {{ $t('back-to-account') }}</RouterLink>
       </div>
 
     </div>
@@ -285,18 +309,34 @@ export default {
   gap: 8px;
 }
 
-/* Warning */
-.totp-warning {
+.manual-key {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manual-key-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.manual-key-value {
+  flex: 1;
+  font-size: 0.82rem;
+  word-break: break-all;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.require-toggle {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  background: rgba(245,158,11,0.08);
-  border: 1px solid rgba(245,158,11,0.2);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 0.8rem;
-  color: #fbbf24;
-  line-height: 1.5;
+  font-size: 0.83rem;
+  color: var(--text-dim);
 }
 
 /* Right side */

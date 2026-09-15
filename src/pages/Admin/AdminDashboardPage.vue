@@ -2015,7 +2015,7 @@ export default {
                         <div class="info-row"><span class="info-label">Role</span><span>{{ permLabel(selected.permLevel) }} ({{ selected.permLevel }})</span></div>
                         <div class="info-row"><span class="info-label">TOTP enabled</span><span>{{ selected.totpEnabled ? 'Yes' : 'No' }}</span></div>
                         <div class="info-row"><span class="info-label">Language</span><span>{{ selected.language || '-' }}</span></div>
-                        <div class="info-row"><span class="info-label">Password salted</span><span>{{ selected.hasPasswordSalt ? 'Yes' : 'No (pre-migration)' }}</span></div>
+                        <div class="info-row"><span class="info-label">Password</span><span>{{ selected.hasPassword ? (selected.passwordScheme || 'Yes') : 'None' }}</span></div>
                         <div v-if="economyEnabled" class="info-row"><span class="info-label">Coins</span><span><CoinAmount :value="userCoins ?? selected.coins" /></span></div>
                         <div class="info-row"><span class="info-label">Created</span><span>{{ formatDate(selected.dateCreated) }}</span></div>
                         <div class="info-row"><span class="info-label">Last login</span><span>{{ formatDate(selected.lastLogin) }}</span></div>

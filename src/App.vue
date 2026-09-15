@@ -4,6 +4,7 @@ import { RouterView, useRoute } from 'vue-router'
 import NavBar from "@/components/NavBar.vue";
 import Footer from "@/components/Footer.vue";
 import DialogHost from "@/components/DialogHost.vue";
+import ReauthDialog from "@/components/ReauthDialog.vue";
 
 // Embed routes (e.g. the embeddable item viewer) render bare - no site nav/footer - so they
 // look native when iframed into another app.
@@ -17,6 +18,7 @@ const isEmbed = computed(() => route.meta?.embed === true);
   <Footer v-if="!isEmbed"/>
   <!-- Renders confirm/alert dialogs from anywhere in the app, embeds included. -->
   <DialogHost/>
+  <ReauthDialog/>
 </template>
 
 <style scoped>

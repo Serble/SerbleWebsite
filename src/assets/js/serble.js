@@ -30,24 +30,20 @@ export function getAuthToken() {
     return getLocalStorage("access_token");
 }
 
+// Proof of a recent sign-in, required by credential changes. Kept in memory only.
+let reauthToken = null;
+
 /**
- * Takes the replacement token out of a response body, if it carries one, and makes it the
- * stored token.
- *
- * Some requests invalidate the token they were made with - changing the password ends every
- * session the account had, including the one asking. The API hands back a replacement so the
- * device that made the change stays signed in, and without swapping it in here the app would
- * go on holding a token its own request had just retired: nothing visibly fails until the next
- * call, which 401s for no reason the user can see.
- *
- * Returns the body with the token stripped, so a session credential never reaches the user
- * store or anything that renders a user.
+ * Takes replacement tokens out of a response body and stores them. A request that revokes the
+ * account's sessions (a password change, removing a credential) returns replacements so this device
+ * stays signed in. Returns the body without them.
  */
 function takeReplacementToken(data) {
     if (!data || typeof data !== 'object') return data;
-    const { replacementToken, ReplacementToken, ...rest } = data;
+    const { replacementToken, ReplacementToken, replacementReauthToken, ...rest } = data;
     const token = replacementToken ?? ReplacementToken;
     if (token) setLocalStorage("access_token", token);
+    if (replacementReauthToken) reauthToken = replacementReauthToken;
     return rest;
 }
 
@@ -110,19 +106,6 @@ export async function editUser(edits) {
     }
 }
 
-export async function loginUser(username, password) {
-    try {
-        const response = await axios.get(`${API_URL}/auth`, {
-            headers: { Authorization: `Basic ${btoa(username + ":" + password)}` },
-        });
-        setLocalStorage("access_token", response.data.token);
-        return response.data; // Return user data
-    } catch (error) {
-        console.error('Error verifying token', error);
-        return null;
-    }
-}
-
 export async function registerUser(username, password, recapToken) {
     try {
         const response = await axios.post(`${API_URL}/account`, {
@@ -147,67 +130,10 @@ export async function registerUser(username, password, recapToken) {
     }
 }
 
-function _imageEncode(arrayBuffer) {
-    let b64encoded = btoa([].reduce.call(new Uint8Array(arrayBuffer),function(p,c){return p+String.fromCharCode(c)},''))
-    let mimetype="image/png"
-    return "data:"+mimetype+";base64,"+b64encoded
-}
-
-export async function getTotpQrCode() {
-    try {
-        const response = await axios.get(`${API_URL}/account/mfa/totp/qrcode`, {
-            headers: { SerbleAuth: `User ${getAuthToken()}` },
-            responseType: 'arraybuffer'
-        });
-
-        return _imageEncode(response.data);
-    } catch (error) {
-        console.error(error);
-        return null;
-    }
-}
-
-export async function submitTotpCode(mfaToken, code) {
-    try {
-        const response = await axios.post(`${API_URL}/account/mfa`, {
-            login_token: mfaToken,
-            totp_code: code
-        });
-        setLocalStorage("access_token", response.data.token);
-        return response.data; // Return user data
-    } catch (error) {
-        console.error('Error logging in with totp', error);
-        return null;
-    }
-}
-
-export async function checkTotpCode(totpCode) {
-    try {
-        const response = await axios.post(`${API_URL}/account/mfa/totp`, {
-            totp_code: totpCode
-        }, {
-            headers: { SerbleAuth: `User ${getAuthToken()}` },
-        });
-        if (response.status !== 200) {
-            console.error('Error enabling TOTP', response);
-            return {
-                success: false,
-                error: response.status
-            };
-        }
-        return {
-            success: true,
-            valid: response.data.valid  // Whether the TOTP code is valid
-        };
-    } catch (error) {
-        console.error(error);
-        return null;
-    }
-}
-
 export function logout() {
     setCookie("access_token", "", 0);
     setLocalStorage("access_token", "");
+    reauthToken = null;
 }
 
 // -- OAuth App helpers --
@@ -241,6 +167,7 @@ export async function logoutAllSessions() {
             headers: { SerbleAuth: `User ${getAuthToken()}` }
         });
         takeReplacementToken(response.data);
+        reauthToken = null;
         return { success: true };
     } catch (error) {
         console.error('Error signing out other sessions', error);
@@ -561,103 +488,137 @@ function bufferToB64url(buffer) {
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-export async function getPasskeys() {
+function userHeaders(reauth = null, extra = {}) {
+    const headers = { SerbleAuth: `User ${getAuthToken()}`, ...extra };
+    if (reauth) headers['Serble-Reauth'] = reauth;
+    return headers;
+}
+
+function webauthnAvailable(method) {
+    return window.isSecureContext && typeof navigator.credentials?.[method] === 'function';
+}
+
+function isReauthRequired(error) {
+    return error?.response?.status === 403 && error?.response?.data?.error === 'reauth_required';
+}
+
+let reauthHandler = null;
+
+/** Registers the UI that asks the user to confirm who they are. It resolves a reauth token, or null. */
+export function setReauthHandler(handler) {
+    reauthHandler = handler;
+}
+
+/**
+ * Runs `action(reauthToken)`. If the API asks for re-authentication, prompts for it once and retries.
+ * Actions return `{ reauthRequired: true }` when the API refused for that reason.
+ */
+export async function withReauth(action) {
+    let result = await action(reauthToken);
+    if (!result?.reauthRequired) return result;
+    if (!reauthHandler) return { success: false, error: 'reauth-cancelled' };
+
+    const token = await reauthHandler();
+    if (!token) return { success: false, error: 'reauth-cancelled' };
+    reauthToken = token;
+    result = await action(reauthToken);
+    return result?.reauthRequired ? { success: false, error: 'reauth-cancelled' } : result;
+}
+
+async function credentialCall(method, path, data, reauth = null) {
     try {
-        const response = await axios.get(`${API_URL}/auth/passkey/list`, {
-            headers: { SerbleAuth: `User ${getAuthToken()}` }
-        });
-        return { success: true, passkeys: response.data };
+        const response = await axios({ method, url: `${API_URL}${path}`, data, headers: userHeaders(reauth) });
+        const revoked = Boolean(response.data?.replacementToken);
+        return { success: true, revoked, data: takeReplacementToken(response.data) };
     } catch (error) {
-        console.error('Error fetching passkeys', error);
-        return { success: false, error: error?.response?.status };
+        if (isReauthRequired(error)) return { success: false, reauthRequired: true };
+        console.error('Credential request failed', error);
+        const body = error?.response?.data;
+        return {
+            success: false,
+            status: error?.response?.status,
+            error: body?.error ?? 'unknown',
+            message: body?.message ?? null
+        };
     }
 }
 
-export async function deletePasskey(name) {
-    try {
-        await axios.delete(`${API_URL}/auth/passkey/delete/${encodeURIComponent(name)}`, {
-            headers: { SerbleAuth: `User ${getAuthToken()}` }
-        });
-        return { success: true };
-    } catch (error) {
-        console.error('Error deleting passkey', error);
-        return { success: false, error: error?.response?.status };
-    }
+/** `{ credentials: [{ id, type, name, createdAt, lastUsedAt, passkey? }], flows: [{ id, methods }] }` */
+export function getCredentials() {
+    return credentialCall('get', '/account/credentials');
 }
 
-export async function renamePasskey(name, newName) {
-    try {
-        const params = new URLSearchParams({ newName });
-        await axios.patch(`${API_URL}/auth/passkey/rename/${encodeURIComponent(name)}`, params.toString(), {
-            headers: {
-                SerbleAuth: `User ${getAuthToken()}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        });
-        return { success: true };
-    } catch (error) {
-        console.error('Error renaming passkey', error);
-        return { success: false, error: error?.response?.status };
-    }
+export function setPassword(password) {
+    return withReauth(r => credentialCall('put', '/account/credentials/password', { password }, r));
 }
 
-export async function registerPasskey() {
-    if (!window.isSecureContext || !navigator.credentials?.create) {
+/** Starts adding an authenticator app. `data` is `{ id, secret, otpauthUri, qrPng }`. */
+export function beginTotp(name = null) {
+    return withReauth(r => credentialCall('post', '/account/credentials/totp', { name }, r));
+}
+
+export function verifyTotp(id, code) {
+    return credentialCall('post', `/account/credentials/totp/${encodeURIComponent(id)}/verify`, { code });
+}
+
+export function renameCredential(id, name) {
+    return credentialCall('patch', `/account/credentials/${encodeURIComponent(id)}`, { name });
+}
+
+export function deleteCredential(id) {
+    return withReauth(r => credentialCall('delete', `/account/credentials/${encodeURIComponent(id)}`, undefined, r));
+}
+
+/** `flows` is an array of method-name arrays, e.g. `[['password', 'totp'], ['passkey']]`. */
+export function setLoginFlows(flows) {
+    return withReauth(r => credentialCall('put', '/account/login-flows', { flows }, r));
+}
+
+export async function registerPasskey({ name = null, signInAlone = false } = {}) {
+    if (!webauthnAvailable('create')) {
         return { success: false, error: 'webauthn-unavailable' };
     }
     try {
         const params = new URLSearchParams({
             attType: 'none',
             authType: 'cross-platform'
-        });
-        const optionsRes = await axios.post(`${API_URL}/auth/passkey/credentialoptions`, params.toString(), {
-            headers: {
-                SerbleAuth: `User ${getAuthToken()}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
+        }).toString();
+        const optionsResult = await withReauth(async (reauth) => {
+            try {
+                const response = await axios.post(`${API_URL}/auth/passkey/credentialoptions`, params, {
+                    headers: userHeaders(reauth, { 'Content-Type': 'application/x-www-form-urlencoded' })
+                });
+                return { success: true, data: response.data };
+            } catch (error) {
+                if (isReauthRequired(error)) return { success: false, reauthRequired: true };
+                throw error;
             }
         });
-        const responseData = optionsRes.data;
-        // Server returns { challengeId, options: { ...webauthn options... } }
-        const challengeId = responseData.challengeId;
-        const options = responseData.options ?? responseData;
+        if (!optionsResult.success) return optionsResult;
 
-        const challenge       = options.challenge;
-        const rp              = options.rp;
-        const user            = options.user ?? {};
-        const userId          = user.id;
-        const userName        = user.name ?? '';
-        const userDisplay     = user.displayName ?? '';
-        const pubKeyParams    = options.pubKeyCredParams ?? [];
-        const excludeCreds    = options.excludeCredentials ?? [];
-        const authSelection   = options.authenticatorSelection;
-        const attestation     = options.attestation ?? 'none';
-        const timeout         = options.timeout ?? 60000;
+        const { challengeId, options } = optionsResult.data;
+        const user = options.user ?? {};
+        if (!options.challenge) throw new Error('Missing challenge. Keys: ' + Object.keys(options).join(', '));
+        if (!user.id) throw new Error('Missing user.id. User keys: ' + Object.keys(user).join(', '));
 
-        if (!challenge) throw new Error('Missing challenge. Keys: ' + Object.keys(options).join(', '));
-        if (!userId)    throw new Error('Missing user.id. User keys: ' + Object.keys(user).join(', '));
+        const credential = await navigator.credentials.create({
+            publicKey: {
+                challenge: b64urlToBuffer(options.challenge),
+                rp: options.rp,
+                user: {
+                    id: b64urlToBuffer(user.id),
+                    name: user.name ?? '',
+                    displayName: user.displayName ?? ''
+                },
+                pubKeyCredParams: options.pubKeyCredParams ?? [],
+                timeout: options.timeout ?? 60000,
+                excludeCredentials: (options.excludeCredentials ?? []).map(toCredentialDescriptor),
+                authenticatorSelection: options.authenticatorSelection,
+                attestation: options.attestation ?? 'none'
+            }
+        });
 
-        const publicKeyOptions = {
-            challenge: b64urlToBuffer(challenge),
-            rp,
-            user: {
-                id: b64urlToBuffer(userId),
-                name: userName,
-                displayName: userDisplay
-            },
-            pubKeyCredParams: pubKeyParams,
-            timeout,
-            excludeCredentials: excludeCreds.map(c => ({
-                id: b64urlToBuffer(c.id ?? c.Id),
-                type: c.type ?? c.Type,
-                transports: c.transports ?? c.Transports
-            })),
-            authenticatorSelection: authSelection,
-            attestation
-        };
-
-        const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
-
-        const body = {
+        const attestation = {
             id: credential.id,
             rawId: bufferToB64url(credential.rawId),
             type: credential.type,
@@ -669,9 +630,11 @@ export async function registerPasskey() {
             clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {}
         };
 
-        const verifyRes = await axios.post(`${API_URL}/auth/passkey/credential?challengeId=${challengeId}`, body);
+        const verifyRes = await axios.post(`${API_URL}/auth/passkey/credential`,
+            { challengeId, attestation, name, signInAlone },
+            { headers: userHeaders() });
 
-        return { success: true, credentialId: verifyRes.data.credentialId };
+        return { success: true, id: verifyRes.data.id };
     } catch (error) {
         if (error.name === 'NotAllowedError') return { success: false, error: 'cancelled' };
         console.error('Error registering passkey', error);
@@ -679,71 +642,104 @@ export async function registerPasskey() {
     }
 }
 
-export async function loginWithPasskey(username = '') {
-    if (!window.isSecureContext || !navigator.credentials?.get) {
-        return { success: false, error: 'webauthn-unavailable' };
-    }
+function toCredentialDescriptor(c) {
+    return {
+        id: b64urlToBuffer(c.id ?? c.Id),
+        type: c.type ?? c.Type,
+        transports: c.transports ?? c.Transports
+    };
+}
+
+// -- Sign-in --
+//
+// A sign-in is a server-side session: start it, then complete steps (password, TOTP code, passkey)
+// until the account's sign-in flow is satisfied. Every step answers with
+// `{ success, complete, token?, reauthToken?, loginSession, methods, error? }`.
+
+async function loginCall(path, body, asUser) {
     try {
-        let optionsRes;
-        if (username.trim()) {
-            const params = new URLSearchParams({ username: username.trim() });
-            optionsRes = await axios.post(`${API_URL}/auth/passkey/assertionOptions`, params.toString(), {
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-        } else {
-            optionsRes = await axios.get(`${API_URL}/auth/passkey/assertionOptions`);
-        }
-        const assertionResponseData = optionsRes.data;
-        // Unwrap if server returns { challengeId, options: {...} }
-        const assertionChallengeId = assertionResponseData.challengeId;
-        const options = assertionResponseData.options ?? assertionResponseData;
-
-        const challenge        = options.challenge;
-        const rpId             = options.rpId;
-        const allowCreds       = options.allowCredentials ?? [];
-        const userVerification = options.userVerification ?? 'preferred';
-        const timeout          = options.timeout ?? 60000;
-
-        if (!challenge) throw new Error('Missing challenge. Keys: ' + Object.keys(options).join(', '));
-
-        const publicKeyOptions = {
-            challenge: b64urlToBuffer(challenge),
-            rpId,
-            allowCredentials: allowCreds.map(c => ({
-                id: b64urlToBuffer(c.id ?? c.Id),
-                type: c.type ?? c.Type,
-                transports: c.transports ?? c.Transports
-            })),
-            userVerification,
-            timeout
-        };
-
-        const credential = await navigator.credentials.get({ publicKey: publicKeyOptions });
-
-        const body = {
-            id: credential.id,
-            rawId: bufferToB64url(credential.rawId),
-            type: credential.type,
-            response: {
-                authenticatorData: bufferToB64url(credential.response.authenticatorData),
-                clientDataJSON: bufferToB64url(credential.response.clientDataJSON),
-                signature: bufferToB64url(credential.response.signature),
-                userHandle: credential.response.userHandle
-                    ? bufferToB64url(credential.response.userHandle)
-                    : null
-            }
-        };
-
-        const verifyRes = await axios.post(`${API_URL}/auth/passkey/assertion?challengeId=${assertionChallengeId}`, body);
-
-        setLocalStorage('access_token', verifyRes.data.token);
-        return { success: true };
+        const config = asUser ? { headers: userHeaders() } : {};
+        const response = await axios.post(`${API_URL}${path}`, body, config);
+        const data = response.data ?? {};
+        if (data.complete && data.token) setLocalStorage('access_token', data.token);
+        if (data.complete && data.reauthToken) reauthToken = data.reauthToken;
+        return { success: true, ...data };
     } catch (error) {
-        if (error.name === 'NotAllowedError') return { success: false, error: 'cancelled' };
-        console.error('Error logging in with passkey', error);
-        return { success: false, error: error?.response?.data ?? error.message };
+        const status = error?.response?.status;
+        const data = error?.response?.data ?? {};
+        let code = 'unknown';
+        if (!error?.response) code = 'network';
+        else if (status === 401) code = 'invalid-credentials';
+        else if (status === 400) code = 'invalid-session';
+        else if (status === 429) code = 'rate-limited';
+        else if (status === 503) code = 'busy';
+        return { success: false, error: code, loginSession: data.loginSession ?? null, methods: data.methods ?? null };
     }
 }
+
+export function loginStart(username) {
+    return loginCall('/auth/login/start', { username }, false);
+}
+
+/** Starts confirming the signed-in user's identity. Steps take `asUser = true`. */
+export function reauthStart() {
+    return loginCall('/account/reauth', null, true);
+}
+
+export function loginPassword(loginSession, password, asUser = false) {
+    return loginCall('/auth/login/password', { loginSession, password }, asUser);
+}
+
+export function loginTotp(loginSession, code, asUser = false) {
+    return loginCall('/auth/login/totp', { loginSession, code }, asUser);
+}
+
+export function loginCancel(loginSession) {
+    return loginCall('/auth/login/cancel', { loginSession }, false);
+}
+
+/** With no session, starts a sign-in with a discoverable passkey. */
+export async function loginPasskey(loginSession = null, asUser = false) {
+    if (!webauthnAvailable('get')) {
+        return { success: false, error: 'webauthn-unavailable' };
+    }
+
+    const optionsRes = await loginCall('/auth/login/passkey/options', { loginSession }, asUser);
+    if (!optionsRes.success) return optionsRes;
+    const options = optionsRes.options;
+
+    let credential;
+    try {
+        credential = await navigator.credentials.get({
+            publicKey: {
+                challenge: b64urlToBuffer(options.challenge),
+                rpId: options.rpId,
+                allowCredentials: (options.allowCredentials ?? []).map(toCredentialDescriptor),
+                userVerification: options.userVerification ?? 'preferred',
+                timeout: options.timeout ?? 60000
+            }
+        });
+    } catch (error) {
+        if (error.name === 'NotAllowedError') return { success: false, error: 'cancelled', loginSession, methods: null };
+        console.error('Error using passkey', error);
+        return { success: false, error: 'passkey-failed', loginSession, methods: null };
+    }
+
+    const assertion = {
+        id: credential.id,
+        rawId: bufferToB64url(credential.rawId),
+        type: credential.type,
+        response: {
+            authenticatorData: bufferToB64url(credential.response.authenticatorData),
+            clientDataJSON: bufferToB64url(credential.response.clientDataJSON),
+            signature: bufferToB64url(credential.response.signature),
+            userHandle: credential.response.userHandle ? bufferToB64url(credential.response.userHandle) : null
+        }
+    };
+
+    return loginCall('/auth/login/passkey', { loginSession: optionsRes.loginSession, assertion }, asUser);
+}
+
 // -- Admin helpers --
 
 export async function adminGetUserStats() {
@@ -851,6 +847,18 @@ export async function adminDisable2fa(id) {
         return { success: true };
     } catch (error) {
         console.error('Error disabling 2FA', error);
+        return { success: false, error: error?.response?.status };
+    }
+}
+
+export async function adminGetCredentials(id) {
+    try {
+        const response = await axios.get(`${API_URL}/admin/users/${id}/credentials`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error fetching user credentials', error);
         return { success: false, error: error?.response?.status };
     }
 }
