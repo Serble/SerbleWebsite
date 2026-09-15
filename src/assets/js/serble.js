@@ -655,12 +655,21 @@ function toCredentialDescriptor(c) {
 // A sign-in is a server-side session: start it, then complete steps (password, TOTP code, passkey)
 // until the account's sign-in flow is satisfied. Every step answers with
 // `{ success, complete, token?, reauthToken?, loginSession, methods, error? }`.
+//
+// A completed sign-in also returns a device token. Sending it back keeps this device's attempts
+// apart from anyone else's, so others guessing at the account cannot lock it out here. It grants no
+// access, so it outlives sign-out.
+
+const DEVICE_TOKEN_KEY = 'device_token';
 
 async function loginCall(path, body, asUser) {
     try {
-        const config = asUser ? { headers: userHeaders() } : {};
-        const response = await axios.post(`${API_URL}${path}`, body, config);
-        const data = response.data ?? {};
+        const headers = asUser ? userHeaders() : {};
+        const deviceToken = getLocalStorage(DEVICE_TOKEN_KEY);
+        if (deviceToken) headers['Serble-Device'] = deviceToken;
+        const response = await axios.post(`${API_URL}${path}`, body, { headers });
+        const { deviceToken: newDeviceToken, ...data } = response.data ?? {};
+        if (newDeviceToken) setLocalStorage(DEVICE_TOKEN_KEY, newDeviceToken);
         if (data.complete && data.token) setLocalStorage('access_token', data.token);
         if (data.complete && data.reauthToken) reauthToken = data.reauthToken;
         return { success: true, ...data };
