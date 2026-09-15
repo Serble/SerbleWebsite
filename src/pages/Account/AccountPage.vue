@@ -448,7 +448,6 @@ export default {
     const savingRename = ref(false);
     const renameInput = ref(null);
     const registeringPasskey = ref(false);
-    const passkeyAlone = ref(true);
 
     function setError(type, key) {
       if (type === 'totp') totpError.value = key;
@@ -523,7 +522,8 @@ export default {
       if (registeringPasskey.value) return;
       passkeyError.value = '';
       registeringPasskey.value = true;
-      const result = await registerPasskey({ signInAlone: passkeyAlone.value });
+      // Passkeys are always registered as a standalone way to sign in.
+      const result = await registerPasskey({ signInAlone: true });
       registeringPasskey.value = false;
       if (!result.success) {
         if (result.error === 'cancelled') passkeyError.value = 'passkey-register-cancelled';
@@ -619,7 +619,7 @@ export default {
       flowsSaving, flowsError, flowsMessage, flowsSaved, isCodeOnly, addFlow, removeFlow,
       signingOutAll, sessionsError, sessionsEnded, logoutEverywhere,
       totpError, passkeyError, removingId, renamingId, renameValue, savingRename, setRenameInput,
-      registeringPasskey, passkeyAlone, displayName, startRename, cancelRename, submitRename,
+      registeringPasskey, displayName, startRename, cancelRename, submitRename,
       removeCredential, addPasskey,
     };
   }
@@ -826,80 +826,6 @@ export default {
         </header>
 
         <div class="panel-stack">
-          <form class="panel" @submit.prevent="changePassword">
-            <div class="panel-head">
-              <div class="panel-head-text">
-                <h3 class="panel-heading">{{ passwordCredential || credentialsLoading ? $t('change-password') : $t('set-password') }}</h3>
-                <p class="panel-note">{{ $t('password-section-hint') }}</p>
-              </div>
-            </div>
-
-            <div class="panel-body">
-              <!--
-                Password managers only offer to update a saved login when the
-                form says which login it belongs to. Kept out of the tab order
-                and out of the accessibility tree - it is machine-facing only.
-              -->
-              <input
-                class="sr-only"
-                type="text"
-                autocomplete="username"
-                :value="savedUsername"
-                tabindex="-1"
-                aria-hidden="true"
-                readonly
-              >
-              <div class="pair">
-                <div class="field">
-                  <label class="field-label field-label-plain" for="password">{{ $t('new-password') }}</label>
-                  <input
-                    id="password"
-                    v-model="password"
-                    type="password"
-                    class="input"
-                    :class="{ 'is-invalid': passwordError === 'passwords-dont-match' }"
-                    :aria-invalid="passwordError === 'passwords-dont-match' || undefined"
-                    autocomplete="new-password"
-                    @input="touchPassword"
-                  >
-                </div>
-                <div class="field">
-                  <label class="field-label field-label-plain" for="confirmPassword">{{ $t('confirm-password') }}</label>
-                  <input
-                    id="confirmPassword"
-                    v-model="confirmPassword"
-                    type="password"
-                    class="input"
-                    :class="{ 'is-invalid': passwordError === 'passwords-dont-match' }"
-                    :aria-invalid="passwordError === 'passwords-dont-match' || undefined"
-                    autocomplete="new-password"
-                    @input="touchPassword"
-                  >
-                </div>
-              </div>
-            </div>
-
-            <div class="panel-foot">
-              <div class="panel-status" role="status">
-                <p v-if="passwordError" class="status status-error">
-                  <Icon name="alert" :size="13" />{{ $t(passwordError) }}
-                </p>
-                <template v-else-if="passwordSaved">
-                  <p class="status status-ok">
-                    <Icon name="check" :size="13" />{{ $t('password-updated') }}
-                  </p>
-                  <p v-if="passwordRevoked" class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
-                </template>
-              </div>
-              <div class="panel-actions">
-                <button type="submit" class="btn btn-primary btn-sm" :disabled="!canChangePassword || passwordSaving">
-                  <LoadingSpinner v-if="passwordSaving" :size="13" />
-                  {{ passwordSaving ? $t('saving') : (passwordCredential ? $t('update-password') : $t('set-password')) }}
-                </button>
-              </div>
-            </div>
-          </form>
-
           <div class="panel">
             <div class="panel-head">
               <div class="panel-head-text">
@@ -1022,16 +948,21 @@ export default {
                     <p v-else class="builder-msg builder-msg-hint">{{ $t('nothing-picked-yet') }}</p>
                   </div>
 
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm builder-add"
-                    :disabled="flowsSaving || newFlowOrdered.length === 0 || newFlowIsDuplicate"
-                    @click="addFlow"
-                  >
-                    <LoadingSpinner v-if="flowsSaving" :size="13" />
-                    <Icon v-else name="plus" :size="13" />
-                    {{ $t('add') }}
-                  </button>
+                  <div class="builder-actions">
+                    <button type="button" class="btn btn-ghost btn-sm" :disabled="flowsSaving" @click="closeBuilder">
+                      {{ $t('cancel') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      :disabled="flowsSaving || newFlowOrdered.length === 0 || newFlowIsDuplicate"
+                      @click="addFlow"
+                    >
+                      <LoadingSpinner v-if="flowsSaving" :size="13" />
+                      <Icon v-else name="plus" :size="13" />
+                      {{ $t('add') }}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1056,16 +987,96 @@ export default {
             </div>
           </div>
 
-          <div class="panel">
-            <div class="panel-head">
+          <details class="panel panel-collapsible">
+            <summary class="panel-head panel-summary">
+              <div class="panel-head-text">
+                <h3 class="panel-heading">{{ passwordCredential || credentialsLoading ? $t('change-password') : $t('set-password') }}</h3>
+                <p class="panel-note">{{ $t('password-section-hint') }}</p>
+              </div>
+              <Icon name="chevronDown" :size="16" class="panel-chevron" />
+            </summary>
+            <form @submit.prevent="changePassword">
+            <div class="panel-body">
+              <!--
+                Password managers only offer to update a saved login when the
+                form says which login it belongs to. Kept out of the tab order
+                and out of the accessibility tree - it is machine-facing only.
+              -->
+              <input
+                class="sr-only"
+                type="text"
+                autocomplete="username"
+                :value="savedUsername"
+                tabindex="-1"
+                aria-hidden="true"
+                readonly
+              >
+              <div class="pair">
+                <div class="field">
+                  <label class="field-label field-label-plain" for="password">{{ $t('new-password') }}</label>
+                  <input
+                    id="password"
+                    v-model="password"
+                    type="password"
+                    class="input"
+                    :class="{ 'is-invalid': passwordError === 'passwords-dont-match' }"
+                    :aria-invalid="passwordError === 'passwords-dont-match' || undefined"
+                    autocomplete="new-password"
+                    @input="touchPassword"
+                  >
+                </div>
+                <div class="field">
+                  <label class="field-label field-label-plain" for="confirmPassword">{{ $t('confirm-password') }}</label>
+                  <input
+                    id="confirmPassword"
+                    v-model="confirmPassword"
+                    type="password"
+                    class="input"
+                    :class="{ 'is-invalid': passwordError === 'passwords-dont-match' }"
+                    :aria-invalid="passwordError === 'passwords-dont-match' || undefined"
+                    autocomplete="new-password"
+                    @input="touchPassword"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-foot">
+              <div class="panel-status" role="status">
+                <p v-if="passwordError" class="status status-error">
+                  <Icon name="alert" :size="13" />{{ $t(passwordError) }}
+                </p>
+                <template v-else-if="passwordSaved">
+                  <p class="status status-ok">
+                    <Icon name="check" :size="13" />{{ $t('password-updated') }}
+                  </p>
+                  <p v-if="passwordRevoked" class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
+                </template>
+              </div>
+              <div class="panel-actions">
+                <button type="submit" class="btn btn-primary btn-sm" :disabled="!canChangePassword || passwordSaving">
+                  <LoadingSpinner v-if="passwordSaving" :size="13" />
+                  {{ passwordSaving ? $t('saving') : (passwordCredential ? $t('update-password') : $t('set-password')) }}
+                </button>
+              </div>
+            </div>
+            </form>
+          </details>
+
+
+          <details class="panel panel-collapsible">
+            <summary class="panel-head panel-summary">
               <div class="panel-head-text">
                 <h3 class="panel-heading">{{ $t('authenticator-apps') }}</h3>
                 <p class="panel-note">{{ $t('totp-section-hint') }}</p>
               </div>
-              <span class="badge" :class="user?.totpEnabled ? 'badge-success' : 'badge-neutral'">
-                {{ user?.totpEnabled ? $t('enabled') : $t('disabled') }}
+              <span class="panel-summary-aside">
+                <span class="badge" :class="user?.totpEnabled ? 'badge-success' : 'badge-neutral'">
+                  {{ user?.totpEnabled ? $t('enabled') : $t('disabled') }}
+                </span>
+                <Icon name="chevronDown" :size="16" class="panel-chevron" />
               </span>
-            </div>
+            </summary>
 
             <p v-if="credentialsLoading" class="panel-state">
               <LoadingSpinner :size="14" />{{ $t('loading') }}
@@ -1146,16 +1157,19 @@ export default {
                 </RouterLink>
               </div>
             </div>
-          </div>
+          </details>
 
-          <div class="panel">
-            <div class="panel-head">
+          <details class="panel panel-collapsible">
+            <summary class="panel-head panel-summary">
               <div class="panel-head-text">
                 <h3 class="panel-heading">{{ $t('passkeys') }}</h3>
                 <p class="panel-note">{{ $t('passkey-section-hint') }}</p>
               </div>
-              <span v-if="passkeys.length" class="badge badge-neutral">{{ passkeys.length }}</span>
-            </div>
+              <span class="panel-summary-aside">
+                <span v-if="passkeys.length" class="badge badge-neutral">{{ passkeys.length }}</span>
+                <Icon name="chevronDown" :size="16" class="panel-chevron" />
+              </span>
+            </summary>
 
             <p v-if="credentialsLoading" class="panel-state">
               <LoadingSpinner :size="14" />{{ $t('loading') }}
@@ -1228,39 +1242,28 @@ export default {
               </li>
             </ul>
 
-            <div class="panel-foot panel-foot-split">
+            <div class="panel-foot">
               <!-- Kept in the DOM whether or not it has anything to say, so that
                    a failure that arrives later is announced rather than missed. -->
-              <div class="panel-status pk-foot-status" :class="{ 'has-msg': passkeyError }" role="status">
+              <div class="panel-status" role="status">
                 <p v-if="passkeyError" class="status status-error">
                   <Icon name="alert" :size="13" />{{ $t(passkeyError) }}
                 </p>
               </div>
-              <!-- Option on the left, its action on the right - the switch reads
-                   as a setting for the passkey being added, not a stray control. -->
-              <button
-                type="button"
-                role="switch"
-                class="switch"
-                :class="{ on: passkeyAlone }"
-                :aria-checked="passkeyAlone"
-                @click="passkeyAlone = !passkeyAlone"
-              >
-                <span class="switch-track" aria-hidden="true"><span class="switch-knob" /></span>
-                <span class="switch-label">{{ $t('passkey-sign-in-alone') }}</span>
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                :disabled="registeringPasskey"
-                @click="addPasskey"
-              >
-                <LoadingSpinner v-if="registeringPasskey" :size="13" />
-                <Icon v-else name="plus" :size="13" />
-                {{ $t('add-passkey') }}
-              </button>
+              <div class="panel-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  :disabled="registeringPasskey"
+                  @click="addPasskey"
+                >
+                  <LoadingSpinner v-if="registeringPasskey" :size="13" />
+                  <Icon v-else name="plus" :size="13" />
+                  {{ $t('add-passkey') }}
+                </button>
+              </div>
             </div>
-          </div>
+          </details>
 
           <div class="panel">
             <div class="panel-head">
@@ -1634,6 +1637,39 @@ export default {
 }
 
 .panel-head-text { min-width: 0; }
+
+/* -- Collapsible panels -----------------------------------------------------
+   The credential sections are <details>; the head is the <summary> that toggles
+   them, closed by default. */
+.panel-summary {
+  cursor: pointer;
+  list-style: none;
+  /* A collapsed summary is the whole panel, so it needs its own bottom padding;
+     when open the head sits above the body and the sibling rules space it. */
+}
+.panel-summary::-webkit-details-marker { display: none; }
+.panel-summary::marker { content: ''; }
+details:not([open]) > .panel-summary { padding-bottom: var(--space-5); }
+
+.panel-summary:hover .panel-heading { color: var(--accent-light); }
+.panel-summary:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-ring);
+}
+
+/* Badge and chevron ride together at the trailing edge of the summary. */
+.panel-summary-aside {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.panel-chevron {
+  color: var(--text-dim);
+  transition: transform var(--t-fast);
+}
+details[open] > .panel-summary .panel-chevron { transform: rotate(180deg); }
 
 .panel-heading {
   font-size: 0.95rem;
@@ -2095,7 +2131,12 @@ export default {
 .builder-msg-hint { color: var(--text-faint); }
 .builder-msg-warn { color: var(--warning); }
 .way-chain-inline { display: inline-flex; padding-right: 0; }
-.builder-add { margin-inline-start: auto; }
+.builder-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
 
 .ways-status {
   display: flex;
@@ -2153,61 +2194,6 @@ export default {
   border-color: var(--accent);
   background: var(--accent);
 }
-
-/* -- Passkey foot -----------------------------------------------------------
-   The "sign in alone" switch sits on the left as an option, its Add button on
-   the right, and any error takes its own full-width line above the two. The
-   status stays mounted for the live region; with no message it is a zero-height
-   row, so row-gap is off and the gap is added back only when it has content. */
-.panel-foot-split { row-gap: 0; }
-.panel-foot-split .switch { margin-inline-end: auto; }
-
-.pk-foot-status { flex: 1 1 100%; margin: 0; }
-.pk-foot-status.has-msg { margin-bottom: var(--space-2); }
-
-/* -- Switch -----------------------------------------------------------------
-   A dark, self-contained toggle for a persistent setting - replaces the light
-   native checkbox that broke against the dark panel. */
-.switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-}
-
-.switch-track {
-  position: relative;
-  width: 34px;
-  height: 20px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  background: var(--border-strong);
-  transition: background var(--t-fast);
-}
-
-.switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform var(--t-fast);
-}
-
-.switch.on .switch-track { background: var(--accent); }
-.switch.on .switch-knob { transform: translateX(14px); }
-
-.switch:focus-visible { outline: none; }
-.switch:focus-visible .switch-track { box-shadow: var(--focus-ring); }
-
-.switch-label { line-height: 1.3; text-align: left; }
 
 .pk-meta {
   font-size: 0.75rem;

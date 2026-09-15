@@ -13,6 +13,9 @@ const props = defineProps({
   loginSession: { type: String, required: true },
   methods: { type: Array, required: true },
   username: { type: String, default: '' },
+  // A password a manager already filled on an earlier step, so the prompt opens
+  // pre-filled and the manager isn't needed a second time.
+  prefillPassword: { type: String, default: '' },
   // Re-authentication steps are sent as the signed-in user.
   asUser: { type: Boolean, default: false },
 });
@@ -24,7 +27,7 @@ const METHOD_ORDER = ['password', 'passkey', 'totp'];
 const session = ref(props.loginSession);
 const available = ref([...props.methods]);
 const method = ref(pickDefault(props.methods));
-const password = ref('');
+const password = ref(props.prefillPassword);
 const code = ref('');
 const working = ref(false);
 const error = ref('');
@@ -56,6 +59,12 @@ watch(() => props.loginSession, (next) => {
   progressed.value = false;
 });
 
+// A password manager may fill the earlier step after this component mounts; adopt
+// that value as long as the user hasn't already typed one here.
+watch(() => props.prefillPassword, (next) => {
+  if (next && !password.value) password.value = next;
+});
+
 const ERRORS = {
   'rate-limited': 'too-many-attempts',
   busy: 'server-busy',
@@ -79,7 +88,7 @@ async function submit() {
   let result;
   working.value = true;
   if (method.value === 'password') {
-    if (!password.value) { working.value = false; return; }
+    // An empty password is a legitimate credential, so it submits like any other.
     result = await loginPassword(session.value, password.value, props.asUser);
   } else if (method.value === 'totp') {
     if (!code.value.trim()) { working.value = false; return; }
@@ -162,7 +171,7 @@ defineExpose({ focusInput });
           autofocus
         >
       </div>
-      <button type="submit" class="btn btn-primary btn-block" :disabled="working || !password">
+      <button type="submit" class="btn btn-primary btn-block" :disabled="working">
         <LoadingSpinner v-if="working" />
         {{ $t('next') }}
       </button>

@@ -29,6 +29,9 @@ export default {
     }
 
     const username = ref('');
+    // Captured from a hidden field on the username step so a password manager fills
+    // it alongside the username, then handed to the password prompt as a prefill.
+    const password = ref('');
     const session = ref(null);   // { loginSession, methods } once the account is known
     const error = ref('');
     const working = ref(false);
@@ -51,7 +54,8 @@ export default {
     }
 
     async function start() {
-      if (working.value || !username.value.trim()) return;
+      // An empty username is a legitimate account name, so it submits like any other.
+      if (working.value) return;
       error.value = '';
       working.value = true;
       const result = await loginStart(username.value.trim());
@@ -86,6 +90,8 @@ export default {
     function changeAccount() {
       session.value = null;
       error.value = '';
+      // A different account means the carried-over password no longer applies.
+      password.value = '';
     }
 
     function restart() {
@@ -100,7 +106,7 @@ export default {
     );
 
     return {
-      t, username, session, error, working, passkeyWorking,
+      t, username, password, session, error, working, passkeyWorking,
       start, passkeyLogin, changeAccount, restart, finish, registerLink,
     };
   }
@@ -132,7 +138,27 @@ export default {
           />
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block" :disabled="working || !username.trim()">
+        <!--
+          Off-screen, but a real, fully-labelled password field so a password
+          manager fills the username and password together on this first step.
+          The captured value is carried into the password prompt, so the manager
+          isn't needed twice. A manager only fills a field it can identify, so it
+          keeps its id, name, label and autocomplete - only aria-hidden and the
+          tab order are dropped, since the field is not for the sighted/keyboard
+          user. It stays a real (not display:none) field so managers still fill it.
+        -->
+        <label for="login-password" class="sr-only">{{ $t('password') }}</label>
+        <input
+          id="login-password"
+          name="password"
+          class="sr-only"
+          type="password"
+          autocomplete="current-password"
+          v-model="password"
+          tabindex="-1"
+        />
+
+        <button type="submit" class="btn btn-primary btn-block" :disabled="working">
           <LoadingSpinner v-if="working" />
           {{ $t('next') }}
         </button>
@@ -158,6 +184,7 @@ export default {
         :login-session="session.loginSession"
         :methods="session.methods"
         :username="username.trim()"
+        :prefill-password="password"
         @complete="finish"
         @restart="restart"
       />
