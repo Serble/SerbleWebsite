@@ -191,7 +191,7 @@ export default {
 
 .coin-title {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 10px;
@@ -213,10 +213,10 @@ export default {
 }
 
 .section-title {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-dim);
   margin: 0;
 }
@@ -248,36 +248,29 @@ export default {
   cursor: pointer;
   color: inherit;
   font: inherit;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color var(--t), background var(--t);
 }
 
 .link-row:hover {
   border-color: var(--border-strong);
+  background: var(--surface-raised);
 }
 
 .link-badge {
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 3px 7px;
-  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
 }
 
-.link-badge.svg {
-  background: rgba(59, 130, 246, 0.14);
-  color: var(--accent-light);
-}
-
-.link-badge.png {
-  background: rgba(148, 163, 184, 0.14);
-  color: var(--text-dim);
-}
+.link-badge.svg { color: var(--accent-light); }
+.link-badge.png { color: var(--text-dim); }
 
 .link-url {
   flex: 1;
   min-width: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -396,7 +389,7 @@ export default {
 .snippet {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -437,7 +430,7 @@ export default {
   color: var(--text-secondary);
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color var(--t), color var(--t);
 }
 
 .snippet-copy:hover {
@@ -449,7 +442,7 @@ export default {
   margin: 0;
   padding: 14px;
   overflow-x: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   line-height: 1.6;
   color: var(--text-secondary);

@@ -253,7 +253,7 @@ export default {
 .icon-btn {
   background: var(--e-surface); border: 1px solid var(--e-border); border-radius: 8px;
   color: var(--e-muted); width: 30px; height: 30px; display: flex; align-items: center;
-  justify-content: center; cursor: pointer; transition: background 0.15s, color 0.15s;
+  justify-content: center; cursor: pointer; transition: background var(--t), color var(--t);
 }
 .icon-btn:hover:not(:disabled) { color: var(--e-text); background: var(--e-border); }
 .icon-btn:disabled { opacity: .5; cursor: default; }
@@ -278,7 +278,7 @@ export default {
 .state.err { color: #e25555; }
 .state.connect {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
-  background: var(--e-surface); border: 1px solid var(--e-border); border-radius: 14px; padding: 32px 20px;
+  background: var(--e-surface); border: 1px solid var(--e-border); border-radius: var(--radius); padding: 32px 20px;
 }
 .state-icon { color: var(--e-muted); }
 .state-title { font-weight: 700; margin: 4px 0 0; color: var(--e-text); }

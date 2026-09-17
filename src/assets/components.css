@@ -28,7 +28,11 @@
     white-space: nowrap;
     cursor: pointer;
     transition: background var(--t), border-color var(--t), color var(--t),
-                opacity var(--t);
+                opacity var(--t), transform var(--t);
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .btn:disabled,
@@ -42,7 +46,10 @@
     background: var(--accent);
     color: #fff;
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+    color: #fff;
+}
 
 /* Neutral fill - secondary actions that still need weight. */
 .btn-secondary {
@@ -132,20 +139,21 @@
     gap: 5px;
 }
 
+/* Small mono label, the same treatment as the footer headings. */
 .field-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
     color: var(--text-dim);
 }
 
-/* Plain sentence-case label, where the uppercase treatment is too loud. */
+/* Plain sentence-case label in the body face. */
 .field-label-plain {
+    font-family: var(--font-sans);
     font-size: 0.83rem;
     font-weight: 500;
     color: var(--text-secondary);
-    text-transform: none;
     letter-spacing: 0;
 }
 
@@ -257,7 +265,6 @@
 }
 
 .card-lg {
-    border-radius: var(--radius-lg);
     padding: var(--space-6);
 }
 
@@ -272,7 +279,7 @@
 
 .card-title {
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--text);
     margin: 0;
 }
@@ -289,8 +296,9 @@
 }
 
 .page-title {
-    font-size: 1.5rem;
-    font-weight: 800;
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
     color: var(--text);
     margin: 0;
 }
@@ -344,29 +352,27 @@
 }
 
 /* ============================================================================
-   Badges
+   Badges - plain mono text labels. The word and its colour carry the
+   meaning; there is no capsule around it.
    ========================================================================== */
 
 .badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 2px 8px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border);
-    background: var(--surface-sunken);
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
     letter-spacing: 0.02em;
+    color: var(--text-muted);
     white-space: nowrap;
 }
 
-.badge-accent  { background: var(--accent-ring);      border-color: transparent; color: var(--accent-light); }
-.badge-success { background: var(--success-bg);       border-color: transparent; color: var(--success); }
-.badge-danger  { background: var(--danger-bg);        border-color: transparent; color: var(--danger); }
-.badge-warning { background: var(--warning-bg);       border-color: transparent; color: var(--warning); }
-.badge-neutral { background: var(--border);           border-color: transparent; color: var(--text-secondary); }
+.badge-accent  { color: var(--accent-light); }
+.badge-success { color: var(--success); }
+.badge-danger  { color: var(--danger); }
+.badge-warning { color: var(--warning); }
+.badge-neutral { color: var(--text-secondary); }
 
 /* ============================================================================
    Tables
@@ -395,10 +401,10 @@
 }
 
 .table th {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
     color: var(--text-dim);
     white-space: nowrap;
     background: var(--surface-sunken);

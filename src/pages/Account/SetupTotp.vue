@@ -228,7 +228,7 @@ export default {
 .setup-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 28px 28px;
   display: flex;
   flex-direction: column;
@@ -252,7 +252,7 @@ export default {
 .setup-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--accent-ring);
   color: var(--accent-light);
   display: flex;
@@ -359,10 +359,10 @@ export default {
 }
 
 .code-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-dim);
 }
 
@@ -371,17 +371,17 @@ export default {
 .code-input {
   background: var(--surface-sunken);
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font-size: 1.35rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.3em;
   text-indent: 0.3em; /* offsets the trailing letter-spacing so text stays centred */
   text-align: center;
   padding: 11px 16px;
   width: 100%;
-  transition: border-color 0.15s;
+  transition: border-color var(--t);
 }
 
 .code-input::placeholder {
@@ -398,7 +398,7 @@ export default {
 .code-submit {
   width: 100%;
   padding: 11px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--accent);
   color: #fff;
   font-size: 0.9rem;
@@ -408,10 +408,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--t), opacity var(--t), transform var(--t);
 }
 
 .code-submit:hover:not(:disabled) { background: var(--accent-hover); }
+.code-submit:active:not(:disabled) { transform: scale(0.98); }
 .code-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .cancel-link {
@@ -419,7 +420,7 @@ export default {
   color: var(--text-faint);
   text-decoration: none;
   text-align: center;
-  transition: color 0.15s;
+  transition: color var(--t);
 }
 
 .cancel-link:hover { color: var(--text-muted); }

@@ -2,9 +2,10 @@
 import { getCatalogServices } from '@/assets/js/serble.js';
 import ArrowUpRight from '@/components/ArrowUpRight.vue';
 import LinkedText from '@/components/LinkedText.vue';
+import CoinIcon from '@/components/CoinIcon.vue';
 
 export default {
-  components: { ArrowUpRight, LinkedText },
+  components: { ArrowUpRight, LinkedText, CoinIcon },
   data() {
     return {
       services: [],
@@ -19,34 +20,10 @@ export default {
     },
     accountTiles() {
       return [
-        {
-          to: '/account',
-          label: this.$t('account'),
-          description: this.$t('account-tile-desc'),
-          iconColor: '#60a5fa',
-          icon: 'account'
-        },
-        {
-          to: '/oauthapps',
-          label: this.$t('my-applications'),
-          description: this.$t('my-applications-tile-desc'),
-          iconColor: '#818cf8',
-          icon: 'apps'
-        },
-        {
-          to: '/authorizedapps',
-          label: this.$t('authorized-applications'),
-          description: this.$t('authorized-applications-tile-desc'),
-          iconColor: '#4ade80',
-          icon: 'authorized'
-        },
-        {
-          to: '/account/paymentportal',
-          label: this.$t('manage-payments'),
-          description: this.$t('manage-payments-tile-desc'),
-          iconColor: '#fbbf24',
-          icon: 'payments'
-        }
+        { to: '/account', label: this.$t('account'), description: this.$t('account-tile-desc'), icon: 'account', iconColor: '#60a5fa' },
+        { to: '/oauthapps', label: this.$t('my-applications'), description: this.$t('my-applications-tile-desc'), icon: 'apps', iconColor: '#818cf8' },
+        { to: '/authorizedapps', label: this.$t('authorized-applications'), description: this.$t('authorized-applications-tile-desc'), icon: 'authorized', iconColor: '#4ade80' },
+        { to: '/account/balance', label: this.$t('balance'), description: this.$t('balance-tile-desc'), icon: 'coin' }
       ];
     }
   },
@@ -70,19 +47,14 @@ export default {
       return !!service.iconUrl && !this.serviceIconFailures[service.id];
     },
     markServiceIconFailed(serviceId) {
-      this.serviceIconFailures = {
-        ...this.serviceIconFailures,
-        [serviceId]: true
-      };
+      this.serviceIconFailures = { ...this.serviceIconFailures, [serviceId]: true };
     },
     renderAccountIcon(icon) {
       const icons = {
         account: '<path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4"/>',
         apps: '<path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>',
-        authorized: '<path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533.18.085.293.118.293.118s.114-.033.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524z"/>',
-        payments: '<path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/>'
+        authorized: '<path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533.18.085.293.118.293.118s.114-.033.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524z"/>'
       };
-
       return icons[icon] || icons.account;
     }
   }
@@ -116,19 +88,23 @@ export default {
           :to="tile.to"
           class="account-card"
         >
-          <div class="account-card-top">
+          <ArrowUpRight class="account-card-arrow" />
+          <h3 class="account-card-title">
+            <CoinIcon v-if="tile.icon === 'coin'" :size="20" />
             <svg
+              v-else
               xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
+              width="20"
+              height="20"
               fill="currentColor"
               viewBox="0 0 16 16"
+              class="account-card-icon"
               :style="{ color: tile.iconColor }"
+              aria-hidden="true"
               v-html="renderAccountIcon(tile.icon)"
             ></svg>
-            <ArrowUpRight class="account-card-arrow" />
-          </div>
-          <h3 class="account-card-title">{{ tile.label }}</h3>
+            {{ tile.label }}
+          </h3>
           <p class="account-card-desc">{{ tile.description }}</p>
         </RouterLink>
       </div>
@@ -157,9 +133,9 @@ export default {
           target="_blank"
           rel="noopener"
           class="external-card"
-          :class="{ 'external-card-new': service.new }"
         >
-          <div class="external-card-top">
+          <ArrowUpRight class="external-card-arrow" />
+          <h3 class="external-card-title">
             <img
               v-if="serviceHasIcon(service)"
               :src="service.iconUrl"
@@ -167,18 +143,8 @@ export default {
               class="service-icon-image"
               @error="markServiceIconFailed(service.id)"
             />
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" class="external-card-icon">
-              <path d="M14.5 4.5h5v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M13 11l6.5-6.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M10 5.5H7.5A3.5 3.5 0 0 0 4 9v7.5A3.5 3.5 0 0 0 7.5 20h7A3.5 3.5 0 0 0 18 16.5V14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M8.5 11.5h3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-              <path d="M8.5 15h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-            </svg>
-            <ArrowUpRight class="external-card-arrow" />
-          </div>
-          <h3 class="external-card-title">
             {{ service.name }}
-            <span v-if="service.new" class="service-new-badge">{{ $t('new') }}</span>
+            <span v-if="service.new" class="service-new-flag">{{ $t('new') }}</span>
           </h3>
           <p class="external-card-desc">{{ service.description }}</p>
         </a>
@@ -189,9 +155,10 @@ export default {
 
 <style scoped>
 .home-page {
-  max-width: 980px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  max-width: var(--container);
   margin: 0 auto;
-  padding: 0 24px 72px;
+  padding: 0 var(--space-6) 72px;
 }
 
 .home-header-shell {
@@ -210,8 +177,8 @@ export default {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 28px;
-  padding: 40px 24px 96px;
-  max-width: 980px;
+  padding: 40px var(--space-6) 96px;
+  max-width: var(--container);
   margin: 0 auto;
 }
 
@@ -232,8 +199,8 @@ export default {
 .home-header-title {
   font-size: clamp(2.5rem, 7vw, 4.4rem);
   line-height: 0.95;
-  font-weight: 900;
-  letter-spacing: -0.05em;
+  font-weight: 600;
+  letter-spacing: -0.03em;
   color: #f8fafc;
   margin: 0 0 16px;
 }
@@ -251,7 +218,7 @@ export default {
   text-decoration: underline;
   text-decoration-color: rgba(148, 163, 184, 0.4);
   text-underline-offset: 3px;
-  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  transition: color 0.25s var(--ease), text-decoration-color 0.25s var(--ease);
 }
 
 .home-header-sub :deep(a:hover) {
@@ -268,17 +235,12 @@ export default {
 .home-header-note :deep(a) {
   color: var(--accent-light);
   text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.25s var(--ease);
 }
 
 .home-header-note :deep(a:hover) {
-  text-decoration: underline;
-}
-
-.home-divider {
-  width: min(100%, 720px);
-  height: 1px;
-  background: var(--border);
-  margin: 0 auto 12px;
+  border-color: var(--accent-light);
 }
 
 .home-section {
@@ -293,8 +255,8 @@ export default {
 .section-title {
   font-size: clamp(1.5rem, 2vw, 2.2rem);
   line-height: 1.1;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
 }
@@ -308,126 +270,98 @@ export default {
 
 .account-card,
 .external-card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 20px;
+  border-radius: var(--radius);
+  padding: 20px 52px 20px 20px;
   text-decoration: none;
   color: inherit;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  gap: 8px;
+  transition: border-color 0.3s var(--ease), background 0.3s var(--ease);
 }
 
 .account-card:hover,
 .external-card:hover {
-  transform: translateY(-2px);
   border-color: var(--border-strong);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
-  background: #1c1c20;
+  background: var(--surface-raised);
   color: inherit;
-}
-
-.account-card-top,
-.external-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .account-card-arrow,
 .external-card-arrow {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 18px;
+  height: 18px;
   color: var(--text-faint);
-  transition: color 0.15s ease, transform 0.15s ease;
+  transition: color 0.3s var(--ease), transform 0.3s var(--ease);
 }
 
 .account-card:hover .account-card-arrow,
 .external-card:hover .external-card-arrow {
-  color: var(--text-secondary);
-  transform: translate(2px, -2px);
+  color: var(--text);
+  transform: translate(3px, -3px);
 }
 
 .account-card-title,
 .external-card-title {
-  font-size: 1.15rem;
-  line-height: 1.15;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text);
   margin: 0;
 }
 
-.service-new-badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  vertical-align: middle;
-  color: #fff;
-  background: var(--accent, #2563eb);
-  border-radius: 999px;
-}
-
-.external-card-new {
-  border-color: var(--accent, #2563eb);
-  box-shadow: 0 0 0 1px var(--accent, #2563eb);
-}
-
-.external-card-new:hover {
-  border-color: var(--accent, #2563eb);
-  box-shadow: 0 0 0 1px var(--accent, #2563eb);
+/* Plain text rather than a pill: the word on its own is enough. */
+.service-new-flag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--accent-light);
 }
 
 .account-card-desc,
 .external-card-desc {
   font-size: 0.9rem;
   line-height: 1.7;
-  color: #8b8b95;
+  color: var(--text-muted);
   margin: 0;
 }
 
-.external-card-icon,
+.account-card-icon,
 .service-icon-image {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-}
-
-.external-card-icon {
-  color: var(--text-secondary);
 }
 
 .service-icon-image {
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .services-state {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 22px;
-  color: var(--text-muted);
+  margin: 0;
+  padding: 4px 0;
+  color: var(--text-dim);
   font-size: 0.95rem;
-  text-align: center;
 }
 
 .services-state-error {
-  color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--danger);
 }
 
 @media (max-width: 720px) {
   .home-page {
-    padding: 0 18px 64px;
+    padding: 0 var(--space-5) 64px;
   }
 
   .home-header-shell {
@@ -438,9 +372,8 @@ export default {
   .home-header {
     grid-template-columns: 1fr;
     gap: 18px;
-    padding: 28px 18px 44px;
+    padding: 28px 0 44px;
   }
-
 
   .home-header-icon {
     width: 88px;

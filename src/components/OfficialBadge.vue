@@ -34,13 +34,11 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background-color: #2c5282;
-  color: #90cdf4;
+  color: var(--accent-light);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
-  padding: 3px 8px;
-  border-radius: 999px;
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -51,8 +49,6 @@ export default {
 
 /* Tick only - no pill, just the coloured checkmark. */
 .official-badge.icon-only {
-  background-color: transparent;
-  padding: 0;
-  color: #3b82f6;
+  color: var(--accent-light);
 }
 </style>

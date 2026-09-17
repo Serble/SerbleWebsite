@@ -511,7 +511,7 @@ export default {
   margin-top: 28px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 20px 24px;
 }
 
@@ -579,7 +579,7 @@ export default {
   border-radius: 8px;
   padding: 6px 14px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .ghost-btn {
@@ -596,10 +596,10 @@ export default {
 .add-btn {
   color: #fff;
   background: var(--accent);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--text);
 }
 
-.add-btn:hover:not(:disabled) { background: var(--accent-hover); }
+.add-btn:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 
 .danger-btn {
   color: var(--danger);
@@ -641,10 +641,11 @@ export default {
 
 .field-label {
   display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
   margin: 14px 0 8px;
 }
@@ -741,33 +742,23 @@ export default {
 .hook-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px 12px;
   margin-top: 6px;
 }
 
 .tag {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
-  background: var(--border);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 2px 9px;
 }
 
-.tag-ok {
-  color: var(--success);
-  background: var(--success-bg-soft);
-  border-color: var(--success-border-soft);
-}
+.tag-ok { color: var(--success); }
 
 .tag-off { color: var(--text-faint); }
 
-.tag-bad {
-  color: var(--danger);
-  background: var(--danger-bg-soft);
-  border-color: var(--danger-border-soft);
-}
+.tag-bad { color: var(--danger); }
 
 .hook-disabled {
   font-size: 0.79rem;
@@ -858,10 +849,10 @@ export default {
 }
 
 .delivery-status {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .status-ok { color: var(--success); }

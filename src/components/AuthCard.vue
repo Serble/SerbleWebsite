@@ -45,7 +45,7 @@ defineProps({
   max-width: 400px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   padding: var(--space-7) var(--space-7);
   display: flex;
   flex-direction: column;
@@ -66,7 +66,8 @@ defineProps({
 
 .auth-title {
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
 }

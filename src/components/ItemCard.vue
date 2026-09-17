@@ -55,8 +55,9 @@ export default {
   padding: 12px;
   background: var(--surface-sunken);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   text-align: left;
+  transition: border-color var(--t), background var(--t);
 }
 
 .item-card.minimal {

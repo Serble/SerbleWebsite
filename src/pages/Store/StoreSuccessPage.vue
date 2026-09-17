@@ -165,7 +165,7 @@ export default {
 
 .success-title {
   font-size: 2.2rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   margin-bottom: 8px;
   letter-spacing: -0.02em;
@@ -179,7 +179,7 @@ export default {
 
 .minions-wrap {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface);
   margin-bottom: 32px;
@@ -204,20 +204,24 @@ export default {
   display: inline-flex;
   align-items: center;
   padding: 9px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.88rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background var(--t), border-color var(--t), color var(--t), transform var(--t);
+}
+
+.success-btn:active {
+  transform: scale(0.98);
 }
 
 .success-btn-primary {
-  background: #16a34a;
+  background: var(--accent);
   color: #fff;
 }
 
 .success-btn-primary:hover {
-  background: #15803d;
+  background: var(--accent-hover);
   color: #fff;
 }
 

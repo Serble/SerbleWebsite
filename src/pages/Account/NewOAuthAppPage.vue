@@ -182,7 +182,7 @@ export default {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 9px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .back-btn:hover {
@@ -193,7 +193,8 @@ export default {
 
 .form-title {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0 0 2px;
 }
@@ -219,7 +220,7 @@ export default {
 .form-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -234,10 +235,11 @@ export default {
 
 .section-label {
   display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
   margin-bottom: 8px;
 }
@@ -292,7 +294,7 @@ export default {
   border: 1px solid var(--danger-border-soft);
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .uri-remove:hover {
@@ -318,7 +320,7 @@ export default {
   border-radius: 8px;
   padding: 0 18px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--t), color var(--t);
 }
 
 .add-btn:hover {
@@ -345,7 +347,7 @@ export default {
   cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .btn-secondary {

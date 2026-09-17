@@ -3340,10 +3340,10 @@ export default {
   max-width: 1100px;
   margin: 0 auto;
   padding: 32px 24px;
-  color: #e4e4e7;
+  color: var(--text-secondary);
 }
 .admin-page :deep(.text-muted) {
-  color: #9ca3af !important;
+  color: var(--text-muted) !important;
 }
 .tax-admin-card {
   background: var(--surface);
@@ -3374,18 +3374,19 @@ export default {
   padding: 10px 12px;
 }
 .tax-preview-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #9ca3af;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
   margin-bottom: 4px;
 }
 .tax-preview-value {
   font-weight: 600;
-  color: #e4e4e7;
+  color: var(--text-secondary);
 }
 .tax-preview-id {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.83rem;
   word-break: break-all;
 }
@@ -3397,7 +3398,7 @@ export default {
 .config-group {
   background: rgba(255, 255, 255, 0.015);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 .config-group-head {
@@ -3419,6 +3420,9 @@ export default {
 .config-group-head:hover {
   background: rgba(255, 255, 255, 0.055);
 }
+.config-group-head {
+  transition: background var(--t);
+}
 .config-group-title-wrap {
   display: inline-flex;
   align-items: center;
@@ -3426,8 +3430,8 @@ export default {
   min-width: 0;
 }
 .config-group-chevron {
-  color: #9ca3af;
-  transition: transform 0.15s ease;
+  color: var(--text-muted);
+  transition: transform var(--t);
 }
 .config-group-chevron.collapsed {
   transform: rotate(-90deg);
@@ -3435,12 +3439,12 @@ export default {
 .config-group-title {
   margin: 0;
   font-size: 0.95rem;
-  font-weight: 700;
-  color: #f4f4f5;
+  font-weight: 600;
+  color: var(--text);
 }
 .config-group-count {
   font-size: 0.78rem;
-  color: #9ca3af;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 .config-group-rows {
@@ -3466,16 +3470,16 @@ export default {
 }
 .config-label {
   font-weight: 600;
-  color: #e4e4e7;
+  color: var(--text-secondary);
 }
 .config-desc {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin: 2px 0 4px;
 }
 .config-key {
   font-size: 0.72rem;
-  color: #6b7280;
+  color: var(--text-faint);
 }
 .config-control {
   flex: 0 0 auto;
@@ -3491,7 +3495,7 @@ export default {
 .config-textarea {
   width: 320px;
   max-width: 100%;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   resize: vertical;
 }
@@ -3505,7 +3509,7 @@ export default {
 }
 .config-unit {
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 .config-msg {
   font-size: 0.78rem;
@@ -3519,15 +3523,17 @@ export default {
   padding: 16px 18px;
 }
 .stat-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   margin-bottom: 6px;
 }
 .stat-value {
   font-size: 1.6rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 .economy-card {
@@ -3543,14 +3549,16 @@ export default {
   gap: 12px;
 }
 .economy-title {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 .economy-total {
   font-size: 2.2rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   line-height: 1.2;
   margin-top: 6px;
@@ -3576,9 +3584,10 @@ export default {
   gap: 2px;
 }
 .economy-stat-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
 }
 .economy-stat-value {
@@ -3592,12 +3601,13 @@ export default {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 20px 22px;
-  color: #e4e4e7;
+  color: var(--text-secondary);
 }
 .section-heading {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   margin-bottom: 10px;
 }
@@ -3611,21 +3621,21 @@ export default {
 /* Table */
 .admin-page :deep(.table) {
   --bs-table-bg: transparent;
-  --bs-table-color: #e4e4e7;
-  --bs-table-striped-color: #e4e4e7;
+  --bs-table-color: var(--text-secondary);
+  --bs-table-striped-color: var(--text-secondary);
   --bs-table-striped-bg: rgba(255,255,255,0.03);
   --bs-table-hover-bg: rgba(255,255,255,0.06);
-  --bs-table-hover-color: #fff;
+  --bs-table-hover-color: var(--text);
   --bs-table-border-color: var(--border);
-  color: #e4e4e7;
+  color: var(--text-secondary);
 }
 .admin-page :deep(.table thead th) {
   color: var(--text-muted);
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   border-bottom-color: var(--border);
-  font-weight: 600;
 }
 .admin-page :deep(.table code) {
   color: var(--text-secondary);
@@ -3648,10 +3658,10 @@ export default {
 .user-column-menu-title {
   padding: 4px 8px 8px;
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 .user-column-menu-item {
   display: flex;
@@ -3661,6 +3671,9 @@ export default {
   border-radius: 5px;
   cursor: pointer;
   font-size: 0.9rem;
+}
+.user-column-menu-item {
+  transition: background var(--t);
 }
 .user-column-menu-item:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -3755,7 +3768,7 @@ export default {
   padding: 6px 0;
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
-  color: #e4e4e7;
+  color: var(--text-secondary);
 }
 .info-row:last-child { border-bottom: none; }
 .user-info-grid {
@@ -3778,15 +3791,16 @@ export default {
 }
 .info-label {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 code { color: var(--text-secondary); }
 
 .user-panel :deep(.list-group-item) {
   background: transparent !important;
-  color: #e4e4e7;
+  color: var(--text-secondary);
   border-color: var(--border);
 }
 
@@ -3813,21 +3827,21 @@ code { color: var(--text-secondary); }
   cursor: pointer;
   border-bottom: 2px solid transparent;
   border-radius: 0;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--t), border-color var(--t);
 }
 .admin-tabs .nav-link:hover {
   color: var(--text);
 }
 .admin-tabs .nav-link.active {
-  color: #fff;
+  color: var(--text);
   border-bottom-color: var(--accent);
 }
 
 .secret-box {
   display: inline-block;
-  background: rgb(28, 28, 28);
-  border: 1px solid #444;
-  border-radius: 5px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -3837,9 +3851,9 @@ code { color: var(--text-secondary); }
 
 /* Webhook delivery payload - the exact bytes that were signed and sent, so it is shown verbatim. */
 .delivery-payload {
-  background: rgb(28, 28, 28);
-  border: 1px solid #444;
-  border-radius: 5px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   font-size: 0.78rem;
   color: var(--text-secondary);
@@ -3858,12 +3872,15 @@ code { color: var(--text-secondary); }
   display: flex;
   flex-direction: column;
 }
+.product-card {
+  transition: border-color var(--t);
+}
 .product-card:hover {
   border-color: var(--border-strong);
 }
 .admin-page :deep(.form-check-input) {
-  background-color: rgb(28, 28, 28);
-  border-color: #444;
+  background-color: var(--surface-sunken);
+  border-color: var(--border-strong);
 }
 .admin-page :deep(.form-check-input:checked) {
   background-color: var(--accent);

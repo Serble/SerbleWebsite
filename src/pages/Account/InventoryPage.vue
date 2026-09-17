@@ -172,7 +172,7 @@ export default {
     max-height: calc(100vh - 48px);
     overflow-y: auto;
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: var(--radius);
     background: var(--surface);
   }
 }
@@ -223,8 +223,9 @@ export default {
 }
 
 .inv-title {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
 }
@@ -264,7 +265,7 @@ export default {
   text-align: center;
   background: var(--surface-sunken);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
 }
 .inv-empty-icon { color: var(--text-faint); margin-bottom: 4px; }
 .inv-empty-title { font-size: 1rem; font-weight: 700; color: var(--text); margin: 0; }
@@ -284,12 +285,8 @@ export default {
   background: transparent;
   text-align: left;
   text-decoration: none;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: transform 0.08s ease;
-}
-.inv-item-link:hover {
-  transform: translateY(-1px);
 }
 .inv-item-link:hover :deep(.item-card),
 .inv-item-link.active :deep(.item-card) {

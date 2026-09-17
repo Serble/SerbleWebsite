@@ -11,6 +11,11 @@
     <base href="/"/>
     <link rel="icon" type="image/png" href="/images/fave_icon.png">
 
+    <!-- Typefaces: see --font-display / --font-sans / --font-mono in base.css. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
     <!-- Pre-paint guard: the stylesheet is injected by the JS graph, so without
          this the page flashes white before it lands. base.css re-declares both
          with tokens and, loading later at equal specificity, wins. Keep these

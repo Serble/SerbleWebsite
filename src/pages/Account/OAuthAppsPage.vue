@@ -148,7 +148,8 @@ export default {
 
 .apps-title {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0 0 4px;
 }
@@ -169,13 +170,14 @@ export default {
   color: #fff;
   background: var(--accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 9px 16px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--t), transform var(--t);
 }
 
 .new-btn:hover { background: var(--accent-hover); }
+.new-btn:active { transform: scale(0.98); }
 
 /* -- Shared state blocks -- */
 .state-block {
@@ -214,17 +216,16 @@ export default {
 .app-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px 18px;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color var(--t), background var(--t);
 }
 
 .app-card:hover {
   border-color: var(--border-strong);
-  transform: translateY(-2px);
 }
 
 /* -- Card header -- */
@@ -237,11 +238,12 @@ export default {
 .app-icon {
   width: 42px;
   height: 42px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
-  color: #fff;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-light);
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,15 +304,16 @@ export default {
   border-radius: 8px;
   padding: 7px 11px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background var(--t), border-color var(--t), color var(--t);
 }
 
 .id-label {
   flex-shrink: 0;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
 }
 
@@ -364,13 +367,13 @@ export default {
   border-radius: 8px;
   padding: 6px 13px;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .manage-btn:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--border-strong);
+  border-color: var(--text-faint);
+  color: var(--text);
 }
 
 @media (max-width: 480px) {

@@ -166,9 +166,10 @@ export default {
 .swift-logo-wrap {
   width: 64px;
   height: 64px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
-  color: #fff;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,14 +177,10 @@ export default {
 
 .swift-title {
   font-size: 2.6rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
-  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .swift-sub {
@@ -207,41 +204,30 @@ export default {
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 28px 24px;
+  transition: border-color var(--t);
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.plan-card-featured {
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 1px #0ea5e9, 0 8px 32px rgba(14,165,233,0.15);
-}
-
+.plan-card-featured,
 .plan-card-yearly {
-  border-color: #818cf8;
-  box-shadow: 0 0 0 1px #818cf8, 0 8px 32px rgba(129,140,248,0.15);
+  border-color: var(--border-strong);
 }
 
+/* Plain mono label in the card's top corner; the word does the work. */
 .plan-badge {
   position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0ea5e9;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 3px 12px;
-  border-radius: 999px;
+  top: 28px;
+  right: 24px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--accent-light);
   white-space: nowrap;
-}
-
-.plan-badge-yearly {
-  background: #6366f1;
 }
 
 .plan-top {
@@ -251,16 +237,17 @@ export default {
 }
 
 .plan-name {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-dim);
 }
 
 .plan-price {
   font-size: 2.2rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   line-height: 1;
 }
@@ -307,23 +294,27 @@ export default {
   display: block;
   width: 100%;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
   border: none;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--t), border-color var(--t), color var(--t), transform var(--t);
+}
+
+.plan-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .plan-btn-primary {
-  background: #0ea5e9;
+  background: var(--accent);
   color: #fff;
 }
 
 .plan-btn-primary:hover {
-  background: #0284c7;
+  background: var(--accent-hover);
   color: #fff;
 }
 
@@ -343,7 +334,8 @@ export default {
 
 .compare-title {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 24px;
 }
@@ -351,7 +343,7 @@ export default {
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .compare-table {
@@ -366,17 +358,17 @@ export default {
 
 .compare-table th {
   padding: 14px 20px;
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-dim);
   background: var(--surface-sunken);
 }
 
 .th-featured {
-  color: #7dd3fc !important;
-  background: rgba(14,165,233,0.07) !important;
+  color: var(--accent-light) !important;
+  background: rgba(37,99,235,0.08) !important;
 }
 
 .feature-col {
@@ -386,6 +378,7 @@ export default {
 
 .compare-table tbody tr {
   border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--t-fast);
 }
 
 .compare-table tbody tr:last-child { border-bottom: none; }
@@ -402,8 +395,8 @@ export default {
 }
 
 .td-featured {
-  background: rgba(14,165,233,0.05) !important;
-  color: #7dd3fc !important;
+  background: rgba(37,99,235,0.06) !important;
+  color: var(--accent-light) !important;
 }
 
 .feature-name {

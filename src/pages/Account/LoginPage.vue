@@ -226,10 +226,11 @@ export default {
 }
 
 .auth-divider-text {
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .auth-account {

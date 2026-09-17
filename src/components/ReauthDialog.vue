@@ -82,7 +82,6 @@ watch(() => reauthState.open, (open) => {
   inset: 0;
   z-index: 1000;
   background: var(--overlay);
-  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +93,7 @@ watch(() => reauthState.open, (open) => {
   max-width: 400px;
   background: var(--surface-raised);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-modal);
   padding: var(--space-6);
   display: flex;

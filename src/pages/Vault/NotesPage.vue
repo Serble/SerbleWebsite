@@ -491,11 +491,11 @@ export default {
   text-align: left;
   background: none;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   margin-bottom: 2px;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background var(--t-fast), border-color var(--t-fast);
   color: inherit;
 }
 
@@ -537,7 +537,7 @@ export default {
   padding: 2px 4px;
   border-radius: 4px;
   flex-shrink: 0;
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--t-fast), background var(--t-fast);
   line-height: 1;
 }
 
@@ -568,7 +568,7 @@ export default {
 .sidebar-btn {
   width: 100%;
   padding: 8px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   font-size: 0.8rem;
   font-weight: 600;
   border: none;
@@ -576,8 +576,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  transition: background var(--t), color var(--t), transform var(--t);
 }
+
+.sidebar-btn:active { transform: scale(0.98); }
 
 .sidebar-btn-primary {
   background: var(--accent);
@@ -648,7 +650,7 @@ export default {
 .lock-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 40px 36px;
   text-align: center;
   width: 100%;
@@ -665,7 +667,7 @@ export default {
 
 .lock-card h4 {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
   margin: 0;
 }
@@ -684,12 +686,12 @@ export default {
 .lock-input {
   background: var(--surface-sunken);
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  color: #fff;
+  border-radius: var(--radius-sm);
+  color: var(--text);
   font-size: 0.95rem;
   padding: 10px 14px;
   text-align: center;
-  transition: border-color 0.15s;
+  transition: border-color var(--t);
 }
 
 .lock-input::placeholder { color: var(--text-faint); }
@@ -698,13 +700,15 @@ export default {
 
 .lock-btn {
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--t), transform var(--t);
 }
+
+.lock-btn:active { transform: scale(0.98); }
 
 .lock-btn-primary {
   background: var(--accent);
@@ -741,7 +745,7 @@ export default {
 
 .save-btn {
   padding: 6px 16px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   font-size: 0.8rem;
   font-weight: 600;
   border: 1px solid var(--border-strong);
@@ -751,7 +755,7 @@ export default {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .save-btn-dirty {
@@ -770,7 +774,7 @@ export default {
 }
 
 .save-btn-saved {
-  border-color: #166534;
+  border-color: var(--success-border);
   color: var(--success);
 }
 
@@ -782,7 +786,7 @@ export default {
   border: none;
   resize: none;
   color: var(--text-secondary);
-  font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.9rem;
   line-height: 1.7;
   padding: 20px 24px;
@@ -807,7 +811,7 @@ export default {
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  box-shadow: var(--shadow-popover);
 }
 
 @media (max-width: 640px) {
@@ -820,7 +824,7 @@ export default {
     bottom: 0;
     z-index: 40;
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    transition: transform var(--t);
     width: 280px;
   }
 

@@ -479,12 +479,12 @@ export default {
 <style scoped>
 .trades-page { max-width: 760px; margin: 0 auto; padding: 40px 24px 60px; }
 .head { display: flex; align-items: center; justify-content: space-between; }
-.title { font-size: 1.5rem; font-weight: 800; color: var(--text); margin: 0; }
+.title { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); margin: 0; }
 .subtitle { font-size: 0.85rem; color: var(--text-muted); margin: 6px 0 20px; }
 
 .card {
   background: var(--surface-sunken); border: 1px solid var(--border);
-  border-radius: 14px; padding: 18px 20px; margin-bottom: 20px;
+  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 20px;
 }
 .card-title { margin: 0 0 12px; font-size: 1rem; font-weight: 700; color: var(--text); }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 8px 0; }
@@ -499,7 +499,7 @@ export default {
 .hint { font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0; }
 
 .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-.pick { padding: 0; border: 2px solid transparent; background: transparent; border-radius: 14px; cursor: pointer; }
+.pick { padding: 0; border: 2px solid transparent; background: transparent; border-radius: var(--radius); cursor: pointer; transition: border-color var(--t); }
 .pick.on { border-color: var(--accent); }
 
 .picker-search {
@@ -510,7 +510,7 @@ export default {
 .chip {
   display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
   background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--text);
-  border: 1px solid var(--border); border-radius: 999px; padding: 3px 6px 3px 10px; font-size: 0.8rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 6px 3px 10px; font-size: 0.8rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .chip-x { display: inline-flex; align-items: center; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 0 2px; }
@@ -521,10 +521,13 @@ export default {
 .pg-info { font-size: 0.8rem; color: var(--text-muted); }
 
 .btn {
-  border: 0; border-radius: 9px; padding: 9px 16px; font-weight: 600; cursor: pointer;
+  border: 0; border-radius: var(--radius-sm); padding: 9px 16px; font-weight: 600; cursor: pointer;
   background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  transition: background var(--t), color var(--t), border-color var(--t), transform var(--t);
 }
+.btn:active:not(:disabled) { transform: scale(0.98); }
 .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+.btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
 .btn.bad { background: var(--danger); color: #fff; border-color: transparent; }
 .btn.ghost { background: transparent; }
 .btn.small { padding: 6px 12px; font-size: 0.85rem; }
@@ -539,32 +542,33 @@ export default {
 .tab {
   background: transparent; border: 0; padding: 10px 14px; cursor: pointer; color: var(--text-muted);
   font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color var(--t), border-color var(--t);
 }
 .tab.active { color: var(--text); border-bottom-color: var(--accent); }
 .count {
-  display: inline-block; margin-left: 6px; background: var(--accent); color: #fff;
-  border-radius: 999px; font-size: 0.72rem; padding: 1px 7px; font-weight: 700;
+  display: inline-block; margin-left: 6px; color: var(--accent-light);
+  font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500;
 }
 .trades-refresh { margin-left: auto; }
 
 .state { padding: 36px; text-align: center; color: var(--text-muted); }
 
 .trade-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.trade { background: var(--surface-sunken); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+.trade { background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
 .trade-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .who { display: flex; align-items: center; gap: 6px; color: var(--text); }
 .who .dir { color: var(--text-muted); font-size: 0.82rem; }
-.gift-tag { font-size: 0.72rem; background: var(--accent); color: #fff; border-radius: 999px; padding: 1px 8px; }
+.gift-tag { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; color: var(--accent-light); }
 
-.badge { font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
-.badge.ok { background: color-mix(in srgb, #2ea043 22%, transparent); color: #2ea043; }
-.badge.bad { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
-.badge.pending { background: color-mix(in srgb, #d29922 24%, transparent); color: #d29922; }
-.badge.muted { background: var(--surface); color: var(--text-muted); }
+.badge { font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em; }
+.badge.ok { color: var(--success); }
+.badge.bad { color: var(--danger); }
+.badge.pending { color: var(--warning); }
+.badge.muted { color: var(--text-muted); }
 
 .swap { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; }
 .swap-col { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.swap-head { font-size: 0.76rem; color: var(--text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
+.swap-head { font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em; color: var(--text-muted); margin: 0; }
 .swap-arrow { align-self: center; color: var(--text-muted); }
 .coins { margin: 0; font-weight: 700; color: var(--text); }
 .nothing { margin: 0; color: var(--text-muted); font-size: 0.85rem; }

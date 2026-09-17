@@ -347,7 +347,7 @@ export default {
   color: var(--d-text);
 }
 .item-content {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity var(--t), transform var(--t);
 }
 .item-details.is-switching .item-content {
   opacity: 0.45;
@@ -364,13 +364,13 @@ export default {
 }
 .loading-pill {
   border: 1px solid var(--d-border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--d-surface) 88%, transparent);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--d-surface);
   color: var(--d-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  font-weight: 500;
   padding: 6px 12px;
-  backdrop-filter: blur(4px);
 }
 
 .state { padding: 32px; text-align: center; color: var(--d-muted); }
@@ -378,24 +378,24 @@ export default {
 
 .item-head { display: flex; align-items: center; gap: 16px; }
 .head-icon {
-  flex: 0 0 auto; width: 64px; height: 64px; border-radius: 14px; overflow: hidden;
+  flex: 0 0 auto; width: 64px; height: 64px; border-radius: var(--radius, 10px); overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   background: color-mix(in srgb, var(--d-accent) 14%, transparent); border: 1px solid var(--d-border);
 }
 .head-icon-img { width: 100%; height: 100%; object-fit: cover; }
-.head-icon-placeholder { font-weight: 800; font-size: 28px; color: var(--d-accent); }
+.head-icon-placeholder { font-weight: 600; font-size: 28px; color: var(--d-accent); }
 .head-text { min-width: 0; }
-.head-name { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--d-text); word-break: break-word; }
+.head-name { margin: 0; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; color: var(--d-text); word-break: break-word; }
 .head-fp { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; color: var(--d-faint); }
 
 .item-description { margin: 18px 0 0; color: var(--d-muted); line-height: 1.5; }
 
-.detail-grid { margin-top: 22px; border: 1px solid var(--d-border); border-radius: 12px; overflow: hidden; }
+.detail-grid { margin-top: 22px; border: 1px solid var(--d-border); border-radius: var(--radius, 10px); overflow: hidden; }
 .detail-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--d-border); }
 .detail-row:last-child { border-bottom: none; }
 .detail-label {
-  flex: 0 0 120px; font-size: 0.74rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--d-faint);
+  flex: 0 0 120px; font-family: var(--font-mono, monospace); font-size: 0.74rem; font-weight: 500;
+  letter-spacing: 0.02em; color: var(--d-faint);
 }
 .detail-value {
   flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: flex-start; gap: 6px;
@@ -435,8 +435,7 @@ export default {
 .history-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .history-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--d-text); }
 .history-count {
-  font-size: 0.72rem; font-weight: 700; color: var(--d-muted); background: var(--d-surface);
-  border: 1px solid var(--d-border); border-radius: 999px; padding: 1px 8px;
+  font-family: var(--font-mono, monospace); font-size: 0.74rem; font-weight: 500; color: var(--d-muted);
 }
 .history-list { list-style: none; margin: 0; padding: 0; }
 .history-item {
@@ -444,11 +443,10 @@ export default {
   border-radius: 10px; margin-bottom: 8px; background: var(--d-surface);
 }
 .kind-badge {
-  flex: 0 0 auto; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 3px 8px; border-radius: 6px;
+  flex: 0 0 auto; font-family: var(--font-mono, monospace); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em;
 }
-.kind-created { background: #1f4d2e; color: #86efac; }
-.kind-trade { background: #2c4a6b; color: var(--accent-light); }
+.kind-created { color: var(--success, #86efac); }
+.kind-trade { color: var(--accent-light); }
 .history-body { min-width: 0; flex: 1 1 auto; }
 .history-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--d-text); font-size: 0.9rem; }
 .flow-owner { font-weight: 600; word-break: break-word; }

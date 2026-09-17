@@ -62,7 +62,7 @@ export default {};
 
 .cancel-title {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   letter-spacing: -0.02em;
   margin-bottom: 16px;
@@ -89,11 +89,15 @@ export default {};
   display: inline-flex;
   align-items: center;
   padding: 9px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.88rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background var(--t), border-color var(--t), color var(--t), transform var(--t);
+}
+
+.cancel-btn:active {
+  transform: scale(0.98);
 }
 
 .cancel-btn-primary {

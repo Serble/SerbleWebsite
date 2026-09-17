@@ -548,8 +548,9 @@ export default {
 }
 
 .balance-title {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
 }
@@ -557,7 +558,7 @@ export default {
 .balance-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   padding: 40px 24px 28px;
   display: flex;
   flex-direction: column;
@@ -580,17 +581,18 @@ export default {
 
 .coin-amount {
   font-size: 2.6rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   line-height: 1.1;
   word-break: break-all;
 }
 
 .coin-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
 }
 
@@ -640,10 +642,10 @@ export default {
 
 .id-chip-label {
   flex-shrink: 0;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
 }
 
@@ -651,7 +653,7 @@ export default {
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   padding: 24px;
   margin-top: 24px;
 }
@@ -719,7 +721,7 @@ export default {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity var(--t), transform var(--t);
 }
 
 .send-btn:hover:not(:disabled) { opacity: 0.9; }
@@ -753,10 +755,10 @@ export default {
 }
 
 .tx-stat-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
 }
 
@@ -782,14 +784,14 @@ export default {
   padding: 3px;
   background: var(--surface-sunken);
   border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
 }
 
 .tx-filter-btn {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  border-radius: var(--radius-pill);
+  border-radius: 4px;
   padding: 5px 14px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -812,10 +814,10 @@ export default {
    repeating on every row. */
 .tx-day-label {
   margin: 0 0 4px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
 }
 
@@ -959,10 +961,10 @@ export default {
 .tx-detail-full { grid-column: 1 / -1; }
 
 .tx-detail-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
 }
 
@@ -1000,7 +1002,7 @@ export default {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--t), color var(--t);
 }
 
 .load-more-btn:hover:not(:disabled) {

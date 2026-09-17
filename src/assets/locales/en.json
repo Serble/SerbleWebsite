@@ -182,5 +182,7 @@
     "next": "Next",
     "page-indicator": "Page {current} of {total}",
     "proposal": "Proposal",
-    "settings": "Settings"
+    "settings": "Settings",
+    "menu": "Menu",
+    "balance-tile-desc": "See your Serble coins and where they came from."
 }

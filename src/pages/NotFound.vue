@@ -67,20 +67,18 @@ export default {
 
 .error-code {
   font-size: 7rem;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: -0.04em;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text);
   margin-bottom: 12px;
   user-select: none;
 }
 
 .notfound-title {
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 12px;
 }
@@ -95,10 +93,12 @@ export default {
 .notfound-desc :deep(a) {
   color: var(--accent-light);
   text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--t);
 }
 
 .notfound-desc :deep(a:hover) {
-  text-decoration: underline;
+  border-color: var(--accent-light);
 }
 
 .notfound-actions {
@@ -113,13 +113,13 @@ export default {
   display: inline-flex;
   align-items: center;
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--accent);
   color: #fff;
   font-size: 0.88rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.15s;
+  transition: background var(--t), transform var(--t);
 }
 
 .btn-home:hover {
@@ -127,18 +127,23 @@ export default {
   color: #fff;
 }
 
+.btn-home:active,
+.btn-back:active {
+  transform: scale(0.98);
+}
+
 .btn-back {
   display: inline-flex;
   align-items: center;
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
   border: 1px solid var(--border-strong);
   color: var(--text-muted);
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color var(--t), color var(--t), transform var(--t);
 }
 
 .btn-back:hover {
@@ -149,7 +154,7 @@ export default {
 /* Cat image card */
 .cat-card {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface);
 }

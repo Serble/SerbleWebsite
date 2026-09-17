@@ -667,7 +667,7 @@ export default {
         >
           <span class="rail-link-label">{{ $t(id) }}</span>
           <template v-if="id === 'profile' && profileDirty">
-            <span class="dirty-dot" aria-hidden="true"></span>
+            <span class="dirty-mark" aria-hidden="true">*</span>
             <span class="sr-only">{{ $t('unsaved-changes') }}</span>
           </template>
           <span v-else-if="id === 'security' && securityNote" class="rail-link-note">{{ securityNote }}</span>
@@ -871,7 +871,6 @@ export default {
                     {{ $t('sign-in-way-unused', { methods: methodList(redundantVs(flow).methods) }) }}
                   </p>
                   <span class="way-strength">
-                    <span class="way-dot" aria-hidden="true" />
                     {{ $t('strength-' + flowStrength(flow.methods)) }}
                   </span>
                 </li>
@@ -1360,13 +1359,11 @@ export default {
   height: 44px;
   flex-shrink: 0;
   border-radius: var(--radius-pill);
-  background: linear-gradient(140deg, var(--accent-purple), var(--accent));
-  /* A hairline of page colour between the fill and its glow keeps the disc from
-     bleeding into the surface behind it. */
-  box-shadow: 0 0 0 1px var(--surface-sunken), 0 0 0 3px var(--accent-ring);
-  color: #fff;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-light);
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -1457,12 +1454,11 @@ export default {
 
 .rail-link.active .rail-link-note { color: var(--accent-light); }
 
-.dirty-dot {
-  width: 7px;
-  height: 7px;
+.dirty-mark {
   flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  background: var(--accent-light);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--accent-light);
 }
 
 @media (max-width: 900px) {
@@ -1497,10 +1493,10 @@ export default {
 }
 
 .facts-title {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
   margin: 0;
 }
@@ -1520,10 +1516,10 @@ export default {
 }
 
 .fact-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
 }
 
@@ -1961,12 +1957,8 @@ details[open] > .panel-summary .panel-chevron { transform: rotate(180deg); }
 }
 
 .way-method {
-  padding: 4px 11px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1980,18 +1972,12 @@ details[open] > .panel-summary .panel-chevron { transform: rotate(180deg); }
 .way-strength {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
   margin-top: auto;
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--text-dim);
-}
-
-.way-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--strength);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--strength, var(--text-dim));
 }
 
 .way-weak .way-strength { color: var(--warning); }
@@ -2156,14 +2142,14 @@ details[open] > .panel-summary .panel-chevron { transform: rotate(180deg); }
   align-items: center;
   gap: var(--space-2);
   padding: 7px 12px 7px 10px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-sunken);
   color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
+  transition: border-color var(--t), background var(--t), color var(--t);
 }
 
 .flow-toggle:hover { border-color: var(--border-strong); }

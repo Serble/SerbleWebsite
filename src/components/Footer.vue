@@ -3,7 +3,6 @@ import { useI18n } from 'vue-i18n';
 import { setCookie } from '@/assets/js/utils.js';
 import { getSupportedLocale, languageOptions } from '@/assets/js/languages.js';
 import { computed } from 'vue';
-import Icon from '@/components/Icon.vue';
 
 const { locale } = useI18n({ useScope: 'global' });
 
@@ -18,50 +17,41 @@ function changeLanguage(e) {
 
 <template>
   <footer class="site-footer">
-    <div class="footer-top">
+    <div class="footer-inner">
 
-      <!-- Brand -->
-      <div class="footer-col">
+      <div class="footer-grid">
+        <!-- Brand: the wordmark set large in the display face, no logo tile. -->
         <div class="footer-brand">
-          <img src="/images/icon.png" width="32" height="32" :alt="$t('serble')" class="footer-logo" />
-          <span class="footer-brand-name">{{ $t('serble') }}</span>
+          <RouterLink to="/" class="footer-wordmark">{{ $t('serble') }}</RouterLink>
+          <p class="footer-tagline">{{ $t('footer-tagline-1') }}<br>{{ $t('footer-tagline-2') }}</p>
         </div>
-        <p class="footer-tagline">{{ $t('footer-tagline-1') }}<br>{{ $t('footer-tagline-2') }}</p>
-      </div>
 
-      <!-- Navigation -->
-      <div class="footer-col">
-        <p class="footer-heading">{{ $t('navigate') }}</p>
-        <ul class="footer-links">
-          <li><a href="/">{{ $t('home') }}</a></li>
-          <li><a href="/store">{{ $t('store') }}</a></li>
-          <li><RouterLink to="/notes">{{ $t('vault') }}</RouterLink></li>
-          <li><RouterLink to="/wordmaster">{{ $t('games') }}</RouterLink></li>
-          <li><RouterLink to="/contact">{{ $t('contact') }}</RouterLink></li>
-          <li><a href="https://status.serble.net" target="_blank" rel="noopener">{{ $t('status') }} <Icon name="arrowUpRight" :size="12" /></a></li>
-        </ul>
-      </div>
+        <div class="footer-col">
+          <p class="footer-heading">{{ $t('navigate') }}</p>
+          <ul class="footer-links">
+            <li><RouterLink to="/">{{ $t('home') }}</RouterLink></li>
+            <li><RouterLink to="/store">{{ $t('store') }}</RouterLink></li>
+            <li><RouterLink to="/notes">{{ $t('vault') }}</RouterLink></li>
+            <li><RouterLink to="/wordmaster">{{ $t('games') }}</RouterLink></li>
+            <li><RouterLink to="/contact">{{ $t('contact') }}</RouterLink></li>
+            <li><a href="https://status.serble.net" target="_blank" rel="noopener">{{ $t('status') }}</a></li>
+          </ul>
+        </div>
 
-      <!-- Account -->
-      <div class="footer-col">
-        <p class="footer-heading">{{ $t('account') }}</p>
-        <ul class="footer-links">
-          <li><RouterLink to="/login">{{ $t('login') }}</RouterLink></li>
-          <li><RouterLink to="/register">{{ $t('register') }}</RouterLink></li>
-          <li><RouterLink to="/account">{{ $t('profile') }}</RouterLink></li>
-          <li><RouterLink to="/oauthapps">{{ $t('my-applications') }}</RouterLink></li>
-          <li><RouterLink to="/authorizedapps">{{ $t('authorized-apps') }}</RouterLink></li>
-        </ul>
-      </div>
+        <div class="footer-col">
+          <p class="footer-heading">{{ $t('account') }}</p>
+          <ul class="footer-links">
+            <li><RouterLink to="/login">{{ $t('login') }}</RouterLink></li>
+            <li><RouterLink to="/register">{{ $t('register') }}</RouterLink></li>
+            <li><RouterLink to="/account">{{ $t('profile') }}</RouterLink></li>
+            <li><RouterLink to="/oauthapps">{{ $t('my-applications') }}</RouterLink></li>
+            <li><RouterLink to="/authorizedapps">{{ $t('authorized-apps') }}</RouterLink></li>
+          </ul>
+        </div>
 
-      <!-- Language -->
-      <div class="footer-col">
-        <p class="footer-heading">{{ $t('language') }}</p>
-        <div class="lang-select-wrap">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="lang-icon">
-            <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m7.5-6.923c-.67.204-1.335.82-1.887 1.855A8 8 0 0 0 5.145 4H7.5zM4.09 4a9.3 9.3 0 0 1 .64-1.539 7 7 0 0 1 .597-.933A7.03 7.03 0 0 0 2.255 4zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a7 7 0 0 0-.656 2.5zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5zM8.5 5v2.5h2.99a12.5 12.5 0 0 0-.337-2.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5zM5.145 12q.208.58.468 1.068c.552 1.035 1.218 1.65 1.887 1.855V12zm.182 2.472a7 7 0 0 1-.597-.933A9.3 9.3 0 0 1 4.09 12H2.255a7 7 0 0 0 3.072 2.472M3.82 11a13.7 13.7 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5zm6.853 3.472A7 7 0 0 0 13.745 12H11.91a9.3 9.3 0 0 1-.64 1.539 7 7 0 0 1-.597.933M8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855q.26-.487.468-1.068zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.7 13.7 0 0 1-.312 2.5m2.802-3.5a7 7 0 0 0-.656-2.5H12.18c.174.782.282 1.623.312 2.5zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7 7 0 0 0-3.072-2.472c.218.284.418.598.597.933M10.855 4a8 8 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4z"/>
-          </svg>
-          <select class="lang-select" :value="currentLocale" @change="changeLanguage">
+        <div class="footer-col">
+          <label class="footer-heading" for="footer-language">{{ $t('language') }}</label>
+          <select id="footer-language" class="lang-select" :value="currentLocale" @change="changeLanguage">
             <option v-for="option in languageOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
@@ -69,180 +59,165 @@ function changeLanguage(e) {
         </div>
       </div>
 
-    </div>
+      <div class="footer-bottom">
+        <span>&copy; 2020-{{ new Date().getFullYear() }} CoPokBl</span>
+        <a href="/discord/" class="footer-bottom-link">Discord</a>
+      </div>
 
-    <div class="footer-bottom">
-      <span>&copy; 2020-{{ new Date().getFullYear() }} CoPokBl &middot; <a href="/">{{ $t('serble') }}</a></span>
-      <span class="footer-discord">
-        <a href="/discord/" class="footer-discord-link">
-          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
-          </svg>
-          Discord
-        </a>
-      </span>
     </div>
   </footer>
 </template>
 
 <style scoped>
 .site-footer {
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  margin-top: var(--space-8);
   border-top: 1px solid var(--border);
-  background: var(--surface-footer);
-  margin-top: 48px;
+  background: var(--surface-sunken);
 }
 
-.footer-top {
+.footer-inner {
   max-width: var(--container);
   margin: 0 auto;
-  padding: var(--space-8) var(--space-6) var(--space-7);
+  padding: 56px var(--space-6) 0;
+}
+
+.footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: minmax(0, 5fr) repeat(3, minmax(0, 2fr));
   gap: 40px;
+  padding-bottom: 56px;
 }
 
-@media (max-width: 768px) {
-  .footer-top {
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-  }
-}
-
-@media (max-width: 480px) {
-  .footer-top {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Brand column */
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.footer-logo {
-  border-radius: 8px;
-}
-
-.footer-brand-name {
-  font-size: 1.1rem;
+/* Brand */
+.footer-wordmark {
+  display: inline-block;
+  margin-bottom: 14px;
   font-weight: 700;
+  font-size: 2.2rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
   color: var(--text);
+  text-decoration: none;
+  transition: color 0.25s var(--ease);
+}
+
+.footer-wordmark:hover {
+  color: var(--text-muted);
 }
 
 .footer-tagline {
-  font-size: 0.82rem;
-  color: var(--text-faint);
-  line-height: 1.6;
   margin: 0;
+  max-width: 32ch;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-dim);
 }
 
 /* Link columns */
 .footer-heading {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-dim);
-  margin-bottom: 12px;
+  display: block;
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
 }
 
 .footer-links {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
-.footer-links a {
-  font-size: 0.85rem;
+.footer-links a,
+.footer-bottom-link {
+  font-size: 0.9rem;
   color: var(--text-muted);
   text-decoration: none;
-  transition: color 0.15s;
+  border-bottom: 1px solid transparent;
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease);
 }
 
-.footer-links a:hover {
+.footer-links a:hover,
+.footer-bottom-link:hover {
   color: var(--text);
+  border-color: var(--text);
 }
 
-/* Bottom bar */
-.footer-bottom {
-  border-top: 1px solid var(--border-subtle);
-  max-width: var(--container);
-  margin: 0 auto;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: var(--text-faint);
-}
-
-.footer-bottom a {
-  color: var(--text-dim);
-  text-decoration: none;
-}
-
-.footer-bottom a:hover {
-  color: var(--text-muted);
-}
-
-.footer-discord-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #7289da !important;
-  transition: opacity 0.15s;
-}
-
-.footer-discord-link:hover {
-  opacity: 0.8;
-}
-
-/* Language select */
-.lang-select-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.lang-icon {
-  position: absolute;
-  left: 10px;
-  color: var(--text-dim);
-  pointer-events: none;
-  flex-shrink: 0;
-}
-
+/* Language select: a bare control on a rule, matching the rest of the footer. */
 .lang-select {
   appearance: none;
-  background-color: #1c1c1f;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  padding: 6px 28px 6px 30px;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  width: 100%;
+  max-width: 220px;
+  padding: 6px 26px 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-strong);
+  border-radius: 0;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none' stroke='%238e8e99' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 6.5 8 11l4.5-4.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 9px center;
+  background-position: right 4px center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease);
 }
 
 .lang-select:hover,
 .lang-select:focus {
-  border-color: var(--text-dim);
   color: var(--text);
+  border-color: var(--text);
+}
+
+.lang-select:focus-visible {
+  outline: none;
 }
 
 .lang-select option {
-  background-color: var(--surface);
-  color: #e4e4e7;
+  background-color: var(--surface-raised);
+  color: var(--text-secondary);
+}
+
+/* Bottom line */
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 0 22px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+
+.footer-bottom-link {
+  font-size: 0.82rem;
+}
+
+@media (max-width: 768px) {
+  .footer-inner {
+    padding-top: 44px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    padding-bottom: 40px;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

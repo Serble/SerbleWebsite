@@ -9,11 +9,6 @@ export default {};
 
       <!-- Header -->
       <div class="contact-header">
-        <div class="contact-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"/>
-          </svg>
-        </div>
         <h1 class="contact-title">{{ $t('contact-us') }}</h1>
         <p class="contact-sub">{{ $t('contact-sub') }}</p>
       </div>
@@ -93,16 +88,9 @@ export default {};
   text-align: center;
 }
 
-.contact-icon {
-  display: flex;
-  justify-content: center;
-  color: var(--accent-light);
-  margin-bottom: 14px;
-}
-
 .contact-title {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 8px;
@@ -127,24 +115,23 @@ export default {};
   gap: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 18px 20px;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  transition: border-color var(--t), background var(--t);
 }
 
 .contact-card:hover {
   border-color: var(--border-strong);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  background: var(--surface-raised);
   color: inherit;
 }
 
 .card-icon-wrap {
   width: 46px;
   height: 46px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -160,10 +147,10 @@ export default {};
 }
 
 .card-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-dim);
 }
 
@@ -179,11 +166,11 @@ export default {};
 .card-arrow {
   color: var(--border-strong);
   flex-shrink: 0;
-  transition: color 0.15s, transform 0.15s;
+  transition: color var(--t), transform var(--t);
 }
 
 .contact-card:hover .card-arrow {
-  color: var(--text-dim);
-  transform: translateX(2px);
+  color: var(--text);
+  transform: translateX(3px);
 }
 </style>

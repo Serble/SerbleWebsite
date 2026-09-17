@@ -31,8 +31,8 @@
        One blue, three roles. Do not introduce further blues: --accent for
        solid fills, --accent-hover for their hover state, --accent-light for
        text/links/focus borders on dark grounds. */
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
+    --accent: #2b6cf0;
+    --accent-hover: #3b82f6;
     --accent-light: #60a5fa;
     --accent-purple: #7c3aed;
     --accent-ring: rgba(37, 99, 235, 0.15);
@@ -67,11 +67,15 @@
     --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
 
     /* -- Typography ----------------------------------------------------------
-       Generic families go last, otherwise nothing after them is ever reached. */
-    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-                 Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
-                 'Liberation Mono', monospace;
+       Three faces, three jobs. Fraunces (a serif) for display headings and the
+       wordmark, IBM Plex Sans for everything readable, IBM Plex Mono for small
+       labels and code. All three load from Google Fonts in index.html; the
+       generic families go last, otherwise nothing after them is ever reached. */
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont,
+                 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
+                 Consolas, 'Liberation Mono', monospace;
 
     /* -- Radius -------------------------------------------------------------
        Three steps plus a pill. Anything else is drift. */
@@ -96,9 +100,12 @@
     --container: 1000px;
     --container-narrow: 680px;
 
-    /* -- Motion -- */
-    --t-fast: 0.12s;
-    --t: 0.15s;
+    /* -- Motion ---------------------------------------------------------------
+       One easing curve for everything that moves. Nothing snaps: hover and
+       active states ease in and out. */
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 0.15s var(--ease);
+    --t: 0.25s var(--ease);
 
     /* -- Focus -- */
     --focus-ring: 0 0 0 3px var(--accent-ring);

@@ -186,7 +186,6 @@ export default {
         <p class="scopes-heading">{{ $t('oidc-scopes-heading') }}</p>
         <ul v-if="scopes.length" class="scope-list">
           <li v-for="s in scopes" :key="s" class="scope-item">
-            <div class="scope-dot"></div>
             <div class="scope-text">
               <span class="scope-name">{{ s }}</span>
               <span class="scope-desc">{{ describeScope(s) }}</span>
@@ -239,7 +238,7 @@ export default {
   max-width: 480px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 36px 32px;
   display: flex;
   flex-direction: column;
@@ -262,7 +261,7 @@ export default {
   justify-content: center;
 }
 .oidc-error-title {
-  font-size: 1.5rem; font-weight: 800; color: var(--text); margin: 0; text-align: center;
+  font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); margin: 0; text-align: center;
 }
 .oidc-error-sub {
   font-size: 0.85rem; color: var(--text-dim); margin: 0; text-align: center; line-height: 1.6;
@@ -279,8 +278,7 @@ export default {
 }
 .error-detail-row { display: flex; align-items: flex-start; gap: 12px; }
 .error-detail-label {
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--text-faint); min-width: 88px; flex-shrink: 0; padding-top: 2px;
+  font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--text-faint); min-width: 88px; flex-shrink: 0; padding-top: 2px;
 }
 .error-detail-value { font-size: 0.83rem; color: var(--text-secondary); word-break: break-all; }
 .error-code-badge {
@@ -297,12 +295,13 @@ export default {
 
 .oidc-app-header { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .oidc-app-icon {
-  width: 60px; height: 60px; border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
-  color: #fff; font-size: 1.6rem; font-weight: 800;
+  width: 60px; height: 60px; border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-light); font-size: 1.6rem; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
 }
-.oidc-app-name { font-size: 1.4rem; font-weight: 800; color: var(--text); margin: 0; }
+.oidc-app-name { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); margin: 0; }
 .oidc-app-desc { font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
 .oidc-warning-text { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin: 0; }
@@ -312,29 +311,28 @@ export default {
   border-radius: 10px; padding: 14px 16px; text-align: left;
 }
 .scopes-heading {
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 10px;
+  font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--text-faint); margin-bottom: 10px;
 }
 .scope-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .scope-item { display: flex; align-items: flex-start; gap: 10px; }
-.scope-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 5px; }
 .scope-text { display: flex; flex-direction: column; gap: 2px; }
 .scope-name { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .scope-desc { font-size: 0.77rem; color: var(--text-faint); line-height: 1.4; }
 .no-scopes { font-size: 0.85rem; color: var(--text-faint); margin: 0; }
 
 .oidc-deny-warning {
-  font-size: 0.78rem; font-weight: 700; color: var(--danger);
-  text-transform: uppercase; letter-spacing: 0.04em; margin: 0;
+  font-family: var(--font-mono); font-size: 0.76rem; font-weight: 500; color: var(--danger);
+  letter-spacing: 0.02em; margin: 0;
 }
 
 .oidc-actions { display: flex; gap: 10px; width: 100%; }
 .oidc-btn {
-  flex: 1; padding: 11px; border-radius: 8px;
+  flex: 1; padding: 11px; border-radius: var(--radius-sm);
   font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--t), color var(--t), opacity var(--t), transform var(--t);
 }
+.oidc-btn:active:not(:disabled) { transform: scale(0.98); }
 .oidc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .oidc-btn-allow { background: var(--accent); color: #fff; }
 .oidc-btn-allow:hover:not(:disabled) { background: var(--accent-hover); }

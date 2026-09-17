@@ -37,7 +37,7 @@ export default {
   max-width: 480px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 36px 32px;
   display: flex;
   flex-direction: column;

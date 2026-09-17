@@ -432,7 +432,7 @@ export default {
   max-width: 480px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 36px 32px;
   display: flex;
   flex-direction: column;
@@ -451,7 +451,7 @@ export default {
 
 /* Error / result icons */
 .txc-error-icon { color: var(--danger); display: flex; justify-content: center; }
-.txc-error-title { font-size: 1.5rem; font-weight: 800; color: var(--text); margin: 0; text-align: center; }
+.txc-error-title { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); margin: 0; text-align: center; }
 .txc-error-sub { font-size: 0.85rem; color: var(--text-dim); margin: 0; text-align: center; line-height: 1.6; }
 .txc-error-detail {
   width: 100%;
@@ -465,8 +465,7 @@ export default {
 }
 .error-detail-row { display: flex; align-items: flex-start; gap: 12px; }
 .error-detail-label {
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--text-faint); min-width: 88px; flex-shrink: 0; padding-top: 2px;
+  font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--text-faint); min-width: 88px; flex-shrink: 0; padding-top: 2px;
 }
 .error-detail-value { font-size: 0.83rem; color: var(--text-secondary); word-break: break-all; }
 .error-code-badge {
@@ -484,10 +483,10 @@ export default {
 .txc-back-center { align-self: center; }
 
 /* Result */
-.txc-result-icon { color: var(--success, #3fb950); display: flex; justify-content: center; }
+.txc-result-icon { color: var(--success); display: flex; justify-content: center; }
 .txc-result-bad { color: var(--danger); }
 .txc-result-neutral { color: var(--text-dim); }
-.txc-result-title { font-size: 1.5rem; font-weight: 800; color: var(--text); margin: 0; }
+.txc-result-title { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); margin: 0; }
 .txc-result-sub { font-size: 0.85rem; color: var(--text-dim); margin: 0; line-height: 1.6; }
 .txc-result-detail {
   width: 100%;
@@ -503,12 +502,13 @@ export default {
 /* App header */
 .txc-app-header { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .txc-app-icon {
-  width: 60px; height: 60px; border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
-  color: #fff; font-size: 1.6rem; font-weight: 800;
+  width: 60px; height: 60px; border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-light); font-size: 1.6rem; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
 }
-.txc-app-name { font-size: 1.4rem; font-weight: 800; color: var(--text); margin: 0; }
+.txc-app-name { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); margin: 0; }
 .txc-app-desc { font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
 .txc-warning-text { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin: 0; }
@@ -526,10 +526,9 @@ export default {
   padding: 18px 16px;
 }
 .txc-amount-label {
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--text-faint);
+  font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--text-faint);
 }
-.txc-amount-value { font-size: 2rem; font-weight: 800; color: var(--text); }
+.txc-amount-value { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
 .txc-amount-unit { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
 .txc-amount-box-bad { border-color: var(--danger-border); }
 .txc-balance-line { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-top: 4px; }
@@ -549,7 +548,7 @@ export default {
 }
 .txc-insufficient-icon { color: var(--danger); flex-shrink: 0; margin-top: 1px; }
 .txc-insufficient-title {
-  font-size: 0.85rem; font-weight: 800; color: var(--danger);
+  font-size: 0.85rem; font-weight: 700; color: var(--danger);
   margin: 0 0 4px;
 }
 .txc-insufficient-text { font-size: 0.8rem; color: var(--text-dim); line-height: 1.55; margin: 0; }
@@ -569,21 +568,17 @@ export default {
 }
 .txc-detail-row { display: flex; align-items: flex-start; gap: 12px; }
 .txc-detail-label {
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--text-faint); min-width: 64px; flex-shrink: 0; padding-top: 2px;
+  font-family: var(--font-mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--text-faint); min-width: 64px; flex-shrink: 0; padding-top: 2px;
 }
 .txc-detail-value { font-size: 0.85rem; color: var(--text-secondary); word-break: break-word; }
 .txc-recipient-tag {
   display: inline-block;
   margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--accent-light);
   vertical-align: middle;
 }
 
@@ -591,29 +586,30 @@ export default {
 .txc-return-note strong { color: var(--text-secondary); }
 
 .txc-deny-warning {
-  font-size: 0.78rem; font-weight: 700; color: var(--danger);
-  text-transform: uppercase; letter-spacing: 0.04em; margin: 0;
+  font-family: var(--font-mono); font-size: 0.76rem; font-weight: 500; color: var(--danger);
+  letter-spacing: 0.02em; margin: 0;
 }
 
 .txc-actions { display: flex; gap: 10px; width: 100%; }
 .txc-btn {
-  flex: 1; padding: 11px; border-radius: 8px;
+  flex: 1; padding: 11px; border-radius: var(--radius-sm);
   font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--t), color var(--t), opacity var(--t), transform var(--t);
 }
+.txc-btn:active:not(:disabled) { transform: scale(0.98); }
 .txc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .txc-btn-allow { background: var(--accent); color: #fff; }
 .txc-btn-allow:hover:not(:disabled) { background: var(--accent-hover); }
-.txc-btn-allow-fail { background: var(--warning); color: #1a1a1a; }
-.txc-btn-allow-fail:hover:not(:disabled) { background: #eab308; }
+.txc-btn-allow-fail { background: var(--warning); color: var(--surface-sunken); }
+.txc-btn-allow-fail:hover:not(:disabled) { filter: brightness(1.08); }
 .txc-btn-deny { background: var(--danger-strong); color: #fff; }
 .txc-btn-deny:hover:not(:disabled) { background: var(--danger-stronger); }
 
 /* -- Item trades -- */
 .txc-coin-row {
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
 }
 .txc-coin-give { color: var(--danger); }
@@ -636,20 +632,17 @@ export default {
   gap: 10px;
   background: var(--success-bg);
   border: 1px solid var(--success-border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 18px 16px;
 }
 .txc-gift-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--success);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--success);
 }
 
 /* Two-column swap */
@@ -667,15 +660,15 @@ export default {
   gap: 8px;
   background: var(--surface-sunken);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 14px 12px;
   min-width: 0;
 }
 .txc-swap-label {
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 .txc-swap-give { color: var(--danger); }
 .txc-swap-get { color: var(--success); }

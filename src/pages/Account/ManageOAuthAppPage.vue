@@ -465,8 +465,7 @@ export default {
         :aria-selected="activeTab === tab.id"
         @click="selectTab(tab.id)"
       >
-        {{ $t(tab.label) }}
-        <span v-if="tab.id === 'settings' && dirty" class="dirty-dot" :title="$t('unsaved-changes')"></span>
+        {{ $t(tab.label) }}<span v-if="tab.id === 'settings' && dirty" class="dirty-mark" :title="$t('unsaved-changes')" aria-hidden="true">*</span>
       </button>
     </div>
 
@@ -864,7 +863,7 @@ export default {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 9px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .back-btn:hover {
@@ -876,11 +875,12 @@ export default {
 .app-icon {
   width: 42px;
   height: 42px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
-  color: #fff;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-light);
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -898,7 +898,8 @@ export default {
 
 .page-title {
   font-size: 1.45rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
   word-break: break-word;
@@ -937,7 +938,7 @@ export default {
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--t), border-color var(--t);
 }
 
 .tab:hover { color: var(--text-secondary); }
@@ -951,11 +952,10 @@ export default {
 .tab-danger:hover { color: var(--danger); }
 .tab-danger.active { color: var(--danger); border-bottom-color: var(--danger); }
 
-.dirty-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--accent);
+.dirty-mark {
+  font-family: var(--font-mono);
+  color: var(--accent-light);
+  margin-left: 2px;
 }
 
 /* -- Panels -- */
@@ -965,7 +965,7 @@ export default {
   margin-top: 20px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 20px 24px;
 }
 
@@ -1034,10 +1034,11 @@ export default {
 /* -- Fields -- */
 .field-label {
   display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
   margin: 16px 0 8px;
 }
@@ -1077,7 +1078,7 @@ export default {
   border-radius: 8px;
   padding: 9px 12px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background var(--t), border-color var(--t), color var(--t);
 }
 
 .copy-chip:hover {
@@ -1140,10 +1141,11 @@ export default {
 }
 
 .fact-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
 }
 
@@ -1163,7 +1165,7 @@ export default {
   border-radius: 8px;
   padding: 7px 15px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .ghost-btn {
@@ -1177,10 +1179,10 @@ export default {
 .add-btn {
   color: #fff;
   background: var(--accent);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--text);
 }
 
-.add-btn:hover:not(:disabled) { background: var(--accent-hover); }
+.add-btn:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 
 .danger-btn {
   color: var(--danger);
@@ -1216,7 +1218,7 @@ export default {
   border: 1px solid var(--danger-border-soft);
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--t), color var(--t), border-color var(--t);
 }
 
 .icon-danger:hover {
@@ -1368,10 +1370,11 @@ export default {
 }
 
 .balance-box-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
 }
 
@@ -1394,14 +1397,14 @@ export default {
   border-radius: 7px;
   padding: 6px 16px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--t), color var(--t);
 }
 
 .direction-btn:hover { color: var(--text-secondary); }
 
 .direction-btn.active {
-  background: var(--accent);
-  color: #fff;
+  background: var(--border-strong);
+  color: var(--text);
 }
 
 .panel-actions {

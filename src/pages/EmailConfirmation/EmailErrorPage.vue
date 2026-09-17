@@ -38,7 +38,7 @@ export default {};
 .result-card {
   background: var(--surface);
   border: 1px solid var(--danger-border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 48px 40px;
   text-align: center;
   max-width: 400px;
@@ -62,7 +62,7 @@ export default {};
 
 .result-title {
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   margin: 0;
   letter-spacing: -0.02em;
@@ -79,12 +79,16 @@ export default {};
   display: inline-flex;
   align-items: center;
   padding: 10px 24px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.15s;
+  transition: background var(--t), color var(--t), transform var(--t);
   margin-top: 4px;
+}
+
+.result-btn:active {
+  transform: scale(0.98);
 }
 
 .result-btn-primary {

@@ -136,7 +136,7 @@ export default {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(90deg, #2a2a2a 25%, #383838 50%, #2a2a2a 75%);
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-raised) 50%, var(--surface) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.2s ease-in-out infinite;
 }
@@ -148,7 +148,7 @@ export default {
 .skeleton-line {
   height: 14px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #2a2a2a 25%, #383838 50%, #2a2a2a 75%);
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-raised) 50%, var(--surface) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.2s ease-in-out infinite;
   display: inline-block;

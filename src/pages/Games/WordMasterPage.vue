@@ -283,7 +283,7 @@ export default {
 
 .wm-title {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
@@ -293,7 +293,7 @@ export default {
 .wm-status-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 48px 32px;
   text-align: center;
   width: 100%;
@@ -304,7 +304,7 @@ export default {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -322,10 +322,11 @@ export default {
 .stat-chip {
   background: var(--surface-sunken);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   padding: 8px 16px;
   display: flex;
   flex-direction: column;
+  transition: border-color var(--t), background var(--t);
   align-items: center;
   gap: 2px;
   flex: 1;
@@ -337,16 +338,17 @@ export default {
 }
 
 .stat-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-size: 0.7rem;
   color: var(--text-faint);
 }
 
 .stat-value {
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   line-height: 1;
 }
@@ -364,13 +366,12 @@ export default {
   border-radius: 50%;
   border: 2px solid var(--border-strong);
   background: transparent;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background var(--t), border-color var(--t);
 }
 
 .strike-dot-hit {
   background: var(--danger);
   border-color: var(--danger);
-  box-shadow: 0 0 6px var(--danger-glow);
 }
 
 /* Timer bar */
@@ -403,10 +404,10 @@ export default {
 
 .word-bubble {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.04em;
   padding: 10px 28px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -473,14 +474,14 @@ export default {
   flex: 1;
   background: var(--surface-sunken);
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font-size: 1rem;
   font-weight: 600;
   padding: 10px 14px;
   text-align: center;
   letter-spacing: 0.05em;
-  transition: border-color 0.15s;
+  transition: border-color var(--t);
 }
 
 .wm-input::placeholder {
@@ -500,13 +501,17 @@ export default {
 
 .wm-btn {
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.88rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background var(--t), color var(--t), transform var(--t);
+}
+
+.wm-btn:active {
+  transform: scale(0.98);
 }
 
 .wm-btn-primary {
@@ -540,7 +545,7 @@ export default {
 
 .record-new {
   color: var(--warning);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.9rem;
 }
 

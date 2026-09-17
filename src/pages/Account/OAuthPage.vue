@@ -233,7 +233,6 @@ export default {
             class="scope-item"
             :class="{ 'scope-item-sensitive': showSensitive && isSensitiveScope(id) }"
           >
-            <div class="scope-dot"></div>
             <div class="scope-text">
               <span class="scope-name">
                 {{ $t(`scope-${id}`) }}
@@ -309,7 +308,7 @@ export default {
   max-width: 480px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 36px 32px;
   display: flex;
   flex-direction: column;
@@ -340,7 +339,8 @@ export default {
 
 .oauth-error-title {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
   text-align: center;
@@ -372,10 +372,11 @@ export default {
 }
 
 .error-detail-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
   min-width: 88px;
   flex-shrink: 0;
@@ -418,10 +419,11 @@ export default {
 }
 
 .params-heading {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
   margin-bottom: 10px;
 }
@@ -465,11 +467,12 @@ export default {
 .oauth-app-icon {
   width: 60px;
   height: 60px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
-  color: #fff;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-light);
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -477,7 +480,8 @@ export default {
 
 .oauth-app-name {
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0;
 }
@@ -500,10 +504,11 @@ export default {
 }
 
 .scopes-heading {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
   margin-bottom: 10px;
 }
@@ -521,15 +526,6 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-}
-
-.scope-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
-  margin-top: 5px;
 }
 
 .scope-text {
@@ -567,7 +563,7 @@ export default {
   padding: 12px 14px;
   margin-bottom: 14px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color var(--t), background var(--t);
 }
 
 .sensitive-ack-checked {
@@ -593,7 +589,7 @@ export default {
   align-items: center;
   justify-content: center;
   color: #fff;
-  transition: background 0.15s;
+  transition: background var(--t);
 }
 
 .sensitive-ack-checked .sensitive-ack-box {
@@ -622,10 +618,6 @@ export default {
   padding: 8px 10px;
 }
 
-.scope-item-sensitive .scope-dot {
-  background: var(--danger);
-}
-
 .scope-item-sensitive .scope-name {
   color: var(--danger);
 }
@@ -633,23 +625,20 @@ export default {
 .scope-sensitive-tag {
   display: inline-block;
   margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--danger);
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--danger);
   vertical-align: middle;
 }
 
 .oauth-deny-warning {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 500;
   color: var(--danger);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   margin: 0;
 }
 
@@ -663,7 +652,7 @@ export default {
 .oauth-btn {
   flex: 1;
   padding: 11px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 600;
   border: none;
@@ -671,8 +660,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--t), color var(--t), opacity var(--t), transform var(--t);
 }
+
+.oauth-btn:active:not(:disabled) { transform: scale(0.98); }
 
 .oauth-btn:disabled {
   opacity: 0.5;

@@ -192,7 +192,6 @@ export default {
             <p v-if="entry.parsedScopes.length === 0" class="no-scopes">{{ $t('none') }}</p>
             <ul v-else class="scope-list">
               <li v-for="scope in entry.parsedScopes" :key="scope.id" class="scope-item" :class="{ 'scope-item-sensitive': scope.sensitive }">
-                <div class="scope-dot"></div>
                 <div class="scope-text">
                   <span class="scope-name">
                     {{ $t(`scope-${scope.id}`) }}
@@ -239,7 +238,8 @@ export default {
 
 .authorized-title {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0 0 4px;
 }
@@ -291,16 +291,15 @@ export default {
 .auth-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color var(--t), background var(--t);
 }
 
 .auth-card:hover {
   border-color: var(--border-strong);
-  transform: translateY(-2px);
 }
 
 .card-skeleton {
@@ -322,11 +321,12 @@ export default {
 .app-icon {
   width: 46px;
   height: 46px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
-  color: #fff;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-light);
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,7 +334,9 @@ export default {
 }
 
 .app-icon-error {
-  background: linear-gradient(135deg, var(--danger-strong), var(--danger-stronger));
+  background: var(--danger-bg-soft);
+  border-color: var(--danger-border-mid);
+  color: var(--danger);
 }
 
 .app-heading {
@@ -366,10 +368,11 @@ export default {
 }
 
 .scopes-heading {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-faint);
   margin: 0 0 12px;
 }
@@ -387,15 +390,6 @@ export default {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-}
-
-.scope-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
-  margin-top: 5px;
 }
 
 .scope-text {
@@ -429,10 +423,6 @@ export default {
   padding: 8px 10px;
 }
 
-.scope-item-sensitive .scope-dot {
-  background: var(--danger);
-}
-
 .scope-item-sensitive .scope-name {
   color: var(--danger);
 }
@@ -440,14 +430,11 @@ export default {
 .scope-sensitive-tag {
   display: inline-block;
   margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--danger);
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--danger);
   vertical-align: middle;
 }
 
@@ -482,7 +469,7 @@ export default {
   border-radius: 7px;
   padding: 6px 12px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background var(--t), border-color var(--t), color var(--t);
 }
 
 .revoke-btn:hover {

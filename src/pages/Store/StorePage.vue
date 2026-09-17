@@ -137,7 +137,7 @@ export default {
 
 .store-title {
   font-size: 2.4rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 12px;
@@ -164,35 +164,32 @@ export default {
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 28px 24px;
+  transition: border-color var(--t);
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
 .plan-card-featured {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 8px 32px rgba(37,99,235,0.2);
+  border-color: var(--border-strong);
 }
 
 .plan-card-muted {
   opacity: 0.6;
 }
 
+/* Plain mono label in the card's top corner; the word does the work. */
 .plan-badge {
   position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: #fff;
+  top: 28px;
+  right: 24px;
+  font-family: var(--font-mono);
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 3px 12px;
-  border-radius: 999px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--accent-light);
   white-space: nowrap;
 }
 
@@ -203,16 +200,17 @@ export default {
 }
 
 .plan-name {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-dim);
 }
 
 .plan-price {
   font-size: 2.2rem;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   line-height: 1;
 }
@@ -256,14 +254,18 @@ export default {
   display: block;
   width: 100%;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
   border: none;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--t), border-color var(--t), color var(--t), transform var(--t);
+}
+
+.plan-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .plan-btn-primary {
@@ -300,7 +302,8 @@ export default {
 
 .compare-title {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 24px;
 }
@@ -308,7 +311,7 @@ export default {
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .compare-table {
@@ -323,10 +326,10 @@ export default {
 
 .compare-table th {
   padding: 14px 20px;
-  font-weight: 700;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-dim);
   background: var(--surface-sunken);
 }
@@ -343,7 +346,7 @@ export default {
 
 .compare-table tbody tr {
   border-bottom: 1px solid var(--border-subtle);
-  transition: background 0.1s;
+  transition: background var(--t-fast);
 }
 
 .compare-table tbody tr:last-child {

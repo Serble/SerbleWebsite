@@ -43,7 +43,7 @@ export default {
 .redirect-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 48px 40px;
   text-align: center;
   max-width: 400px;
@@ -59,7 +59,8 @@ export default {
 
 .redirect-title {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 10px;
 }
