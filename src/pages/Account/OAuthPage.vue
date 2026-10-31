@@ -80,7 +80,14 @@ export default {
       const validIds     = filterInvalidScopes(requestedIds);
       scopeIds.value     = validIds;
 
-      // 4. Check if already authorized - auto-allow only if no new scopes are requested.
+      // 4. Official apps are trusted outright - auto-allow (the grant is still recorded,
+      //    so it appears on the authorized apps page).
+      if (appIsOfficial.value) {
+        await doAuthorize(true, true);
+        return;
+      }
+
+      // 5. Check if already authorized - auto-allow only if no new scopes are requested.
       //    The authorized-app entry's appId is the OAuth client_id, so match on that
       //    rather than the public app payload (which may not include an id field).
       const currentUser = user.value ?? userStore?.state?.user;

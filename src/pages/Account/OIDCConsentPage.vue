@@ -101,12 +101,19 @@ export default {
         return;
       }
 
+      // Already granted, or an official app - approve without showing the consent
+      // screen. Stays on the loading card so the screen never flashes up.
+      if (r.session?.autoApprove ?? r.session?.AutoApprove) {
+        await decide(true, true);
+        return;
+      }
+
       state.value = 'ready';
     });
 
-    async function decide(approve) {
+    async function decide(approve, silent = false) {
       if (state.value === 'working' || state.value === 'redirecting') return;
-      state.value = 'working';
+      if (!silent) state.value = 'working';
       const fn = approve ? approveOidcAuthorizeSession : denyOidcAuthorizeSession;
       const r = await fn(sessionId.value);
       if (!r.success) {
