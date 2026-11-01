@@ -2,7 +2,10 @@
 import { ref, onMounted, inject, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
-import { getPublicAppInfo, deauthorizeApp } from '@/assets/js/serble.js';
+import {
+  getPublicAppInfo, deauthorizeApp,
+  getCrossAppGrants, revokeCrossAppGrant, getPublicAppsBatch,
+} from '@/assets/js/serble.js';
 import { SCOPES, isSensitiveScope } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingBlock from '@/components/LoadingBlock.vue';
@@ -87,6 +90,65 @@ export default {
       );
     }
 
+    // -- Cross-app sign-in grants --
+    // Each grant lets a caller app sign the user in to a target app. They're shown under the
+    // caller's card when the caller is in the list above, and in a section of their own when
+    // it isn't (a caller the user never authorized directly).
+    const grants = ref([]);
+    const grantsError = ref(false);
+    const grantApps = ref({});        // id -> public app info
+
+    async function loadGrants() {
+      const r = await getCrossAppGrants();
+      grantsError.value = !r.success;
+      grants.value = r.grants ?? [];
+      const ids = grants.value
+        .flatMap(g => [g.callerAppId, g.targetAppId])
+        .filter(id => !(id in grantApps.value));
+      if (ids.length === 0) return;
+      const apps = await getPublicAppsBatch(ids);
+      if (apps.success) grantApps.value = { ...grantApps.value, ...apps.apps };
+    }
+
+    loadGrants();
+
+    function appLabel(id) {
+      return grantApps.value[id]?.name || id;
+    }
+
+    function grantKey(g) {
+      return `${g.callerAppId}/${g.targetAppId}`;
+    }
+
+    const authorizedIds = computed(() => new Set(entries.value.map(e => e.appId)));
+    const otherGrants = computed(() => grants.value.filter(g => !authorizedIds.value.has(g.callerAppId)));
+
+    const revokingGrant = ref('');
+
+    async function revokeGrant(grant) {
+      if (revokingGrant.value) return;
+      const names = { caller: appLabel(grant.callerAppId), target: appLabel(grant.targetAppId) };
+      if (!await confirmDialog({
+        title: t('cross-app-revoke-title'),
+        message: t('cross-app-revoke-confirm', names),
+        confirmLabel: t('revoke'),
+        danger: true,
+      })) return;
+
+      revokingGrant.value = grantKey(grant);
+      const result = await revokeCrossAppGrant(grant.callerAppId, grant.targetAppId);
+      revokingGrant.value = '';
+
+      if (!result.success) {
+        await alertDialog({
+          title: t('revoke-failed'),
+          message: t('cross-app-revoke-failed-detail', names),
+        });
+        return;
+      }
+      grants.value = grants.value.filter(g => grantKey(g) !== grantKey(grant));
+    }
+
     // Revoking cuts an app off from the account, so it asks first and says so
     // when the API refuses - it used to do both silently.
     const revoking = ref('');
@@ -113,16 +175,22 @@ export default {
         return;
       }
       entries.value = entries.value.filter(e => e.appId !== appId);
+      // The API may have dropped the app's cross-app grants with it - show what's left.
+      loadGrants();
     }
 
     const parsedEntries = computed(() =>
       entries.value.map(e => ({
         ...e,
         parsedScopes: entryScopes(e),
+        crossTargets: grants.value.filter(g => g.callerAppId === e.appId),
       }))
     );
 
-    return { pageLoading, parsedEntries, revoke, revoking };
+    return {
+      pageLoading, parsedEntries, revoke, revoking,
+      grantsError, grantApps, otherGrants, appLabel, grantKey, revokeGrant, revokingGrant,
+    };
   }
 };
 </script>
@@ -140,7 +208,7 @@ export default {
     <LoadingBlock v-if="pageLoading" />
 
     <!-- Empty state -->
-    <div v-else-if="parsedEntries.length === 0" class="state-block empty-state">
+    <div v-else-if="parsedEntries.length === 0 && otherGrants.length === 0" class="state-block empty-state">
       <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" fill="currentColor" aria-hidden="true" viewBox="0 0 16 16">
         <path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/>
         <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
@@ -150,7 +218,7 @@ export default {
     </div>
 
     <!-- App cards -->
-    <div v-else class="cards-grid">
+    <div v-else-if="parsedEntries.length > 0" class="cards-grid">
       <div v-for="entry in parsedEntries" :key="entry.appId" class="auth-card">
 
         <!-- Skeleton while loading public info -->
@@ -166,6 +234,21 @@ export default {
               <h4 class="app-name">{{ $t('unknown-error') }}</h4>
               <p class="app-id-muted">{{ $t('id') }}: {{ entry.appId }}</p>
             </div>
+          </div>
+
+          <div v-if="entry.crossTargets.length" class="card-cross">
+            <p class="scopes-heading">{{ $t('cross-app-can-sign-in-to') }}</p>
+            <ul class="cross-list">
+              <li v-for="g in entry.crossTargets" :key="g.targetAppId" class="cross-item">
+                <span class="cross-name">
+                  {{ appLabel(g.targetAppId) }}
+                  <OfficialBadge v-if="grantApps[g.targetAppId]?.isOfficial" icon-only />
+                </span>
+                <button class="revoke-btn revoke-btn-sm" :disabled="revokingGrant === grantKey(g)" @click="revokeGrant(g)">
+                  {{ $t('revoke') }}
+                </button>
+              </li>
+            </ul>
           </div>
           <div class="card-footer">
             <button class="revoke-btn" :disabled="revoking === entry.appId" @click="revoke(entry.appId)">{{ $t('revoke-access') }}</button>
@@ -203,6 +286,21 @@ export default {
             </ul>
           </div>
 
+          <div v-if="entry.crossTargets.length" class="card-cross">
+            <p class="scopes-heading">{{ $t('cross-app-can-sign-in-to') }}</p>
+            <ul class="cross-list">
+              <li v-for="g in entry.crossTargets" :key="g.targetAppId" class="cross-item">
+                <span class="cross-name">
+                  {{ appLabel(g.targetAppId) }}
+                  <OfficialBadge v-if="grantApps[g.targetAppId]?.isOfficial" icon-only />
+                </span>
+                <button class="revoke-btn revoke-btn-sm" :disabled="revokingGrant === grantKey(g)" @click="revokeGrant(g)">
+                  {{ $t('revoke') }}
+                </button>
+              </li>
+            </ul>
+          </div>
+
           <div class="card-footer">
             <span class="app-id-muted">{{ $t('id') }}: {{ entry.appId }}</span>
             <button
@@ -221,6 +319,33 @@ export default {
 
       </div>
     </div>
+
+    <!-- Cross-app grants whose caller isn't in the list above -->
+    <section v-if="!pageLoading && otherGrants.length > 0" class="cross-section">
+      <h4 class="cross-section-title">{{ $t('cross-app-other-grants') }}</h4>
+      <p class="cross-section-sub">{{ $t('cross-app-other-grants-sub') }}</p>
+      <div class="auth-card">
+        <ul class="cross-list cross-list-card">
+          <li v-for="g in otherGrants" :key="grantKey(g)" class="cross-item">
+            <i18n-t keypath="cross-app-grant-pair" tag="span" class="cross-name" scope="global">
+              <template #caller>
+                <strong>{{ appLabel(g.callerAppId) }}</strong>
+                <OfficialBadge v-if="grantApps[g.callerAppId]?.isOfficial" icon-only />
+              </template>
+              <template #target>
+                <strong>{{ appLabel(g.targetAppId) }}</strong>
+                <OfficialBadge v-if="grantApps[g.targetAppId]?.isOfficial" icon-only />
+              </template>
+            </i18n-t>
+            <button class="revoke-btn revoke-btn-sm" :disabled="revokingGrant === grantKey(g)" @click="revokeGrant(g)">
+              {{ $t('revoke') }}
+            </button>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <p v-if="!pageLoading && grantsError" class="cross-load-error">{{ $t('cross-app-grants-load-failed') }}</p>
   </div>
 </template>
 
@@ -476,6 +601,82 @@ export default {
   background: var(--danger-strong);
   border-color: var(--danger-strong);
   color: #fff;
+}
+
+/* -- Cross-app grants -- */
+.card-cross {
+  padding: 14px 20px 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* The header already draws a line under itself. */
+.card-header + .card-cross { border-top: none; }
+
+.cross-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cross-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cross-name {
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.cross-name strong { color: var(--text); }
+
+.cross-list-card {
+  padding: 14px 20px;
+  gap: 12px;
+}
+
+.cross-list-card .cross-name { font-weight: 400; }
+
+.revoke-btn-sm {
+  font-size: 0.74rem;
+  padding: 4px 10px;
+}
+
+.revoke-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cross-section {
+  margin-top: 36px;
+}
+
+.cross-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.cross-section-sub {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0 0 14px;
+}
+
+.cross-load-error {
+  margin: 20px 0 0;
+  font-size: 0.82rem;
+  color: var(--danger);
 }
 
 @media (max-width: 480px) {

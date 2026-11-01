@@ -153,7 +153,36 @@ function normaliseOwnedApp(a) {
         redirectUri,
         redirectUris: redirectUri.split(';').map(u => u.trim()).filter(Boolean),
         isOfficial: a.IsOfficial ?? a.isOfficial ?? false,
+        isPublicClient: a.IsPublicClient ?? a.isPublicClient ?? false,
+        requirePkce: a.RequirePkce ?? a.requirePkce ?? false,
         dateCreated: a.DateCreated ?? a.dateCreated ?? null,
+        ...normaliseCrossAppSettings(a),
+    };
+}
+
+// An enum the API may send as its int or, from a serialiser set up differently, as its name.
+function enumValue(value, names) {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+        const asNumber = Number(value);
+        if (value !== '' && Number.isInteger(asNumber)) return asNumber;
+        const i = names.findIndex(n => n.toLowerCase() === value.replace(/_/g, '').toLowerCase());
+        if (i !== -1) return i;
+    }
+    return 0;
+}
+
+/**
+ * The cross-app sign-in settings of an app, from any of the owner (PascalCase), PATCH or admin
+ * (camelCase) shapes. `crossAppScopes` is null when the app uses the default scopes.
+ */
+export function normaliseCrossAppSettings(a) {
+    const scopes = a?.CrossAppScopes ?? a?.crossAppScopes ?? null;
+    const callers = a?.CrossAppAllowedCallers ?? a?.crossAppAllowedCallers;
+    return {
+        crossAppPolicy: enumValue(a?.CrossAppPolicy ?? a?.crossAppPolicy, ['Disabled', 'OfficialOnly', 'AnyWithConsent']),
+        crossAppScopes: typeof scopes === 'string' && scopes.trim() ? scopes.trim() : null,
+        crossAppAllowedCallers: Array.isArray(callers) ? callers.filter(Boolean) : [],
     };
 }
 
@@ -385,6 +414,100 @@ export async function denyOidcAuthorizeSession(sessionId) {
     }
 }
 
+// -- Cross-app sign-in --
+//
+// A caller app asks Serble for a code that signs the user in to a target app. Between two official
+// apps that happens silently; otherwise the user approves the pair once, on /oauth/cross-app.
+
+function crossAppFlag(status) {
+    if (status === 400) return 'bad-request';
+    if (status === 401) return 'unauthenticated';
+    if (status === 403) return 'forbidden';
+    if (status === 404) return 'not-found';
+    return 'unknown';
+}
+
+function crossAppFailure(error, what) {
+    console.error(`Error ${what}`, error);
+    const status = error?.response?.status;
+    const body = error?.response?.data;
+    return {
+        success: false,
+        flag: crossAppFlag(status),
+        error: status,
+        // 400s explain themselves in plain text (unknown app, unregistered redirect URI).
+        message: typeof body === 'string' && body ? body : null,
+    };
+}
+
+// GET /account/crossApp/request - what the consent page shows. Returns { success, request } where
+// request is { callerId, callerName, callerDescription, callerIsOfficial, targetId, targetName,
+// targetDescription, targetIsOfficial, scopes, flow, alreadyGranted, autoApprove, denied, redirect }.
+export async function getCrossAppRequest(clientId, target, redirectUri, state) {
+    try {
+        const response = await axios.get(`${API_URL}/account/crossApp/request`, {
+            params: { client_id: clientId, target, redirect_uri: redirectUri, state: state ?? '' },
+            headers: { SerbleAuth: `User ${getAuthToken()}` },
+        });
+        return { success: true, request: response.data };
+    } catch (error) {
+        return crossAppFailure(error, 'fetching cross-app request');
+    }
+}
+
+async function decideCrossAppRequest(decision, { clientId, target, redirectUri, state }) {
+    try {
+        const response = await axios.post(
+            `${API_URL}/account/crossApp/${decision}`,
+            { clientId, target, redirectUri, state: state ?? '' },
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true, redirect: response.data?.redirect ?? null };
+    } catch (error) {
+        return crossAppFailure(error, `sending cross-app ${decision}`);
+    }
+}
+
+// POST /account/crossApp/approve - returns { success, redirect }, the URL to send the user to.
+export function approveCrossAppRequest(request) {
+    return decideCrossAppRequest('approve', request);
+}
+
+// POST /account/crossApp/deny - returns { success, redirect }, the URL to send the user to.
+export function denyCrossAppRequest(request) {
+    return decideCrossAppRequest('deny', request);
+}
+
+// GET /account/crossApp - the pairs the user has approved: [{ callerAppId, targetAppId, dateCreated }].
+export async function getCrossAppGrants() {
+    try {
+        const response = await axios.get(`${API_URL}/account/crossApp`, {
+            headers: { SerbleAuth: `User ${getAuthToken()}` }
+        });
+        const grants = (Array.isArray(response.data) ? response.data : []).map(g => ({
+            callerAppId: g.callerAppId ?? g.CallerAppId ?? '',
+            targetAppId: g.targetAppId ?? g.TargetAppId ?? '',
+            dateCreated: g.dateCreated ?? g.DateCreated ?? null,
+        })).filter(g => g.callerAppId && g.targetAppId);
+        return { success: true, grants };
+    } catch (error) {
+        return { ...crossAppFailure(error, 'fetching cross-app grants'), grants: [] };
+    }
+}
+
+// DELETE /account/crossApp/{caller}/{target} - stops the caller signing the user in to the target.
+export async function revokeCrossAppGrant(callerAppId, targetAppId) {
+    try {
+        await axios.delete(
+            `${API_URL}/account/crossApp/${encodeURIComponent(callerAppId)}/${encodeURIComponent(targetAppId)}`,
+            { headers: { SerbleAuth: `User ${getAuthToken()}` } }
+        );
+        return { success: true };
+    } catch (error) {
+        return crossAppFailure(error, 'revoking cross-app grant');
+    }
+}
+
 // -- Vault / Notes --
 
 export async function getNotes() {
@@ -452,6 +575,9 @@ export async function deleteNote(noteId) {
     }
 }
 
+// edits: [{ field, newValue }], applied in order. The cross-app fields are cross_app_policy,
+// cross_app_scopes and cross_app_allowed_callers.
+// A 400 carries the API's reason (written for the owner) as `message`.
 export async function editOAuthApp(appId, edits) {    try {
         const response = await axios.patch(`${API_URL}/app/${appId}`, edits, {
             headers: { SerbleAuth: `User ${getAuthToken()}` }
@@ -459,7 +585,12 @@ export async function editOAuthApp(appId, edits) {    try {
         return { success: true, app: response.data };
     } catch (error) {
         console.error('Error editing app', error);
-        return { success: false, error: error?.response?.status };
+        const body = error?.response?.data;
+        return {
+            success: false,
+            error: error?.response?.status,
+            message: typeof body === 'string' && body ? body : null,
+        };
     }
 }
 
@@ -947,7 +1078,11 @@ export async function adminGetApp(id) {
     }
 }
 
-// edits: { name?, description?, redirectUri?, ownerId? }
+// edits: { name?, description?, redirectUri?, ownerId?, crossAppPolicy?, crossAppScopes?,
+//          crossAppAllowedCallers? }
+// crossAppPolicy is the API's int, crossAppScopes a space-separated string ("" resets it to the
+// default) and crossAppAllowedCallers an array of app ids.
+// Returns the updated AdminAppView.
 export async function adminEditApp(id, edits) {
     try {
         const response = await axios.patch(`${API_URL}/admin/apps/${id}`, edits, {
@@ -956,7 +1091,12 @@ export async function adminEditApp(id, edits) {
         return { success: true, app: response.data };
     } catch (error) {
         console.error('Error editing app', error);
-        return { success: false, error: error?.response?.status };
+        const body = error?.response?.data;
+        return {
+            success: false,
+            error: error?.response?.status,
+            message: typeof body === 'string' && body ? body : null,
+        };
     }
 }
 

@@ -1,6 +1,7 @@
 <script>
 import { computed, inject, ref, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { FEATURES } from '@/assets/js/featureFlags.js';
 import {
@@ -8,7 +9,12 @@ import {
   getAppKeys, createAppKey, deleteAppKey,
   getAppBalance, getBalance, depositToApp, withdrawFromApp,
   adminGetAppTaxTarget, adminSetAppTaxTarget,
+  getPublicAppsBatch, normaliseCrossAppSettings,
 } from '@/assets/js/serble.js';
+import {
+  CROSS_APP_POLICIES, CROSS_APP_SCOPES, DEFAULT_CROSS_APP_SCOPES, MAX_CROSS_APP_CALLERS,
+  crossAppScopeInfo, parseScopeList, joinScopes, parseAppIdList,
+} from '@/assets/js/crossApp.js';
 import { isValidCoinAmount, isNonNegativeCoinAmount, parseCoinsToRaw, formatCoinsPlain } from '@/assets/js/coins.js';
 import CoinIcon from '@/components/CoinIcon.vue';
 import CoinAmount from '@/components/CoinAmount.vue';
@@ -23,6 +29,7 @@ export default {
 
     const router = useRouter();
     const route = useRoute();
+    const { t } = useI18n();
     const featureStore = inject('featureStore');
     const userStore = inject('userStore');
     const economyEnabled = computed(() => featureStore?.isEnabled(FEATURES.ECONOMY) === true);
@@ -43,6 +50,7 @@ export default {
       { id: 'overview', label: 'overview' },
       { id: 'settings', label: 'settings' },
       { id: 'keys', label: 'api-keys' },
+      { id: 'cross-app', label: 'cross-app-sign-in' },
       ...(economyEnabled.value ? [
         { id: 'webhooks', label: 'webhooks' },
         { id: 'economy', label: 'economy' },
@@ -194,6 +202,132 @@ export default {
         redirectUris: [...redirectUris.value],
       };
       formSuccess.value = true;
+    }
+
+    // -- Cross-app sign-in --
+    // Its own tab with its own save. When the API refuses an edit it explains why, and that
+    // message is shown above the controls.
+    const crossPolicy = ref(0);
+    const crossScopes = ref([]);      // empty = the default
+    const crossCallers = ref([]);     // empty = any caller the policy allows
+    const newCaller = ref('');
+    const callerApps = ref({});       // id -> public app info, or null once known not to exist
+    const crossSaving = ref(false);
+    const crossMsg = ref('');         // i18n key
+    const crossRaw = ref('');         // plain text straight from the API, when it explained itself
+    const crossOk = ref(false);
+
+    function sayCross(key, raw = '', ok = false) {
+      crossMsg.value = key;
+      crossRaw.value = raw;
+      crossOk.value = ok;
+    }
+
+    const savedCrossScopes = computed(() => joinScopes(parseScopeList(app.value?.crossAppScopes)));
+
+    const crossDirty = computed(() => {
+      if (!app.value) return false;
+      return crossPolicy.value !== app.value.crossAppPolicy
+        || joinScopes(crossScopes.value) !== savedCrossScopes.value
+        || crossCallers.value.join(' ') !== app.value.crossAppAllowedCallers.join(' ');
+    });
+
+    const crossPolicyHint = computed(() => CROSS_APP_POLICIES.find(p => p.value === crossPolicy.value)?.hint ?? '');
+
+    const crossScopeChoices = CROSS_APP_SCOPES.map(id => crossAppScopeInfo(id));
+
+    function scopeLabel(id) {
+      const info = crossAppScopeInfo(id);
+      return info.nameKey ? t(info.nameKey) : id;
+    }
+
+    const crossDefaultScopes = computed(() => DEFAULT_CROSS_APP_SCOPES.map(id => scopeLabel(id)).join(', '));
+
+    function resetCrossApp() {
+      crossPolicy.value = app.value?.crossAppPolicy ?? 0;
+      crossScopes.value = parseScopeList(app.value?.crossAppScopes);
+      crossCallers.value = [...(app.value?.crossAppAllowedCallers ?? [])];
+      newCaller.value = '';
+      sayCross('');
+    }
+
+    async function resolveCallers(ids) {
+      const missing = ids.filter(id => !(id in callerApps.value));
+      if (missing.length === 0) return;
+      const r = await getPublicAppsBatch(missing);
+      // On a failed lookup the ids stay unresolved and are shown as they are, rather than
+      // being called unknown when they may well exist.
+      if (!r.success) return;
+      const next = { ...callerApps.value };
+      for (const id of missing) next[id] = r.apps[id] ?? null;
+      callerApps.value = next;
+    }
+
+    function addCaller() {
+      sayCross('');
+      const ids = parseAppIdList(newCaller.value).filter(id => !crossCallers.value.includes(id));
+      const unique = [...new Set(ids)];
+      if (unique.length === 0) {
+        newCaller.value = '';
+        return;
+      }
+      if (crossCallers.value.length + unique.length > MAX_CROSS_APP_CALLERS) {
+        sayCross('cross-app-callers-limit');
+        return;
+      }
+      crossCallers.value.push(...unique);
+      newCaller.value = '';
+      resolveCallers(unique);
+    }
+
+    function removeCaller(index) {
+      crossCallers.value.splice(index, 1);
+      sayCross('');
+    }
+
+    async function saveCrossApp() {
+      sayCross('');
+      if (!app.value) return;
+      const saved = app.value;
+
+      const edits = [];
+      if (crossPolicy.value !== saved.crossAppPolicy) {
+        edits.push({ field: 'cross_app_policy', newValue: CROSS_APP_POLICIES.find(p => p.value === crossPolicy.value).field });
+      }
+      const newScopes = joinScopes(crossScopes.value);
+      if (newScopes !== savedCrossScopes.value) {
+        edits.push({ field: 'cross_app_scopes', newValue: newScopes });
+      }
+      const newCallers = crossCallers.value.join(' ');
+      if (newCallers !== saved.crossAppAllowedCallers.join(' ')) {
+        edits.push({ field: 'cross_app_allowed_callers', newValue: newCallers });
+      }
+      if (edits.length === 0) return;
+
+      crossSaving.value = true;
+      const result = await editOAuthApp(saved.id, edits);
+      crossSaving.value = false;
+      if (!result.success) {
+        // A 400 names the setting it refused, in words written for the owner.
+        if (result.error === 400 && result.message) sayCross('', result.message);
+        else sayCross('cross-app-save-failed');
+        return;
+      }
+
+      // The response is what the API actually stored, so prefer it to what was sent.
+      const body = result.app;
+      const fromServer = body && typeof body === 'object'
+        && ('crossAppPolicy' in body || 'CrossAppPolicy' in body);
+      app.value = {
+        ...app.value,
+        ...(fromServer ? normaliseCrossAppSettings(body) : {
+          crossAppPolicy: crossPolicy.value,
+          crossAppScopes: newScopes || null,
+          crossAppAllowedCallers: [...crossCallers.value],
+        }),
+      };
+      resetCrossApp();
+      sayCross('cross-app-saved', '', true);
     }
 
     // -- API keys --
@@ -388,6 +522,8 @@ export default {
 
       app.value = result.app;
       resetForm();
+      resetCrossApp();
+      resolveCallers(result.app.crossAppAllowedCallers);
       loading.value = false;
 
       const requested = route.query.tab;
@@ -418,6 +554,11 @@ export default {
       copied, copy, secretVisible, maskedSecret, formatDate,
       name, description, redirectUris, newUri, addUri, removeUri,
       dirty, resetForm, submit, saving, formError, formSuccess,
+      CROSS_APP_POLICIES, MAX_CROSS_APP_CALLERS,
+      crossPolicy, crossScopes, crossCallers, newCaller, callerApps,
+      crossSaving, crossMsg, crossRaw, crossOk, crossDirty, sayCross,
+      crossPolicyHint, crossScopeChoices, crossDefaultScopes,
+      resetCrossApp, addCaller, removeCaller, saveCrossApp,
       keys, keysLoading, keysError, newKeyName, creatingKey, revealedKey,
       keyMessage, keyMessageError, loadKeys, createKey, copyKey,
       pendingKeyRevoke, confirmRevokeKey,
@@ -465,7 +606,7 @@ export default {
         :aria-selected="activeTab === tab.id"
         @click="selectTab(tab.id)"
       >
-        {{ $t(tab.label) }}<span v-if="tab.id === 'settings' && dirty" class="dirty-mark" :title="$t('unsaved-changes')" aria-hidden="true">*</span>
+        {{ $t(tab.label) }}<span v-if="(tab.id === 'settings' && dirty) || (tab.id === 'cross-app' && crossDirty)" class="dirty-mark" :title="$t('unsaved-changes')" aria-hidden="true">*</span>
       </button>
     </div>
 
@@ -797,6 +938,92 @@ export default {
             <button v-else class="danger-btn" @click="pendingKeyRevoke = k.id">{{ $t('revoke') }}</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- -- Cross-app sign-in -- -->
+    <div v-show="activeTab === 'cross-app'" class="tab-panel" role="tabpanel">
+      <div v-if="crossMsg || crossRaw" class="banner" :class="crossOk ? 'banner-ok' : 'banner-error'" :role="crossOk ? 'status' : 'alert'">
+        {{ crossMsg ? $t(crossMsg, { max: MAX_CROSS_APP_CALLERS }) : crossRaw }}
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h4 class="panel-title">{{ $t('cross-app-sign-in') }}</h4>
+            <p class="panel-subtitle">{{ $t('cross-app-subtitle') }}</p>
+          </div>
+        </div>
+
+        <label class="field-label" for="cross-policy">{{ $t('cross-app-policy') }}</label>
+        <select id="cross-policy" v-model="crossPolicy" class="select" :disabled="crossSaving" @change="sayCross('')">
+          <option v-for="p in CROSS_APP_POLICIES" :key="p.value" :value="p.value">{{ $t(p.label) }}</option>
+        </select>
+        <p v-if="crossPolicyHint" class="field-hint">{{ $t(crossPolicyHint) }}</p>
+
+        <div class="field-label">{{ $t('cross-app-scopes') }}</div>
+        <div class="scope-checks">
+          <label v-for="s in crossScopeChoices" :key="s.id" class="check scope-check" :title="s.descKey ? $t(s.descKey) : ''">
+            <input v-model="crossScopes" type="checkbox" :value="s.id" :disabled="crossSaving" @change="sayCross('')">
+            <span class="scope-check-text">
+              <span class="scope-check-name">
+                {{ s.nameKey ? $t(s.nameKey) : s.id }}
+                <span v-if="s.sensitive" class="scope-sensitive-tag">{{ $t('sensitive') }}</span>
+              </span>
+              <code class="scope-check-id">{{ s.id }}</code>
+            </span>
+          </label>
+        </div>
+        <p class="field-hint">{{ $t('cross-app-scopes-hint', { scopes: crossDefaultScopes }) }}</p>
+
+        <div class="field-label">{{ $t('cross-app-callers') }}</div>
+        <div v-if="crossCallers.length > 0" class="uri-list">
+          <div v-for="(id, index) in crossCallers" :key="id" class="uri-item">
+            <div class="caller-info">
+              <span class="caller-name">
+                <template v-if="callerApps[id]">
+                  {{ callerApps[id].name || id }}
+                  <OfficialBadge v-if="callerApps[id].isOfficial" icon-only />
+                </template>
+                <template v-else-if="callerApps[id] === null">{{ $t('cross-app-unknown-app') }}</template>
+                <template v-else>{{ id }}</template>
+              </span>
+              <code v-if="callerApps[id] !== undefined" class="caller-id">{{ id }}</code>
+            </div>
+            <button type="button" class="icon-danger" :title="$t('remove')" :disabled="crossSaving" @click="removeCaller(index)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p v-else class="panel-state">{{ $t('cross-app-callers-empty') }}</p>
+
+        <div class="inline-row">
+          <input
+            v-model="newCaller"
+            type="text"
+            class="input"
+            :placeholder="$t('cross-app-add-caller')"
+            :disabled="crossSaving || crossCallers.length >= MAX_CROSS_APP_CALLERS"
+            @keydown.enter.prevent="addCaller"
+          >
+          <button
+            type="button"
+            class="add-btn"
+            :disabled="crossSaving || crossCallers.length >= MAX_CROSS_APP_CALLERS"
+            @click="addCaller"
+          >{{ $t('add') }}</button>
+        </div>
+        <p class="field-hint">{{ $t('cross-app-callers-hint', { max: MAX_CROSS_APP_CALLERS }) }}</p>
+
+      </div>
+
+      <div class="form-actions">
+        <button class="ghost-btn" :disabled="!crossDirty || crossSaving" @click="resetCrossApp">{{ $t('discard') }}</button>
+        <button class="add-btn" :disabled="!crossDirty || crossSaving" @click="saveCrossApp">
+          {{ crossSaving ? '...' : $t('save-changes') }}
+        </button>
       </div>
     </div>
 
@@ -1252,6 +1479,68 @@ export default {
   color: var(--text-secondary);
   font-size: 0.85rem;
 }
+
+/* -- Cross-app sign-in -- */
+.scope-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 16px;
+}
+
+.scope-check { align-items: flex-start; }
+
+.scope-check input[type='checkbox'] { margin-top: 2px; }
+
+.scope-check-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.scope-check-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.scope-check-id {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+.scope-sensitive-tag {
+  margin-left: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--danger);
+}
+
+.caller-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.caller-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.caller-id {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.icon-danger:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* -- Settings actions -- */
 .form-actions {

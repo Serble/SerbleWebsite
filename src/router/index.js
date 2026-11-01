@@ -61,6 +61,7 @@ const ROUTE_TITLES = {
   EmailConfirmSuccess: 'title-email-confirmed',
   EmailConfirmError: 'title-email-not-confirmed',
   OAuthAuthorize: 'title-authorize',
+  CrossAppConsent: 'title-cross-app-sign-in',
   TransactionConsent: 'title-transaction-consent',
   LoadingPreview: 'title-loading-preview',
   NotFound: 'title-not-found',
@@ -258,6 +259,14 @@ const router = createRouter({
       path: '/oauth/authorize',
       name: 'OAuthAuthorize',
       component: () => import('@/pages/Account/OAuthAuthorizeDispatcher.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Consent for one app (client_id) signing the user in to another (target). The API only
+      // sends users here when the pair needs approving; the page approves silently otherwise.
+      path: '/oauth/cross-app',
+      name: 'CrossAppConsent',
+      component: () => import('@/pages/Account/CrossAppConsentPage.vue'),
       meta: { requiresAuth: true },
     },
     {

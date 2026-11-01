@@ -69,7 +69,12 @@ import {
   adminGetWebhooks,
   adminGetWebhookDeliveries,
   adminRedeliverWebhook,
+  normaliseCrossAppSettings,
 } from '@/assets/js/serble.js';
+import {
+  CROSS_APP_POLICIES, CROSS_APP_SCOPES, DEFAULT_CROSS_APP_SCOPES, MAX_CROSS_APP_CALLERS,
+  parseScopeList, joinScopes, parseAppIdList,
+} from '@/assets/js/crossApp.js';
 import { getLocalStorage, setLocalStorage } from '@/assets/js/utils.js';
 import { formatCoins, formatCoinsPlain, parseCoinsToRaw, isValidCoinAmount, isNonNegativeCoinAmount } from '@/assets/js/coins.js';
 import { FEATURES } from '@/assets/js/featureFlags.js';
@@ -516,6 +521,7 @@ export default {
     const selectedAppLoading = ref(false);
     const selectedAppError = ref(null);
     const appEdits = ref({ name: '', description: '', redirectUri: '', ownerId: '' });
+    const appCrossForm = ref(crossFormFrom(null));
     const showSecret = ref(false);
     const appTaxTarget = ref('0');
     const appTaxTargetDraft = ref('');
@@ -557,6 +563,7 @@ export default {
           redirectUri: r.app.redirectUri ?? '',
           ownerId: r.app.ownerId ?? '',
         };
+        appCrossForm.value = crossFormFrom(r.app);
         loadAppOidc(id);
         if (economyEnabled.value) {
           appCoins.value = String(r.app?.coins ?? '0');
@@ -648,6 +655,7 @@ export default {
       appAccess.value = null;
       appAccessForm.value = emptyAccessForm();
       claimMappingsForm.value = [];
+      appCrossForm.value = crossFormFrom(null);
     }
 
     async function refreshSelectedApp() {
@@ -662,6 +670,7 @@ export default {
           redirectUri: r.app.redirectUri ?? '',
           ownerId: r.app.ownerId ?? '',
         };
+        appCrossForm.value = crossFormFrom(r.app);
         if (r.app?.isOfficial) await loadAppTaxTarget(r.app.id);
         else {
           appTaxTarget.value = '0';
@@ -683,6 +692,51 @@ export default {
         return;
       }
       await withBusy(() => adminEditApp(cur.id, body), 'App updated');
+      await refreshSelectedApp();
+    }
+
+    // -- Cross-app sign-in --
+    // Literal English like the rest of this page; the owner-facing settings are the localised ones.
+    const CROSS_APP_POLICY_NAMES = { 0: 'Disabled', 1: 'Official apps only', 2: 'Any app with user consent' };
+
+    // callers is edited as one space-separated string; the API takes (and returns) an array.
+    function crossFormFrom(app) {
+      const c = normaliseCrossAppSettings(app);
+      return {
+        policy: c.crossAppPolicy,
+        scopes: parseScopeList(c.crossAppScopes),
+        callers: c.crossAppAllowedCallers.join(' '),
+      };
+    }
+
+    const appCrossDefaultScopes = DEFAULT_CROSS_APP_SCOPES.join(', ');
+
+    function appCrossBody() {
+      if (!selectedApp.value) return {};
+      const cur = normaliseCrossAppSettings(selectedApp.value);
+      const f = appCrossForm.value;
+      const body = {};
+      if (f.policy !== cur.crossAppPolicy) body.crossAppPolicy = f.policy;
+      const scopes = joinScopes(f.scopes);
+      if (scopes !== joinScopes(parseScopeList(cur.crossAppScopes))) body.crossAppScopes = scopes;
+      const callers = [...new Set(parseAppIdList(f.callers))];
+      if (callers.join(' ') !== cur.crossAppAllowedCallers.join(' ')) body.crossAppAllowedCallers = callers;
+      return body;
+    }
+
+    const appCrossDirty = computed(() => Object.keys(appCrossBody()).length > 0);
+
+    async function actSaveCrossApp() {
+      if (!selectedApp.value) return;
+      const body = appCrossBody();
+      if (Object.keys(body).length === 0) return;
+      if ((body.crossAppAllowedCallers?.length ?? 0) > MAX_CROSS_APP_CALLERS) {
+        flash(`At most ${MAX_CROSS_APP_CALLERS} allowed callers.`, 'danger');
+        return;
+      }
+      const r = await withBusy(() => adminEditApp(selectedApp.value.id, body), 'Cross-app sign-in settings saved');
+      // A 400 says which setting it refused; that beats the bare status withBusy shows.
+      if (r && !r.success && r.message) flash(r.message, 'danger');
       await refreshSelectedApp();
     }
 
@@ -1751,6 +1805,8 @@ export default {
       userApps, userAppsLoading,
       loadAppStats, runAppSearch, selectApp, closeApp,
       actSaveApp, actDeleteApp, actCycleSecret, actToggleOfficial, copySecret,
+      CROSS_APP_POLICIES, CROSS_APP_POLICY_NAMES, CROSS_APP_SCOPES, MAX_CROSS_APP_CALLERS,
+      appCrossForm, appCrossDirty, appCrossDefaultScopes, actSaveCrossApp,
       loadAppTaxTarget, saveAppTaxTarget,
       loadUserApps, viewAppFromUser,
       products, productsLoading, productsError, productForm, editingProduct, productPanelOpen,
@@ -2296,6 +2352,42 @@ export default {
               </div>
             </div>
           </div>
+
+          <h6 class="section-heading">Cross-app sign-in</h6>
+          <form class="row g-3 mb-4" @submit.prevent="actSaveCrossApp">
+            <div class="col-12">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;" for="admin-cross-policy">Who can sign users in</label>
+              <select id="admin-cross-policy" v-model="appCrossForm.policy" class="select">
+                <option v-for="p in CROSS_APP_POLICIES" :key="p.value" :value="p.value">{{ CROSS_APP_POLICY_NAMES[p.value] }}</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="field-label-plain mb-2" style="font-size:0.8rem;">
+                Scopes
+                <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
+                  - none ticked means the default ({{ appCrossDefaultScopes }})
+                </span>
+              </label>
+              <div class="flex flex-wrap gap-3">
+                <label v-for="id in CROSS_APP_SCOPES" :key="id" class="check m-0">
+                  <input v-model="appCrossForm.scopes" type="checkbox" :value="id" />
+                  <code style="font-size:0.8rem;">{{ id }}</code>
+                </label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="field-label-plain mb-1" style="font-size:0.8rem;" for="admin-cross-callers">
+                Allowed callers
+                <span class="text-muted-light" style="text-transform:none; letter-spacing:0; font-weight:400;">
+                  - app ids, space-separated, up to {{ MAX_CROSS_APP_CALLERS }}; empty allows any caller the policy allows
+                </span>
+              </label>
+              <input id="admin-cross-callers" v-model="appCrossForm.callers" type="text" class="input"  placeholder="App ids separated by spaces" />
+            </div>
+            <div class="col-12 flex gap-2">
+              <button type="submit" class="btn btn-primary" :disabled="actionBusy || !appCrossDirty">Save</button>
+            </div>
+          </form>
 
           <h6 class="section-heading">Client secret</h6>
           <div class="flex flex-wrap gap-2 items-center mb-4">
