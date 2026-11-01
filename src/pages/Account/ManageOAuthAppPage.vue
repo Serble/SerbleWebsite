@@ -1139,17 +1139,15 @@ export default {
 }
 
 /* -- Tabs -- */
+/* Seven tabs only just fit the 720px column, so spacing is tight. If they still don't fit
+   (phones, longer translations), they wrap to a second row so none get cut off. */
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
-
-.tabs::-webkit-scrollbar { display: none; }
 
 .tab {
   display: inline-flex;
@@ -1160,8 +1158,8 @@ export default {
   border: 0;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  padding: 10px 14px;
-  font-size: 0.88rem;
+  padding: 10px 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
