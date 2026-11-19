@@ -1,7 +1,9 @@
 <script>
 import { onMounted, onUnmounted } from 'vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
+  components: { Icon },
   setup() {
     let animFrame = null;
     let particles = [];
@@ -79,9 +81,7 @@ export default {
 
       <!-- Icon -->
       <div class="success-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-        </svg>
+        <Icon name="checkCircle" :size="56" />
       </div>
 
       <h1 class="success-title">{{ $t('purchase-complete') }}</h1>
@@ -99,21 +99,15 @@ export default {
       <!-- Action buttons -->
       <div class="success-actions">
         <RouterLink to="/account" class="success-btn success-btn-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4"/>
-          </svg>
+          <Icon name="person" class="me-2" />
           {{ $t('account-page') }}
         </RouterLink>
         <RouterLink to="/account/paymentportal" class="success-btn success-btn-outline">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/>
-          </svg>
+          <Icon name="creditCard" class="me-2" />
           {{ $t('manage-subscription') }}
         </RouterLink>
         <RouterLink to="/store" class="success-btn success-btn-outline">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4M5 13a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
-          </svg>
+          <Icon name="cart" class="me-2" />
           {{ $t('store') }}
         </RouterLink>
       </div>

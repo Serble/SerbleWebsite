@@ -1,12 +1,13 @@
 <script>
 // Shared icon refresh button. Sits on a filled foreground surface (like a card),
 // matching the reference button next to "Transaction History" on the balance
-// page. While `loading` is true the button is disabled and the icon spins.
+// page. While `loading` is true the button is disabled and shows the spinner.
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
   name: 'RefreshButton',
-  components: { LoadingSpinner },
+  components: { LoadingSpinner, Icon },
   props: {
     // Disables the button and spins the icon while a refresh is in flight.
     loading: { type: Boolean, default: false },
@@ -29,7 +30,8 @@ export default {
     :aria-label="title"
     @click="$emit('click')"
   >
-    <LoadingSpinner :size="small ? 14 : 15" :spin="loading" />
+    <LoadingSpinner v-if="loading" :size="small ? 16 : 18" />
+    <Icon v-else name="refresh" :size="small ? 16 : 18" />
   </button>
 </template>
 

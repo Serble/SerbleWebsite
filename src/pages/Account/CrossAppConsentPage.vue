@@ -146,10 +146,7 @@ export default {
   <div v-else-if="state === 'error'" class="xapp-page">
     <div class="xapp-card-error">
       <div class="xapp-error-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-          <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-        </svg>
+        <Icon name="alert" :size="44" />
       </div>
 
       <h2 class="xapp-error-title">{{ $t('sign-in-unavailable') }}</h2>
@@ -192,9 +189,7 @@ export default {
       </div>
 
       <div class="xapp-arrow" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1"/>
-        </svg>
+        <Icon name="arrowDown" :size="18" />
       </div>
 
       <div class="xapp-app">
@@ -358,7 +353,7 @@ export default {
 .xapp-arrow { display: flex; justify-content: center; color: var(--text-faint); }
 
 .xapp-warning { margin: 0; line-height: 1.5; flex-wrap: nowrap; align-items: flex-start; }
-.xapp-warning svg { margin-top: 2px; }
+.xapp-warning svg { margin-top: calc((1lh - 16px) / 2); } /* centre the icon on the first line of text */
 
 .xapp-scopes {
   width: 100%; background: var(--surface-sunken); border: 1px solid var(--border);

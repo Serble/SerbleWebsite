@@ -55,14 +55,11 @@ export default {
 
     <div v-else class="purchase-card card card-danger text-center">
       <div class="purchase-icon text-danger">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-          <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-        </svg>
+        <Icon name="alert" :size="48" />
       </div>
       <h4 class="mb-2">{{ $t('an-error-occured') }}</h4>
       <p class="text-muted mb-4" style="font-size:0.9rem;">{{ $t('unknown-error-occured') }}</p>
-      <RouterLink to="/store" class="btn btn-ghost"><Icon name="arrowLeft" /> {{ $t('store') }}</RouterLink>
+      <RouterLink to="/store" class="btn btn-ghost"><Icon name="arrowLeft" :size="18" /> {{ $t('store') }}</RouterLink>
     </div>
 
   </div>

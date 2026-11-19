@@ -116,7 +116,7 @@ export default {
             @click="toggleMenu('games')"
           >
             {{ $t('games') }}
-            <Icon name="chevronDown" :size="10" class="chevron" />
+            <Icon name="chevronDown" :size="12" class="chevron" />
           </button>
           <div class="nav-dropdown" :class="{ open: openMenu === 'games' }">
             <RouterLink to="/wordmaster" class="nav-dropdown-item" @click="closeMenu">{{ $t('word-master') }}</RouterLink>
@@ -137,7 +137,7 @@ export default {
             @click="toggleMenu('info')"
           >
             {{ $t('info') }}
-            <Icon name="chevronDown" :size="10" class="chevron" />
+            <Icon name="chevronDown" :size="12" class="chevron" />
           </button>
           <div class="nav-dropdown" :class="{ open: openMenu === 'info' }">
             <RouterLink to="/discord" class="nav-dropdown-item" @click="closeMenu">{{ $t('serble-discord') }}</RouterLink>
@@ -159,7 +159,7 @@ export default {
             @click="toggleMenu('vault')"
           >
             {{ $t('vault') }}
-            <Icon name="chevronDown" :size="10" class="chevron" />
+            <Icon name="chevronDown" :size="12" class="chevron" />
           </button>
           <div class="nav-dropdown" :class="{ open: openMenu === 'vault' }">
             <RouterLink to="/notes" class="nav-dropdown-item" @click="closeMenu">{{ $t('notes') }}</RouterLink>
@@ -184,7 +184,7 @@ export default {
             @click="toggleMenu('user')"
           >
             <span class="nav-username">{{ user.username }}</span>
-            <Icon name="chevronDown" :size="10" class="chevron" />
+            <Icon name="chevronDown" :size="12" class="chevron" />
           </button>
           <div class="nav-dropdown nav-dropdown-right" :class="{ open: openMenu === 'user' }">
             <RouterLink to="/account" class="nav-dropdown-item">{{ $t('account') }}</RouterLink>

@@ -288,7 +288,7 @@ export default {
         >
           <span class="id-chip-label">{{ $t('your-balance-id') }}</span>
           <code class="id-chip-value">{{ balanceId }}</code>
-          <Icon :name="copied === 'balanceId' ? 'check' : 'copy'" :size="12" />
+          <Icon :name="copied === 'balanceId' ? 'check' : 'copy'" :size="14" />
           <span class="sr-only">{{ copied === 'balanceId' ? $t('copied') : $t('copy-value') }}</span>
         </button>
       </template>
@@ -470,7 +470,7 @@ export default {
                         @click="copy(tx.fromBalanceId, `from-${tx.id}`)"
                       >
                         <code class="id-chip-value">{{ tx.fromBalanceId }}</code>
-                        <Icon :name="copied === `from-${tx.id}` ? 'check' : 'copy'" :size="12" />
+                        <Icon :name="copied === `from-${tx.id}` ? 'check' : 'copy'" :size="14" />
                         <span class="sr-only">{{ $t('copy-value') }}</span>
                       </button>
                       <span v-else class="tx-detail-empty">{{ $t('unknown') }}</span>
@@ -490,7 +490,7 @@ export default {
                         @click="copy(tx.toBalanceId, `to-${tx.id}`)"
                       >
                         <code class="id-chip-value">{{ tx.toBalanceId }}</code>
-                        <Icon :name="copied === `to-${tx.id}` ? 'check' : 'copy'" :size="12" />
+                        <Icon :name="copied === `to-${tx.id}` ? 'check' : 'copy'" :size="14" />
                         <span class="sr-only">{{ $t('copy-value') }}</span>
                       </button>
                       <span v-else class="tx-detail-empty">{{ $t('unknown') }}</span>
@@ -508,7 +508,7 @@ export default {
                         @click="copy(tx.id, `id-${tx.id}`)"
                       >
                         <code class="id-chip-value">{{ tx.id }}</code>
-                        <Icon :name="copied === `id-${tx.id}` ? 'check' : 'copy'" :size="12" />
+                        <Icon :name="copied === `id-${tx.id}` ? 'check' : 'copy'" :size="14" />
                         <span class="sr-only">{{ $t('copy-value') }}</span>
                       </button>
                     </dd>

@@ -176,10 +176,7 @@ export default {
     <div v-else-if="state === 'error'" class="oauth-card oauth-card-error">
 
       <div class="oauth-error-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-          <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-        </svg>
+        <Icon name="alert" :size="44" />
       </div>
 
       <h2 class="oauth-error-title">{{ $t('invalid-oauth') }}</h2>
@@ -256,15 +253,10 @@ export default {
       <label v-if="showSensitive" class="sensitive-ack" :class="{ 'sensitive-ack-checked': acknowledged }">
         <input type="checkbox" v-model="acknowledged" class="sensitive-ack-input">
         <span class="sensitive-ack-box" aria-hidden="true">
-          <svg v-if="acknowledged" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
-          </svg>
+          <Icon v-if="acknowledged" name="check" :size="14" />
         </span>
         <span class="sensitive-ack-text">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="sensitive-ack-icon">
-            <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
-            <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-          </svg>
+          <Icon name="warning" :size="18" class="sensitive-ack-icon" />
           {{ $t('sensitive-scope-warning') }}
         </span>
       </label>
@@ -278,9 +270,7 @@ export default {
           :disabled="state === 'working' || (showSensitive && !acknowledged)"
           @click="doAuthorize(true)"
         >
-          <svg v-if="state !== 'working'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
-          </svg>
+          <Icon v-if="state !== 'working'" name="check" :size="18" class="me-2" />
           <LoadingSpinner v-else class="me-2" />
           {{ $t('allow') }}
         </button>
@@ -289,9 +279,7 @@ export default {
           :disabled="state === 'working'"
           @click="doAuthorize(false)"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
-          </svg>
+          <Icon name="close" :size="18" class="me-2" />
           {{ $t('deny') }}
         </button>
       </div>
@@ -615,7 +603,7 @@ export default {
 
 .sensitive-ack-icon {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: calc((1lh - 18px) / 2); /* centre the icon on the first line of text */
 }
 
 .scope-item-sensitive {

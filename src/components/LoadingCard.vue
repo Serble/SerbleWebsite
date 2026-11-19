@@ -3,8 +3,11 @@
 // caption. This is the same "dark box" shown during the OAuth flow and is
 // meant to be reused anywhere a full loading screen is needed so every page
 // presents an identical loading experience.
+import LoadingSpinner from '@/components/LoadingSpinner.vue';
+
 export default {
   name: 'LoadingCard',
+  components: { LoadingSpinner },
   props: {
     // Diameter of the spinner icon in px.
     size: { type: Number, default: 36 },
@@ -16,17 +19,7 @@ export default {
 
 <template>
   <div class="loading-card">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      :width="size"
-      :height="size"
-      fill="currentColor"
-      viewBox="0 0 16 16"
-      class="loading-spin text-accent mb-3"
-    >
-      <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-    </svg>
+    <LoadingSpinner :size="size" class="text-accent mb-3" />
     <p class="loading-text">{{ text ?? $t('loading') }}</p>
   </div>
 </template>
@@ -50,10 +43,4 @@ export default {
   color: var(--text-muted);
   margin: 0;
 }
-
-@keyframes loading-spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-spin { animation: loading-spin 0.9s linear infinite; }
 </style>

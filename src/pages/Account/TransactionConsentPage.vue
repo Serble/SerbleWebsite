@@ -203,10 +203,7 @@ export default {
     <!-- Error -->
     <div v-else-if="state === 'error'" class="txc-card txc-card-error">
       <div class="txc-error-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-          <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-        </svg>
+        <Icon name="alert" :size="44" />
       </div>
       <h2 class="txc-error-title">{{ $t('transaction-unavailable') }}</h2>
       <p class="txc-error-sub">{{ $t(errorMessages[error.code] ?? errorMessages.unknown) }}</p>
@@ -228,13 +225,8 @@ export default {
     <!-- Result -->
     <div v-else-if="state === 'result'" class="txc-card">
       <div class="txc-result-icon" :class="{ 'txc-result-bad': isDenied || isFailed }">
-        <svg v-if="isApproved" xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05"/>
-        </svg>
-        <svg v-else xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-          <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-        </svg>
+        <Icon v-if="isApproved" name="checkCircle" :size="44" />
+        <Icon v-else name="alert" :size="44" />
       </div>
 
       <h2 class="txc-result-title">
@@ -263,9 +255,7 @@ export default {
     <!-- Already resolved (non-pending status from GET) -->
     <div v-else-if="!isPending" class="txc-card">
       <div class="txc-result-icon txc-result-neutral">
-        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432zM8 16a8 8 0 0 1-.589-.022l.078-.997A7 7 0 0 0 8 15zm-2.004-.45a7 7 0 0 0 .985.299l-.219.976a8 8 0 0 1-1.126-.342zm-1.37-.71a7 7 0 0 0 .439.27l-.493.87a8 8 0 0 1-.979-.654l.615-.789q.197.154.418.302zm-1.834-1.79a7 7 0 0 0 .653.796l-.724.69a8 8 0 0 1-.747-.91zm-.744-1.352a7 7 0 0 0 .214.468l-.893.45a8 8 0 0 1-.45-1.088l.95-.313q.077.249.179.483m-.53-2.507a7 7 0 0 0 .1 1.025l-.985.17A8 8 0 0 1 0 7.917l1-.013zm.131-1.538a7 7 0 0 0-.081.51L.51 6.84a8 8 0 0 1 .23-1.155l.964.267q-.069.247-.12.501zm.952-2.379a7 7 0 0 0-.486.908l-.914-.405q.24-.54.555-1.038zm.964-1.205q-.183.183-.35.378l-.758-.653q.19-.22.401-.432z"/>
-        </svg>
+        <Icon name="history" :size="44" />
       </div>
       <h2 class="txc-result-title">{{ $t('already-handled') }}</h2>
       <p class="txc-result-sub">{{ $t(resolvedMessage) }}</p>
@@ -287,9 +277,7 @@ export default {
         </i18n-t>
         <div class="txc-gift-box">
           <span class="txc-gift-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-              <path d="M3 2.5a2.5 2.5 0 0 1 5 0 2.5 2.5 0 0 1 5 0v.006c0 .07 0 .27-.038.494H15a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 14.5V7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2.038A3 3 0 0 1 3 2.506zm1.068.5H7v-.5a1.5 1.5 0 1 0-3 0c0 .085.002.274.045.43zM9 3h2.932l.023-.07c.043-.156.045-.345.045-.43a1.5 1.5 0 0 0-3 0zM1 4v2h6V4zm8 0v2h6V4zM2 7v7.5a.5.5 0 0 0 .5.5H7V7zm7 8h4.5a.5.5 0 0 0 .5-.5V7H9z"/>
-            </svg>
+            <Icon name="gift" class="me-1" />
             {{ $t('gift') }}
           </span>
           <div v-if="hasOfferCoins" class="txc-coin-row">
@@ -321,9 +309,7 @@ export default {
           </div>
 
           <div class="txc-swap-arrow" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M1 11.5a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 12H1.5a.5.5 0 0 1-.5-.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5"/>
-            </svg>
+            <Icon name="arrowSwap" :size="22" />
           </div>
 
           <div class="txc-swap-col">
@@ -358,9 +344,7 @@ export default {
 
       <!-- Insufficient funds notice -->
       <div v-if="insufficientFunds" class="txc-insufficient">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="txc-insufficient-icon">
-          <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
-        </svg>
+        <Icon name="warning" :size="20" class="txc-insufficient-icon" />
         <div>
           <p class="txc-insufficient-title">{{ $t('insufficient-balance') }}</p>
           <i18n-t keypath="txc-insufficient-text" tag="p" class="txc-insufficient-text" scope="global">
@@ -398,9 +382,7 @@ export default {
 
       <div class="txc-actions">
         <button class="txc-btn txc-btn-allow" :class="{ 'txc-btn-allow-fail': insufficientFunds }" :disabled="state === 'working'" @click="decide(true)">
-          <svg v-if="state !== 'working'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
-          </svg>
+          <Icon v-if="state !== 'working'" name="check" :size="18" class="me-2" />
           <LoadingSpinner v-else class="me-2" />
           <template v-if="insufficientFunds">{{ $t('let-them-know') }}</template>
           <template v-else-if="isGift">{{ $t('accept-gift') }}</template>
@@ -408,9 +390,7 @@ export default {
           <template v-else>{{ $t('approve') }}</template>
         </button>
         <button class="txc-btn txc-btn-deny" :disabled="state === 'working'" @click="decide(false)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
-          </svg>
+          <Icon name="close" :size="18" class="me-2" />
           {{ $t('deny') }}
         </button>
       </div>
@@ -546,7 +526,11 @@ export default {
   padding: 14px 16px;
   text-align: left;
 }
-.txc-insufficient-icon { color: var(--danger); flex-shrink: 0; margin-top: 1px; }
+.txc-insufficient-icon {
+  color: var(--danger); flex-shrink: 0;
+  /* centre on the title's first line: same font size, so 1lh is the title's line */
+  font-size: 0.85rem; margin-top: calc((1lh - 20px) / 2);
+}
 .txc-insufficient-title {
   font-size: 0.85rem; font-weight: 700; color: var(--danger);
   margin: 0 0 4px;

@@ -2022,7 +2022,7 @@ export default {
                   <td v-if="userTableColumnVisible('username')" class="user-table-cell">{{ u.username }}</td>
                   <td v-if="userTableColumnVisible('email')" class="user-table-cell">
                     {{ u.email || '-' }}
-                    <span v-if="u.email && u.verifiedEmail" class="badge badge-success ms-1"><Icon name="check" :size="12" label="verified" /></span>
+                    <span v-if="u.email && u.verifiedEmail" class="badge badge-success ms-1"><Icon name="check" :size="14" label="verified" /></span>
                     <span v-else-if="u.email" class="badge badge-warning ms-1">unverified</span>
                   </td>
                   <td v-if="userTableColumnVisible('id')" class="user-table-cell">
@@ -3329,7 +3329,7 @@ export default {
               @click="toggleConfigGroup(group.name)"
             >
               <span class="config-group-title-wrap">
-                <Icon name="chevronDown" :size="12" class="config-group-chevron" :class="{ collapsed: isConfigGroupCollapsed(group.name) }" />
+                <Icon name="chevronDown" :size="14" class="config-group-chevron" :class="{ collapsed: isConfigGroupCollapsed(group.name) }" />
                 <span class="config-group-title">{{ group.name }}</span>
               </span>
               <span class="config-group-count">{{ group.rows.length }} setting{{ group.rows.length === 1 ? '' : 's' }}</span>

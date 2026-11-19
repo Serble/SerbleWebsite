@@ -26,7 +26,7 @@ export default {
     <section class="preview-group">
       <h3 class="preview-label">{{ $t('preview-loading-spinner') }}</h3>
       <div class="preview-inline">
-        <LoadingSpinner :size="14" />
+        <LoadingSpinner :size="16" />
         <LoadingSpinner :size="24" />
         <LoadingSpinner :size="36" />
       </div>

@@ -1,11 +1,11 @@
 <script>
 import { getCatalogServices } from '@/assets/js/serble.js';
-import ArrowUpRight from '@/components/ArrowUpRight.vue';
+import Icon from '@/components/Icon.vue';
 import LinkedText from '@/components/LinkedText.vue';
 import CoinIcon from '@/components/CoinIcon.vue';
 
 export default {
-  components: { ArrowUpRight, LinkedText, CoinIcon },
+  components: { Icon, LinkedText, CoinIcon },
   data() {
     return {
       services: [],
@@ -20,9 +20,9 @@ export default {
     },
     accountTiles() {
       return [
-        { to: '/account', label: this.$t('account'), description: this.$t('account-tile-desc'), icon: 'account', iconColor: '#60a5fa' },
-        { to: '/oauthapps', label: this.$t('my-applications'), description: this.$t('my-applications-tile-desc'), icon: 'apps', iconColor: '#818cf8' },
-        { to: '/authorizedapps', label: this.$t('authorized-applications'), description: this.$t('authorized-applications-tile-desc'), icon: 'authorized', iconColor: '#4ade80' },
+        { to: '/account', label: this.$t('account'), description: this.$t('account-tile-desc'), icon: 'person', iconColor: '#60a5fa' },
+        { to: '/oauthapps', label: this.$t('my-applications'), description: this.$t('my-applications-tile-desc'), icon: 'grid', iconColor: '#818cf8' },
+        { to: '/authorizedapps', label: this.$t('authorized-applications'), description: this.$t('authorized-applications-tile-desc'), icon: 'shieldCheck', iconColor: '#4ade80' },
         { to: '/account/balance', label: this.$t('balance'), description: this.$t('balance-tile-desc'), icon: 'coin' }
       ];
     }
@@ -49,14 +49,6 @@ export default {
     markServiceIconFailed(serviceId) {
       this.serviceIconFailures = { ...this.serviceIconFailures, [serviceId]: true };
     },
-    renderAccountIcon(icon) {
-      const icons = {
-        account: '<path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4"/>',
-        apps: '<path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>',
-        authorized: '<path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533.18.085.293.118.293.118s.114-.033.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524z"/>'
-      };
-      return icons[icon] || icons.account;
-    }
   }
 }
 </script>
@@ -88,21 +80,10 @@ export default {
           :to="tile.to"
           class="account-card"
         >
-          <ArrowUpRight class="account-card-arrow" />
+          <Icon name="arrowUpRight" :size="18" class="account-card-arrow" />
           <h3 class="account-card-title">
             <CoinIcon v-if="tile.icon === 'coin'" :size="20" />
-            <svg
-              v-else
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              fill="currentColor"
-              viewBox="0 0 16 16"
-              class="account-card-icon"
-              :style="{ color: tile.iconColor }"
-              aria-hidden="true"
-              v-html="renderAccountIcon(tile.icon)"
-            ></svg>
+            <Icon v-else :name="tile.icon" :size="20" class="account-card-icon" :style="{ color: tile.iconColor }" />
             {{ tile.label }}
           </h3>
           <p class="account-card-desc">{{ tile.description }}</p>
@@ -134,7 +115,7 @@ export default {
           rel="noopener"
           class="external-card"
         >
-          <ArrowUpRight class="external-card-arrow" />
+          <Icon name="arrowUpRight" :size="18" class="external-card-arrow" />
           <h3 class="external-card-title">
             <img
               v-if="serviceHasIcon(service)"
@@ -295,8 +276,6 @@ export default {
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 18px;
-  height: 18px;
   color: var(--text-faint);
   transition: color 0.3s var(--ease), transform 0.3s var(--ease);
 }

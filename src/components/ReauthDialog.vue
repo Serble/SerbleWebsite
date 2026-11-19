@@ -56,7 +56,7 @@ watch(() => reauthState.open, (open) => {
         <h2 class="dialog-title">{{ $t('reauth-title') }}</h2>
         <p class="dialog-message">{{ $t('reauth-hint') }}</p>
 
-        <p v-if="loading" class="dialog-state"><LoadingSpinner :size="14" />{{ $t('loading') }}</p>
+        <p v-if="loading" class="dialog-state"><LoadingSpinner :size="16" />{{ $t('loading') }}</p>
         <div v-else-if="error" class="alert alert-danger"><Icon name="alert" />{{ $t(error) }}</div>
         <SignInSteps
           v-else-if="session"

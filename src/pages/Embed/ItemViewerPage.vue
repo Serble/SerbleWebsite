@@ -183,9 +183,7 @@ export default {
   <div class="embed" :style="rootStyle" ref="rootEl">
     <!-- Not signed in -->
     <div v-if="authChecked && !loggedIn" class="state connect">
-      <svg width="34" height="34" viewBox="0 0 16 16" fill="currentColor" class="state-icon">
-        <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zM10 2.704 4.25 5.16 1.5 4.06v7.6l6.5 2.6 6.5-2.6V4.06z"/>
-      </svg>
+      <Icon name="box" :size="34" class="state-icon" />
       <p class="state-title">{{ $t('view-your-items-here') }}</p>
       <p class="state-text">{{ $t('connect-account-blurb') }}</p>
       <button class="btn" @click="connect">{{ $t('connect-serble-account') }}</button>
@@ -196,7 +194,8 @@ export default {
       <div class="head">
         <h2 class="title">{{ heading }}</h2>
         <button class="icon-btn" :disabled="loading" @click="load" :title="$t('refresh')">
-          <LoadingSpinner :size="14" :spin="loading" />
+          <LoadingSpinner v-if="loading" />
+          <Icon v-else name="refresh" />
         </button>
       </div>
 
@@ -231,7 +230,7 @@ export default {
       <div class="drawer">
         <button class="drawer-close" @click="closeItem" :aria-label="$t('close')">&times;</button>
         <ItemDetails :item-id="selected.id" class="embed-details" />
-        <button class="btn ghost" @click="openFullPage(selected)">{{ $t('open-full-item-page') }} <Icon name="arrowUpRight" :size="12" /></button>
+        <button class="btn ghost" @click="openFullPage(selected)">{{ $t('open-full-item-page') }} <Icon name="arrowUpRight" :size="14" /></button>
       </div>
     </div>
   </div>

@@ -102,9 +102,7 @@ export default {
       <div class="setup-card setup-left">
         <div class="setup-card-header">
           <div class="setup-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
-            </svg>
+            <Icon name="lock" :size="22" />
           </div>
           <h2 class="setup-title">{{ $t('setup-totp-app') }}</h2>
         </div>
@@ -150,7 +148,7 @@ export default {
         </div>
 
         <div v-if="error" class="code-error">
-          <Icon name="alert" :size="13" />
+          <Icon name="alert" :size="15" />
           {{ $t(error === 'enable-failed' ? 'unknown-error-occured' : error) }}
         </div>
 
@@ -187,7 +185,7 @@ export default {
           @click="submit"
         >
           <LoadingSpinner v-if="working" class="me-2" />
-          <Icon v-else name="check" :size="14" class="me-2" />
+          <Icon v-else name="check" :size="16" class="me-2" />
           {{ $t('submit') }}
         </button>
 

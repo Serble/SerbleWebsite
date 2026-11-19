@@ -274,19 +274,14 @@ export default {
 
     <!-- Sidebar toggle (mobile) -->
     <button class="sidebar-toggle" @click="sidebarOpen = !sidebarOpen" :class="{ open: sidebarOpen }">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
-      </svg>
+      <Icon name="menu" :size="18" />
     </button>
 
     <!-- Sidebar -->
     <aside class="notes-sidebar" :class="{ 'sidebar-visible': sidebarOpen }">
       <div class="sidebar-header">
         <span class="sidebar-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-            <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1"/>
-            <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2z"/>
-          </svg>
+          <Icon name="note" :size="18" class="me-2" />
           {{ $t('notes') }}
         </span>
       </div>
@@ -305,18 +300,11 @@ export default {
         >
           <div class="note-item-top">
             <span class="note-item-title">
-              <svg v-if="(loadedContent[id] || '').startsWith('------BEGIN ENCRYPTED')"
-                xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor"
-                viewBox="0 0 16 16" class="lock-icon me-1">
-                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
-              </svg>
+              <Icon v-if="(loadedContent[id] || '').startsWith('------BEGIN ENCRYPTED')" name="lock" :size="13" class="lock-icon me-1" />
               {{ noteTitles[id] || id }}
             </span>
             <button class="note-delete-btn" @click="removeNote(id, $event)" :title="$t('delete')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-              </svg>
+              <Icon name="trash" :size="14" />
             </button>
           </div>
           <p class="note-item-summary">{{ noteSummaries[id] || $t('click-to-load') }}</p>
@@ -326,16 +314,11 @@ export default {
       <!-- New note buttons -->
       <div class="sidebar-actions">
         <button class="sidebar-btn sidebar-btn-primary" @click="newNote(false)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-          </svg>
+          <Icon name="plusCircle" :size="15" class="me-1" />
           {{ $t('new-note') }}
         </button>
         <button class="sidebar-btn sidebar-btn-lock" @click="newNote(true)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
-          </svg>
+          <Icon name="lock" :size="15" class="me-1" />
           {{ $t('new-encrypted-note') }}
         </button>
       </div>
@@ -352,9 +335,7 @@ export default {
 
       <!-- No note selected -->
       <div v-if="!currentId" class="editor-empty">
-        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="opacity-25 mb-3" viewBox="0 0 16 16">
-          <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1"/><path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2z"/>
-        </svg>
+        <Icon name="note" :size="40" class="opacity-25 mb-3" />
         <p class="text-muted">{{ $t('no-note-selected') }}</p>
       </div>
 
@@ -362,9 +343,7 @@ export default {
       <div v-else-if="isEncrypted && isEmptyEncrypted && decryptedContent === null" class="editor-lock-screen">
         <div class="lock-card">
           <div class="lock-icon-wrap text-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
-            </svg>
+            <Icon name="lock" :size="40" />
           </div>
           <h4>{{ $t('set-encryption-password') }}</h4>
           <p class="text-muted lock-hint">{{ $t('choose-strong-password') }}</p>
@@ -384,9 +363,7 @@ export default {
       <div v-else-if="isEncrypted && decryptedContent === null" class="editor-lock-screen">
         <div class="lock-card">
           <div class="lock-icon-wrap text-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
-            </svg>
+            <Icon name="lock" :size="40" />
           </div>
           <h4>{{ $t('note-is-encrypted') }}</h4>
           <p v-if="wrongAttempts > 0" class="lock-wrong">
@@ -409,9 +386,7 @@ export default {
       <template v-else>
         <div class="editor-topbar">
           <div class="editor-title-row">
-            <svg v-if="isEncrypted" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="text-warning me-2">
-              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
-            </svg>
+            <Icon v-if="isEncrypted" name="lock" class="text-warning me-2" />
             <span class="editor-note-title">{{ noteTitles[currentId] || currentId }}</span>
           </div>
           <button
@@ -420,9 +395,7 @@ export default {
             :disabled="saveState !== 'dirty'"
             @click="doSave()"
           >
-            <svg v-if="saveState === 'saved'" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-              <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
-            </svg>
+            <Icon v-if="saveState === 'saved'" name="check" :size="15" class="me-1" />
             {{ saveLabel }}
           </button>
         </div>

@@ -217,7 +217,7 @@ export default {
             class="history-item"
             :class="w.correct ? 'history-correct' : 'history-wrong'"
           >
-            <Icon :name="w.correct ? 'check' : 'close'" :size="12" class="history-icon" />
+            <Icon :name="w.correct ? 'check' : 'close'" :size="14" class="history-icon" />
             {{ w.text }}
           </div>
         </div>
@@ -251,7 +251,7 @@ export default {
         <!-- Record -->
         <div class="record-row">
           <span v-if="newRecord" class="record-badge record-new">
-            <Icon name="trophy" :size="13" /> {{ $t('new-record') }} {{ record }}
+            <Icon name="trophy" :size="15" /> {{ $t('new-record') }} {{ record }}
           </span>
           <span v-else class="record-badge">
             {{ $t('record') }} {{ record === 0 ? '-' : record }}

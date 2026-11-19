@@ -21,9 +21,10 @@ import CoinAmount from '@/components/CoinAmount.vue';
 import LoadingBlock from '@/components/LoadingBlock.vue';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import AppWebhooksPanel from '@/components/AppWebhooksPanel.vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
-  components: { CoinIcon, CoinAmount, LoadingBlock, OfficialBadge, AppWebhooksPanel },
+  components: { CoinIcon, CoinAmount, LoadingBlock, OfficialBadge, AppWebhooksPanel, Icon },
   setup() {
     ensureLoggedIn();
 
@@ -581,9 +582,7 @@ export default {
     <!-- -- Page header -- -->
     <div class="page-header">
       <RouterLink to="/oauthapps" class="back-btn" :title="$t('back-to-apps')" :aria-label="$t('back-to-apps')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
-          <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
-        </svg>
+        <Icon name="arrowLeft" />
       </RouterLink>
       <div class="app-icon">{{ (app.name || '?').charAt(0).toUpperCase() }}</div>
       <div class="header-text">
@@ -851,9 +850,7 @@ export default {
           <div v-for="(uri, index) in redirectUris" :key="index" class="uri-item">
             <span class="uri-text">{{ uri }}</span>
             <button type="button" class="icon-danger" :title="$t('remove')" @click="removeUri(index)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
-              </svg>
+              <Icon name="close" :size="14" />
             </button>
           </div>
         </div>
@@ -991,9 +988,7 @@ export default {
               <code v-if="callerApps[id] !== undefined" class="caller-id">{{ id }}</code>
             </div>
             <button type="button" class="icon-danger" :title="$t('remove')" :disabled="crossSaving" @click="removeCaller(index)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
-              </svg>
+              <Icon name="close" :size="14" />
             </button>
           </div>
         </div>

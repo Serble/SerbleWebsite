@@ -134,7 +134,7 @@ defineExpose({ focusInput });
 <template>
   <div class="steps">
     <p v-if="progressed" class="steps-note">
-      <Icon name="check" :size="13" />{{ $t('sign-in-next-step') }}
+      <Icon name="check" :size="15" />{{ $t('sign-in-next-step') }}
     </p>
 
     <div v-if="sortedMethods.length > 1" class="method-tabs" role="tablist">

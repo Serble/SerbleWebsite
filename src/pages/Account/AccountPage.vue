@@ -690,7 +690,7 @@ export default {
               @click="copyId"
             >
               <code class="id-text">{{ user?.id }}</code>
-              <Icon :name="idCopied ? 'check' : 'copy'" :size="12" />
+              <Icon :name="idCopied ? 'check' : 'copy'" :size="14" />
               <span class="sr-only">{{ idCopied ? $t('copied') : $t('copy-id') }}</span>
             </button>
           </dd>
@@ -753,10 +753,10 @@ export default {
               <div class="label-row">
                 <label class="field-label field-label-plain" for="email">{{ $t('email') }}</label>
                 <span v-if="user?.email && user?.verifiedEmail" class="inline-note inline-note-ok">
-                  <Icon name="check" :size="12" />{{ $t('verified') }}
+                  <Icon name="check" :size="14" />{{ $t('verified') }}
                 </span>
                 <span v-else-if="user?.email" class="inline-note inline-note-warn">
-                  <Icon name="alert" :size="12" />{{ $t('not-verified') }}
+                  <Icon name="alert" :size="14" />{{ $t('not-verified') }}
                 </span>
               </div>
               <input
@@ -787,10 +787,10 @@ export default {
           <div class="panel-foot">
             <div class="panel-status" role="status">
               <p v-for="key in profileErrors" :key="key" class="status status-error">
-                <Icon name="alert" :size="13" />{{ $t(key) }}
+                <Icon name="alert" :size="15" />{{ $t(key) }}
               </p>
               <p v-if="profileSaved && profileErrors.length === 0" class="status status-ok">
-                <Icon name="check" :size="13" />{{ $t('save-changes-success') }}
+                <Icon name="check" :size="15" />{{ $t('save-changes-success') }}
               </p>
             </div>
             <div class="panel-actions">
@@ -803,7 +803,7 @@ export default {
                 {{ $t('discard') }}
               </button>
               <button type="submit" class="btn btn-primary btn-sm" :disabled="!profileDirty || profileSaving">
-                <LoadingSpinner v-if="profileSaving" :size="13" />
+                <LoadingSpinner v-if="profileSaving" :size="15" />
                 {{ profileSaving ? $t('saving') : $t('save-changes') }}
               </button>
             </div>
@@ -835,7 +835,7 @@ export default {
             </div>
 
             <p v-if="credentialsLoading" class="panel-state">
-              <LoadingSpinner :size="14" />{{ $t('loading') }}
+              <LoadingSpinner :size="16" />{{ $t('loading') }}
             </p>
 
             <div v-else class="panel-body ways">
@@ -856,18 +856,18 @@ export default {
                     :disabled="flowsSaving || flows.length < 2"
                     @click="removeFlow(flow)"
                   >
-                    <Icon name="trash" :size="13" />
+                    <Icon name="trash" :size="15" />
                   </button>
                   <div class="way-chain">
                     <template v-for="(m, i) in flow.methods" :key="m">
                       <span v-if="i > 0" class="way-and" aria-hidden="true">
-                        <Icon name="plus" :size="10" />
+                        <Icon name="plus" :size="12" />
                       </span>
                       <span class="way-method">{{ $t('method-' + m) }}</span>
                     </template>
                   </div>
                   <p v-if="redundantVs(flow)" class="way-redundant">
-                    <Icon name="alert" :size="12" />
+                    <Icon name="alert" :size="14" />
                     {{ $t('sign-in-way-unused', { methods: methodList(redundantVs(flow).methods) }) }}
                   </p>
                   <span class="way-strength">
@@ -913,7 +913,7 @@ export default {
                     @click="toggleMethod(m)"
                   >
                     <span class="flow-toggle-box" aria-hidden="true">
-                      <Icon v-if="newFlow.includes(m)" name="check" :size="11" />
+                      <Icon v-if="newFlow.includes(m)" name="check" :size="13" />
                     </span>
                     {{ $t('method-' + m) }}
                   </button>
@@ -922,26 +922,26 @@ export default {
                 <div class="builder-foot">
                   <div class="builder-msgs">
                     <p v-if="newFlowIsDuplicate" class="builder-msg builder-msg-warn">
-                      <Icon name="alert" :size="13" />{{ $t('sign-in-way-exists') }}
+                      <Icon name="alert" :size="15" />{{ $t('sign-in-way-exists') }}
                     </p>
                     <template v-else-if="newFlowOrdered.length">
                       <p class="builder-msg">
                         {{ $t('new-way-preview') }}
                         <span class="way-chain way-chain-inline">
                           <template v-for="(m, i) in newFlowOrdered" :key="m">
-                            <span v-if="i > 0" class="way-and" aria-hidden="true"><Icon name="plus" :size="10" /></span>
+                            <span v-if="i > 0" class="way-and" aria-hidden="true"><Icon name="plus" :size="12" /></span>
                             <span class="way-method">{{ $t('method-' + m) }}</span>
                           </template>
                         </span>
                       </p>
                       <p v-if="newFlowRedundantVs" class="builder-msg builder-msg-warn">
-                        <Icon name="alert" :size="13" />{{ $t('sign-in-way-redundant', { methods: methodList(newFlowRedundantVs.methods) }) }}
+                        <Icon name="alert" :size="15" />{{ $t('sign-in-way-redundant', { methods: methodList(newFlowRedundantVs.methods) }) }}
                       </p>
                       <p v-if="newFlowSupersedes.length" class="builder-msg builder-msg-warn">
-                        <Icon name="alert" :size="13" />{{ $t('sign-in-way-replaces', { methods: supersededSummary }) }}
+                        <Icon name="alert" :size="15" />{{ $t('sign-in-way-replaces', { methods: supersededSummary }) }}
                       </p>
                       <p v-if="newFlowIsCodeOnly" class="builder-msg builder-msg-warn">
-                        <Icon name="alert" :size="13" />{{ $t('flow-code-only-warning') }}
+                        <Icon name="alert" :size="15" />{{ $t('flow-code-only-warning') }}
                       </p>
                     </template>
                     <p v-else class="builder-msg builder-msg-hint">{{ $t('nothing-picked-yet') }}</p>
@@ -957,8 +957,8 @@ export default {
                       :disabled="flowsSaving || newFlowOrdered.length === 0 || newFlowIsDuplicate"
                       @click="addFlow"
                     >
-                      <LoadingSpinner v-if="flowsSaving" :size="13" />
-                      <Icon v-else name="plus" :size="13" />
+                      <LoadingSpinner v-if="flowsSaving" :size="15" />
+                      <Icon v-else name="plus" :size="15" />
                       {{ $t('add') }}
                     </button>
                   </div>
@@ -971,14 +971,14 @@ export default {
                 role="status"
               >
                 <p v-if="flowsMessage" class="status status-error">
-                  <Icon name="alert" :size="13" />{{ flowsMessage }}
+                  <Icon name="alert" :size="15" />{{ flowsMessage }}
                 </p>
                 <p v-else-if="flowsError" class="status status-error">
-                  <Icon name="alert" :size="13" />{{ $t(flowsError) }}
+                  <Icon name="alert" :size="15" />{{ $t(flowsError) }}
                 </p>
                 <template v-else-if="flowsSaved">
                   <p class="status status-ok">
-                    <Icon name="check" :size="13" />{{ $t('sign-in-methods-updated') }}
+                    <Icon name="check" :size="15" />{{ $t('sign-in-methods-updated') }}
                   </p>
                   <p class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
                 </template>
@@ -1043,18 +1043,18 @@ export default {
             <div class="panel-foot">
               <div class="panel-status" role="status">
                 <p v-if="passwordError" class="status status-error">
-                  <Icon name="alert" :size="13" />{{ $t(passwordError) }}
+                  <Icon name="alert" :size="15" />{{ $t(passwordError) }}
                 </p>
                 <template v-else-if="passwordSaved">
                   <p class="status status-ok">
-                    <Icon name="check" :size="13" />{{ $t('password-updated') }}
+                    <Icon name="check" :size="15" />{{ $t('password-updated') }}
                   </p>
                   <p v-if="passwordRevoked" class="status status-note">{{ $t('other-sessions-signed-out') }}</p>
                 </template>
               </div>
               <div class="panel-actions">
                 <button type="submit" class="btn btn-primary btn-sm" :disabled="!canChangePassword || passwordSaving">
-                  <LoadingSpinner v-if="passwordSaving" :size="13" />
+                  <LoadingSpinner v-if="passwordSaving" :size="15" />
                   {{ passwordSaving ? $t('saving') : (passwordCredential ? $t('update-password') : $t('set-password')) }}
                 </button>
               </div>
@@ -1078,7 +1078,7 @@ export default {
             </summary>
 
             <p v-if="credentialsLoading" class="panel-state">
-              <LoadingSpinner :size="14" />{{ $t('loading') }}
+              <LoadingSpinner :size="16" />{{ $t('loading') }}
             </p>
 
             <div v-else-if="authenticators.length === 0" class="empty">
@@ -1102,7 +1102,7 @@ export default {
                   >
                   <div class="pk-actions">
                     <button type="button" class="btn btn-primary btn-sm" :disabled="savingRename" @click="submitRename(cred)">
-                      <LoadingSpinner v-if="savingRename" :size="12" />
+                      <LoadingSpinner v-if="savingRename" :size="14" />
                       {{ $t('save') }}
                     </button>
                     <button type="button" class="btn btn-ghost btn-sm" :disabled="savingRename" @click="cancelRename">
@@ -1126,7 +1126,7 @@ export default {
                       :disabled="removingId === cred.id"
                       @click="startRename(cred)"
                     >
-                      <Icon name="pencil" :size="13" />
+                      <Icon name="pencil" :size="15" />
                     </button>
                     <button
                       type="button"
@@ -1136,8 +1136,8 @@ export default {
                       :disabled="removingId === cred.id"
                       @click="removeCredential(cred)"
                     >
-                      <LoadingSpinner v-if="removingId === cred.id" :size="13" />
-                      <Icon v-else name="trash" :size="13" />
+                      <LoadingSpinner v-if="removingId === cred.id" :size="15" />
+                      <Icon v-else name="trash" :size="15" />
                     </button>
                   </div>
                 </template>
@@ -1147,12 +1147,12 @@ export default {
             <div class="panel-foot">
               <div class="panel-status" role="status">
                 <p v-if="totpError" class="status status-error">
-                  <Icon name="alert" :size="13" />{{ $t(totpError) }}
+                  <Icon name="alert" :size="15" />{{ $t(totpError) }}
                 </p>
               </div>
               <div class="panel-actions">
                 <RouterLink to="/setuptotp" class="btn btn-primary btn-sm">
-                  <Icon name="plus" :size="13" />{{ $t('add-authenticator') }}
+                  <Icon name="plus" :size="15" />{{ $t('add-authenticator') }}
                 </RouterLink>
               </div>
             </div>
@@ -1171,7 +1171,7 @@ export default {
             </summary>
 
             <p v-if="credentialsLoading" class="panel-state">
-              <LoadingSpinner :size="14" />{{ $t('loading') }}
+              <LoadingSpinner :size="16" />{{ $t('loading') }}
             </p>
 
             <div v-else-if="passkeys.length === 0" class="empty">
@@ -1196,7 +1196,7 @@ export default {
                   >
                   <div class="pk-actions">
                     <button type="button" class="btn btn-primary btn-sm" :disabled="savingRename" @click="submitRename(pk)">
-                      <LoadingSpinner v-if="savingRename" :size="12" />
+                      <LoadingSpinner v-if="savingRename" :size="14" />
                       {{ $t('save') }}
                     </button>
                     <button type="button" class="btn btn-ghost btn-sm" :disabled="savingRename" @click="cancelRename">
@@ -1223,7 +1223,7 @@ export default {
                       :disabled="removingId === pk.id"
                       @click="startRename(pk)"
                     >
-                      <Icon name="pencil" :size="13" />
+                      <Icon name="pencil" :size="15" />
                     </button>
                     <button
                       type="button"
@@ -1233,8 +1233,8 @@ export default {
                       :disabled="removingId === pk.id"
                       @click="removeCredential(pk)"
                     >
-                      <LoadingSpinner v-if="removingId === pk.id" :size="13" />
-                      <Icon v-else name="trash" :size="13" />
+                      <LoadingSpinner v-if="removingId === pk.id" :size="15" />
+                      <Icon v-else name="trash" :size="15" />
                     </button>
                   </div>
                 </template>
@@ -1246,7 +1246,7 @@ export default {
                    a failure that arrives later is announced rather than missed. -->
               <div class="panel-status" role="status">
                 <p v-if="passkeyError" class="status status-error">
-                  <Icon name="alert" :size="13" />{{ $t(passkeyError) }}
+                  <Icon name="alert" :size="15" />{{ $t(passkeyError) }}
                 </p>
               </div>
               <div class="panel-actions">
@@ -1256,8 +1256,8 @@ export default {
                   :disabled="registeringPasskey"
                   @click="addPasskey"
                 >
-                  <LoadingSpinner v-if="registeringPasskey" :size="13" />
-                  <Icon v-else name="plus" :size="13" />
+                  <LoadingSpinner v-if="registeringPasskey" :size="15" />
+                  <Icon v-else name="plus" :size="15" />
                   {{ $t('add-passkey') }}
                 </button>
               </div>
@@ -1275,10 +1275,10 @@ export default {
             <div class="panel-foot">
               <div class="panel-status" role="status">
                 <p v-if="sessionsError" class="status status-error">
-                  <Icon name="alert" :size="13" />{{ $t(sessionsError) }}
+                  <Icon name="alert" :size="15" />{{ $t(sessionsError) }}
                 </p>
                 <p v-else-if="sessionsEnded" class="status status-ok">
-                  <Icon name="check" :size="13" />{{ $t('logout-all-done') }}
+                  <Icon name="check" :size="15" />{{ $t('logout-all-done') }}
                 </p>
               </div>
               <div class="panel-actions">
@@ -1288,7 +1288,7 @@ export default {
                   :disabled="signingOutAll"
                   @click="logoutEverywhere"
                 >
-                  <LoadingSpinner v-if="signingOutAll" :size="13" />
+                  <LoadingSpinner v-if="signingOutAll" :size="15" />
                   {{ $t('logout-all-sessions') }}
                 </button>
               </div>
@@ -1992,7 +1992,7 @@ details[open] > .panel-summary .panel-chevron { transform: rotate(180deg); }
   color: var(--warning);
 }
 
-.way-redundant svg { flex-shrink: 0; margin-top: 2px; }
+.way-redundant svg { flex-shrink: 0; margin-top: calc((1lh - 14px) / 2); } /* centre the icon on the first line of text */
 
 /* A ghost trash tucked in the corner - present but quiet until hovered. */
 .way-remove {

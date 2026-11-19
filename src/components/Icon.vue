@@ -1,80 +1,10 @@
 <script setup>
 import { computed } from 'vue';
-
-/**
- * Bootstrap Icons paths, inlined once.
- *
- * The same SVG markup was pasted throughout the app - the alert glyph alone
- * appeared sixteen times. Add new icons to PATHS rather than inlining more
- * <svg> blocks. All are 16x16 and use currentColor, so they take the colour of
- * whatever they sit in.
- */
-const PATHS = {
-  alert: [
-    'M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16',
-    'M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z',
-  ],
-  lock: [
-    'M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2',
-  ],
-  check: [
-    'M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z',
-  ],
-  close: [
-    'M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708',
-  ],
-  chevronDown: [
-    'M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z',
-  ],
-  person: [
-    'M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4',
-  ],
-  plus: [
-    'M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4',
-  ],
-  pencil: [
-    'M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325',
-  ],
-  trash: [
-    'M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z',
-    'M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z',
-  ],
-  arrowLeft: [
-    'M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8',
-  ],
-  arrowDownLeft: [
-    'M2 13.5a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 0-1H3.707L13.854 2.854a.5.5 0 0 0-.708-.708L3 12.293V7.5a.5.5 0 0 0-1 0z',
-  ],
-  send: [
-    'M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z',
-  ],
-  arrowUpRight: [
-    'M14 2.5a.5.5 0 0 0-.5-.5h-6a.5.5 0 0 0 0 1h4.793L2.146 13.146a.5.5 0 0 0 .708.708L13 3.707V8.5a.5.5 0 0 0 1 0z',
-  ],
-  arrowSwap: [
-    'M1 11.5a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 12H1.5a.5.5 0 0 1-.5-.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5',
-  ],
-  chevronLeft: [
-    'M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0',
-  ],
-  chevronRight: [
-    'M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708',
-  ],
-  dash: [
-    'M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8',
-  ],
-  trophy: [
-    'M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5q0 .807-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33 33 0 0 1 2.5.5m.099 2.54a2 2 0 0 0 .72 3.935c-.333-1.05-.588-2.346-.72-3.935m10.083 3.935a2 2 0 0 0 .72-3.935c-.133 1.59-.388 2.885-.72 3.935',
-  ],
-  copy: [
-    'M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z',
-    'M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z',
-  ],
-};
+import { ICONS, strokeFor } from '@/assets/js/icons.js';
 
 const props = defineProps({
   name: { type: String, required: true },
-  size: { type: [Number, String], default: 14 },
+  size: { type: [Number, String], default: 16 },
   /**
    * Icons are decorative by default and hidden from screen readers. Pass a
    * label when the icon is the only content of a control.
@@ -82,28 +12,58 @@ const props = defineProps({
   label: { type: String, default: '' },
 });
 
-const paths = computed(() => PATHS[props.name] ?? []);
+const icon = computed(() => ICONS[props.name] ?? []);
+const solid = computed(() => !Array.isArray(icon.value));
+const px = computed(() => Number(props.size));
+// Laid out inline, sit the icon's middle on the middle of the capital letters beside it: Plex Sans
+// and Plex Mono both have a 0.698em cap height, so that is 0.349em above the baseline. In a flex
+// row vertical-align is ignored and align-items: center puts the icon on the middle of the line
+// box, 0.375em above the baseline in Plex, which is within 0.4px of the same spot.
+const style = computed(() => ({ verticalAlign: `calc(0.349em - ${px.value / 2}px)` }));
 </script>
 
 <template>
   <svg
+    v-if="solid"
     xmlns="http://www.w3.org/2000/svg"
-    :width="size"
-    :height="size"
-    viewBox="0 0 16 16"
+    :width="px"
+    :height="px"
+    :viewBox="icon.viewBox"
     fill="currentColor"
     :aria-hidden="label ? undefined : 'true'"
     :aria-label="label || undefined"
     :role="label ? 'img' : undefined"
+    :data-icon="name"
+    :style="style"
     class="icon"
   >
-    <path v-for="(d, i) in paths" :key="i" :d="d" />
+    <path v-for="(d, i) in icon.fill" :key="i" :d="d" />
+  </svg>
+  <svg
+    v-else
+    xmlns="http://www.w3.org/2000/svg"
+    :width="px"
+    :height="px"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    :stroke-width="strokeFor(px)"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    :aria-hidden="label ? undefined : 'true'"
+    :aria-label="label || undefined"
+    :role="label ? 'img' : undefined"
+    :data-icon="name"
+    :style="style"
+    class="icon"
+  >
+    <path v-for="(d, i) in icon" :key="i" :d="d" />
   </svg>
 </template>
 
 <style scoped>
 .icon {
+  display: inline-block;
   flex-shrink: 0;
-  vertical-align: -0.125em;
 }
 </style>

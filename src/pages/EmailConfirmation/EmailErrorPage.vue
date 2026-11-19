@@ -1,5 +1,8 @@
 <script>
-export default {};
+import Icon from '@/components/Icon.vue';
+export default {
+  components: { Icon },
+};
 </script>
 
 <template>
@@ -7,18 +10,14 @@ export default {};
     <div class="result-card">
 
       <div class="result-icon result-icon-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-4.646-3.646a.5.5 0 0 0-.708 0L8 7.293 5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0 0-.708"/>
-        </svg>
+        <Icon name="closeCircle" :size="56" />
       </div>
 
       <h1 class="result-title">{{ $t('an-error-occured') }}</h1>
       <p class="result-desc">{{ $t('email-not-verified') }}</p>
 
       <RouterLink to="/account" class="result-btn result-btn-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-          <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4"/>
-        </svg>
+        <Icon name="person" class="me-2" />
         {{ $t('account-page') }}
       </RouterLink>
 

@@ -5,9 +5,10 @@ import { ensureLoggedIn } from '@/assets/js/utils.js';
 import { getUserApps } from '@/assets/js/serble.js';
 import LoadingBlock from '@/components/LoadingBlock.vue';
 import OfficialBadge from '@/components/OfficialBadge.vue';
+import Icon from '@/components/Icon.vue';
 
 export default {
-  components: { LoadingBlock, OfficialBadge },
+  components: { LoadingBlock, OfficialBadge, Icon },
   setup() {
     ensureLoggedIn();
 
@@ -59,9 +60,7 @@ export default {
         <p class="apps-subtitle">{{ $t('my-apps-subtitle') }}</p>
       </div>
       <button class="new-btn" @click="onNew">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-        </svg>
+        <Icon name="plus" :size="18" />
         {{ $t('new-app') }}
       </button>
     </div>
@@ -72,9 +71,7 @@ export default {
     <!-- Empty state -->
     <div v-else-if="apps.length === 0" class="state-block empty-state">
       <!-- Apps grid - mirrors the tiled cards this page shows once apps exist. -->
-      <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
-      </svg>
+      <Icon name="grid" :size="52" />
       <p class="empty-title">{{ $t('no-apps') }}</p>
       <p class="empty-sub">{{ $t('no-apps-subtitle') }}</p>
     </div>
@@ -97,9 +94,7 @@ export default {
           </div>
           <RouterLink class="manage-btn" :to="manageLink(app.id)">
             {{ $t('manage') }}
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
-            </svg>
+            <Icon name="arrowRight" :size="16" />
           </RouterLink>
         </div>
 
@@ -114,15 +109,10 @@ export default {
           <code class="id-text">{{ app.id }}</code>
           <span class="id-status">
             <template v-if="copiedId === app.id">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0"/>
-              </svg>
+              <Icon name="check" :size="15" />
               {{ $t('copied') }}
             </template>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
-              <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
-            </svg>
+            <Icon v-else name="copy" :size="15" />
           </span>
         </button>
       </div>
