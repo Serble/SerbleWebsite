@@ -678,4 +678,47 @@ export default {
 }
 
 .oauth-btn-deny:hover:not(:disabled) { background: var(--danger-stronger); }
+/* -- Phones --
+   The card's border and padding cost a third of a phone's width, and the boxes inside it then
+   made a card in a card. On a phone the page is the card: the content uses the full width, the
+   inner boxes are the only boxes, and the two decisions stack as full-width buttons. */
+@media (max-width: 560px) {
+  .oauth-page {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 24px 16px 40px;
+  }
+
+  .oauth-card {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .oauth-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .oauth-btn {
+    flex: none;
+    width: 100%;
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  .oauth-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+
+  /* the mono labels stay labels, but readable: 12px */
+  .scopes-heading, .error-detail-label, .params-heading {
+    font-size: 0.75rem;
+  }
+}
 </style>

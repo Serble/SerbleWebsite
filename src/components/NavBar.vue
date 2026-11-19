@@ -1,12 +1,15 @@
 <script>
-import { inject, computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { inject, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
-import CoinIcon from '@/components/CoinIcon.vue';
 import Icon from '@/components/Icon.vue';
 import { FEATURES } from '@/assets/js/featureFlags.js';
 
+// Below this width the bar collapses to the brand and one menu button. Keep in step with the
+// @media query at the bottom of the styles.
+const MOBILE_QUERY = '(max-width: 768px)';
+
 export default {
-  components: { CoinIcon, Icon },
+  components: { Icon },
   setup() {
     const userStore = inject('userStore');
     const featureStore = inject('featureStore');
@@ -15,18 +18,48 @@ export default {
     const user = computed(() => userStore.state.user);
     const isAdmin = computed(() => (user.value?.permLevel ?? 0) > 1);
     const economyEnabled = computed(() => featureStore?.isEnabled(FEATURES.ECONOMY) === true);
-    const mobileOpen = ref(false);
 
-    // Which dropdown is open, by key. Hover alone used to drive this in CSS,
-    // which left the menus unreachable by keyboard.
+    // One source for every link, so the desktop bar, its dropdowns and the phone menu always
+    // list the same places in the same order. Labels are locale keys.
+    const topLinks = [
+      { to: '/', label: 'home' },
+      { href: 'https://status.serble.net', label: 'status' },
+      { to: '/store', label: 'store' },
+    ];
+    const groups = [
+      { key: 'games', label: 'games', items: [{ to: '/wordmaster', label: 'word-master' }] },
+      { key: 'info', label: 'info', items: [{ to: '/discord', label: 'serble-discord' }, { to: '/contact', label: 'contact' }] },
+      { key: 'vault', label: 'vault', items: [{ to: '/notes', label: 'notes' }] },
+    ];
+    const accountLinks = computed(() => [
+      { to: '/account', label: 'account' },
+      { to: '/oauthapps', label: 'my-applications' },
+      { to: '/authorizedapps', label: 'authorized-applications' },
+      ...(economyEnabled.value ? [
+        { to: '/account/balance', label: 'balance' },
+        { to: '/account/inventory', label: 'inventory' },
+        { to: '/account/trades', label: 'trades' },
+      ] : []),
+      { to: '/account/paymentportal', label: 'manage-payments' },
+      ...(isAdmin.value ? [{ to: '/admin', label: 'admin-dashboard' }] : []),
+    ]);
+
+    // -- Desktop dropdowns --
+    // Which dropdown is open, by key. A click toggles it; hovering opens it only for a real
+    // mouse. Touch screens fire pointerenter and then click on the same tap, which used to
+    // open the menu and shut it again straight away.
     const openMenu = ref(null);
 
     function toggleMenu(key) {
       openMenu.value = openMenu.value === key ? null : key;
     }
 
-    function openMenuNow(key) {
-      openMenu.value = key;
+    function hoverOpen(e, key) {
+      if (e.pointerType === 'mouse') openMenu.value = key;
+    }
+
+    function hoverClose(e) {
+      if (e.pointerType === 'mouse') openMenu.value = null;
     }
 
     function closeMenu() {
@@ -41,6 +74,15 @@ export default {
       }
     }
 
+    // A menu opened by click stays open until something else is clicked.
+    function onDocumentClick(e) {
+      if (openMenu.value && !e.target.closest('.nav-dropdown-wrap')) closeMenu();
+    }
+
+    // -- Phone menu --
+    const mobileOpen = ref(false);
+    const toggleButton = ref(null);
+
     function toggleMobile() {
       mobileOpen.value = !mobileOpen.value;
     }
@@ -50,6 +92,40 @@ export default {
       closeMenu();
     }
 
+    // The panel covers the page, so the page behind must not scroll with it.
+    watch(mobileOpen, (open) => {
+      document.documentElement.style.overflow = open ? 'hidden' : '';
+    });
+
+    // Close on any navigation, including back/forward.
+    watch(() => route.fullPath, closeMobile);
+
+    function onDocumentKeydown(e) {
+      if (e.key === 'Escape' && mobileOpen.value) {
+        closeMobile();
+        toggleButton.value?.focus();
+      }
+    }
+
+    // Widening past the breakpoint (rotating a tablet) leaves no panel behind.
+    let mql = null;
+    function onBreakpoint(e) {
+      if (!e.matches) closeMobile();
+    }
+
+    onMounted(() => {
+      document.addEventListener('click', onDocumentClick);
+      document.addEventListener('keydown', onDocumentKeydown);
+      mql = window.matchMedia(MOBILE_QUERY);
+      mql.addEventListener('change', onBreakpoint);
+    });
+    onBeforeUnmount(() => {
+      document.removeEventListener('click', onDocumentClick);
+      document.removeEventListener('keydown', onDocumentKeydown);
+      mql?.removeEventListener('change', onBreakpoint);
+      document.documentElement.style.overflow = '';
+    });
+
     // Before the router resolves the first navigation the route is a bare "/",
     // which would flash the Home underline on every page load. Only match once
     // a real route has been resolved.
@@ -57,17 +133,10 @@ export default {
       return route.matched.length > 0 && route.path === path;
     }
 
-    // A menu opened by click stays open until something else is clicked.
-    function onDocumentClick(e) {
-      if (openMenu.value && !e.target.closest('.nav-dropdown-wrap')) closeMenu();
-    }
-
-    onMounted(() => document.addEventListener('click', onDocumentClick));
-    onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
-
     return {
-      user, isAdmin, economyEnabled, userStore, mobileOpen, toggleMobile, closeMobile, isActive,
-      openMenu, toggleMenu, openMenuNow, closeMenu, onMenuKeydown,
+      user, userStore, topLinks, groups, accountLinks, isActive,
+      openMenu, toggleMenu, hoverOpen, hoverClose, closeMenu, onMenuKeydown,
+      mobileOpen, toggleMobile, closeMobile, toggleButton,
     };
   },
   methods: {
@@ -92,89 +161,48 @@ export default {
 
       <!-- Centre links (desktop) -->
       <ul class="nav-links">
-        <li>
-          <RouterLink to="/" class="nav-link" :class="{ active: isActive('/') }">{{ $t('home') }}</RouterLink>
-        </li>
-        <li>
-          <a href="https://status.serble.net" target="_blank" rel="noopener" class="nav-link">{{ $t('status') }}</a>
-        </li>
-        <li>
-          <RouterLink to="/store" class="nav-link" :class="{ active: isActive('/store') }">{{ $t('store') }}</RouterLink>
+        <li v-for="link in topLinks" :key="link.label">
+          <a v-if="link.href" :href="link.href" target="_blank" rel="noopener" class="nav-link">{{ $t(link.label) }}</a>
+          <RouterLink v-else :to="link.to" class="nav-link" :class="{ active: isActive(link.to) }">{{ $t(link.label) }}</RouterLink>
         </li>
 
-        <!-- Games dropdown -->
         <li
+          v-for="group in groups"
+          :key="group.key"
           class="nav-dropdown-wrap"
-          @mouseenter="openMenuNow('games')"
-          @mouseleave="closeMenu"
+          @pointerenter="hoverOpen($event, group.key)"
+          @pointerleave="hoverClose"
           @keydown="onMenuKeydown"
         >
           <button
             class="nav-link nav-dropdown-btn"
             aria-haspopup="true"
-            :aria-expanded="openMenu === 'games'"
-            @click="toggleMenu('games')"
+            :aria-expanded="openMenu === group.key"
+            @click="toggleMenu(group.key)"
           >
-            {{ $t('games') }}
+            {{ $t(group.label) }}
             <Icon name="chevronDown" :size="12" class="chevron" />
           </button>
-          <div class="nav-dropdown" :class="{ open: openMenu === 'games' }">
-            <RouterLink to="/wordmaster" class="nav-dropdown-item" @click="closeMenu">{{ $t('word-master') }}</RouterLink>
-          </div>
-        </li>
-
-        <!-- Info dropdown -->
-        <li
-          class="nav-dropdown-wrap"
-          @mouseenter="openMenuNow('info')"
-          @mouseleave="closeMenu"
-          @keydown="onMenuKeydown"
-        >
-          <button
-            class="nav-link nav-dropdown-btn"
-            aria-haspopup="true"
-            :aria-expanded="openMenu === 'info'"
-            @click="toggleMenu('info')"
-          >
-            {{ $t('info') }}
-            <Icon name="chevronDown" :size="12" class="chevron" />
-          </button>
-          <div class="nav-dropdown" :class="{ open: openMenu === 'info' }">
-            <RouterLink to="/discord" class="nav-dropdown-item" @click="closeMenu">{{ $t('serble-discord') }}</RouterLink>
-            <RouterLink to="/contact" class="nav-dropdown-item" @click="closeMenu">{{ $t('contact') }}</RouterLink>
-          </div>
-        </li>
-
-        <!-- Vault dropdown -->
-        <li
-          class="nav-dropdown-wrap"
-          @mouseenter="openMenuNow('vault')"
-          @mouseleave="closeMenu"
-          @keydown="onMenuKeydown"
-        >
-          <button
-            class="nav-link nav-dropdown-btn"
-            aria-haspopup="true"
-            :aria-expanded="openMenu === 'vault'"
-            @click="toggleMenu('vault')"
-          >
-            {{ $t('vault') }}
-            <Icon name="chevronDown" :size="12" class="chevron" />
-          </button>
-          <div class="nav-dropdown" :class="{ open: openMenu === 'vault' }">
-            <RouterLink to="/notes" class="nav-dropdown-item" @click="closeMenu">{{ $t('notes') }}</RouterLink>
+          <div class="nav-dropdown" :class="{ open: openMenu === group.key }">
+            <RouterLink
+              v-for="item in group.items"
+              :key="item.to"
+              :to="item.to"
+              class="nav-dropdown-item"
+              @click="closeMenu"
+            >{{ $t(item.label) }}</RouterLink>
           </div>
         </li>
       </ul>
 
       <!-- Right side -->
       <div class="nav-right">
-        <!-- Logged in: user menu -->
+        <!-- Logged in: user menu (desktop) -->
         <div
           v-if="user"
-          class="nav-dropdown-wrap"
-          @mouseenter="openMenuNow('user')"
-          @mouseleave="closeMenu"
+          class="nav-dropdown-wrap nav-user"
+          @pointerenter="hoverOpen($event, 'user')"
+          @pointerleave="hoverClose"
           @keydown="onMenuKeydown"
         >
           <button
@@ -187,57 +215,96 @@ export default {
             <Icon name="chevronDown" :size="12" class="chevron" />
           </button>
           <div class="nav-dropdown nav-dropdown-right" :class="{ open: openMenu === 'user' }">
-            <RouterLink to="/account" class="nav-dropdown-item">{{ $t('account') }}</RouterLink>
-            <RouterLink to="/oauthapps" class="nav-dropdown-item">{{ $t('my-applications') }}</RouterLink>
-            <RouterLink to="/authorizedapps" class="nav-dropdown-item">{{ $t('authorized-applications') }}</RouterLink>
-            <RouterLink v-if="economyEnabled" to="/account/balance" class="nav-dropdown-item">{{ $t('balance') }}</RouterLink>
-            <RouterLink v-if="economyEnabled" to="/account/inventory" class="nav-dropdown-item">{{ $t('inventory') }}</RouterLink>
-            <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-dropdown-item">{{ $t('trades') }}</RouterLink>
-            <RouterLink to="/account/paymentportal" class="nav-dropdown-item">{{ $t('manage-payments') }}</RouterLink>
-            <RouterLink v-if="isAdmin" to="/admin" class="nav-dropdown-item">{{ $t('admin-dashboard') }}</RouterLink>
+            <RouterLink
+              v-for="item in accountLinks"
+              :key="item.to"
+              :to="item.to"
+              class="nav-dropdown-item"
+              @click="closeMenu"
+            >{{ $t(item.label) }}</RouterLink>
             <div class="nav-dropdown-divider"></div>
             <button class="nav-dropdown-item nav-dropdown-danger" @click="logout">{{ $t('logout') }}</button>
           </div>
         </div>
 
-        <!-- Logged out -->
+        <!-- Logged out (desktop) -->
         <div v-else class="nav-auth">
           <RouterLink to="/login" class="nav-link">{{ $t('login') }}</RouterLink>
           <RouterLink to="/register" class="btn-nav-register">{{ $t('register') }}</RouterLink>
         </div>
 
-        <!-- Mobile toggle -->
-        <button class="nav-hamburger" @click="toggleMobile" :aria-expanded="mobileOpen" :aria-label="$t('menu')">
+        <!-- Phone: the one control on the right -->
+        <button
+          ref="toggleButton"
+          class="nav-hamburger"
+          :aria-expanded="mobileOpen"
+          aria-controls="nav-mobile"
+          :aria-label="$t('menu')"
+          @click="toggleMobile"
+        >
           <span></span><span></span>
         </button>
       </div>
 
     </div>
 
-    <!-- Mobile menu -->
-    <div class="nav-mobile" :class="{ open: mobileOpen }">
-      <RouterLink to="/" class="nav-mobile-link" @click="closeMobile">{{ $t('home') }}</RouterLink>
-      <a href="https://status.serble.net" class="nav-mobile-link" @click="closeMobile">{{ $t('status') }}</a>
-      <RouterLink to="/store" class="nav-mobile-link" @click="closeMobile">{{ $t('store') }}</RouterLink>
-      <RouterLink to="/wordmaster" class="nav-mobile-link" @click="closeMobile">{{ $t('word-master') }}</RouterLink>
-      <RouterLink to="/notes" class="nav-mobile-link" @click="closeMobile">{{ $t('notes') }}</RouterLink>
-      <RouterLink to="/discord" class="nav-mobile-link" @click="closeMobile">{{ $t('serble-discord') }}</RouterLink>
-      <RouterLink to="/contact" class="nav-mobile-link" @click="closeMobile">{{ $t('contact') }}</RouterLink>
-      <div class="nav-mobile-divider"></div>
-      <template v-if="user">
-        <RouterLink to="/account" class="nav-mobile-link" @click="closeMobile">{{ $t('account') }}</RouterLink>
-        <RouterLink to="/oauthapps" class="nav-mobile-link" @click="closeMobile">{{ $t('my-applications') }}</RouterLink>
-        <RouterLink to="/authorizedapps" class="nav-mobile-link" @click="closeMobile">{{ $t('authorized-applications') }}</RouterLink>
-        <RouterLink v-if="economyEnabled" to="/account/balance" class="nav-mobile-link" @click="closeMobile">{{ $t('balance') }}</RouterLink>
-        <RouterLink v-if="economyEnabled" to="/account/inventory" class="nav-mobile-link" @click="closeMobile">{{ $t('inventory') }}</RouterLink>
-        <RouterLink v-if="economyEnabled" to="/account/trades" class="nav-mobile-link" @click="closeMobile">{{ $t('trades') }}</RouterLink>
-        <RouterLink to="/account/paymentportal" class="nav-mobile-link" @click="closeMobile">{{ $t('manage-payments') }}</RouterLink>
-        <button class="nav-mobile-link nav-mobile-danger" @click="logout">{{ $t('logout') }}</button>
-      </template>
-      <template v-else>
-        <RouterLink to="/login" class="nav-mobile-link" @click="closeMobile">{{ $t('login') }}</RouterLink>
-        <RouterLink to="/register" class="nav-mobile-link" @click="closeMobile">{{ $t('register') }}</RouterLink>
-      </template>
+    <!-- Phone menu: the same links as the bar, grouped under the same names as its dropdowns. -->
+    <div id="nav-mobile" class="nav-mobile" :class="{ open: mobileOpen }">
+      <div class="nav-mobile-inner">
+        <section class="nav-mobile-section">
+          <p class="nav-mobile-label">{{ $t('navigate') }}</p>
+          <template v-for="link in topLinks" :key="link.label">
+            <a v-if="link.href" :href="link.href" target="_blank" rel="noopener" class="nav-mobile-link" @click="closeMobile">
+              {{ $t(link.label) }}<Icon name="arrowUpRight" :size="14" class="nav-mobile-external" />
+            </a>
+            <RouterLink
+              v-else
+              :to="link.to"
+              class="nav-mobile-link"
+              :class="{ active: isActive(link.to) }"
+              @click="closeMobile"
+            >{{ $t(link.label) }}</RouterLink>
+          </template>
+        </section>
+
+        <!-- The small groups sit side by side so the account links stay near the top. -->
+        <div class="nav-mobile-groups">
+        <section v-for="group in groups" :key="group.key" class="nav-mobile-section" :style="{ gridArea: group.key }">
+          <p class="nav-mobile-label">{{ $t(group.label) }}</p>
+          <RouterLink
+            v-for="item in group.items"
+            :key="item.to"
+            :to="item.to"
+            class="nav-mobile-link"
+            :class="{ active: isActive(item.to) }"
+            @click="closeMobile"
+          >{{ $t(item.label) }}</RouterLink>
+        </section>
+        </div>
+
+        <!-- Signed in: headed by the username, as the desktop menu is -->
+        <section v-if="user" class="nav-mobile-section nav-mobile-account">
+          <p class="nav-mobile-label nav-mobile-user">
+            <Icon name="person" :size="14" />
+            <span>{{ user.username }}</span>
+          </p>
+          <RouterLink
+            v-for="item in accountLinks"
+            :key="item.to"
+            :to="item.to"
+            class="nav-mobile-link"
+            :class="{ active: isActive(item.to) }"
+            @click="closeMobile"
+          >{{ $t(item.label) }}</RouterLink>
+          <button class="nav-mobile-link nav-mobile-danger" @click="logout">{{ $t('logout') }}</button>
+        </section>
+
+        <!-- Signed out -->
+        <div v-else class="nav-mobile-auth">
+          <RouterLink to="/login" class="nav-mobile-btn" @click="closeMobile">{{ $t('login') }}</RouterLink>
+          <RouterLink to="/register" class="nav-mobile-btn nav-mobile-btn-primary" @click="closeMobile">{{ $t('register') }}</RouterLink>
+        </div>
+      </div>
     </div>
   </nav>
 </template>
@@ -245,6 +312,7 @@ export default {
 <style scoped>
 .site-nav {
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --nav-h: 60px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -257,7 +325,7 @@ export default {
   max-width: var(--container);
   margin: 0 auto;
   padding: 0 var(--space-6);
-  height: 60px;
+  height: var(--nav-h);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -268,6 +336,8 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+  /* a full-height tap target without moving the logo */
+  align-self: stretch;
   text-decoration: none;
   flex-shrink: 0;
 }
@@ -501,29 +571,37 @@ export default {
   transform: scale(0.98);
 }
 
-/* -- Mobile toggle: two bars that ease into a cross -- */
+/* -- Menu button: two bars that ease into a cross. 44px square to suit a thumb. -- */
 .nav-hamburger {
   display: none;
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  /* optically align the bars with the page gutter */
+  margin-right: -11px;
   padding: 0;
   background: none;
   border: none;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.nav-hamburger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .nav-hamburger span {
   position: absolute;
-  left: 9px;
-  right: 9px;
+  left: 12px;
+  right: 12px;
   height: 1.5px;
   background: var(--text);
   transition: transform 0.3s var(--ease);
 }
 
-.nav-hamburger span:first-child { top: 14px; }
-.nav-hamburger span:last-child  { top: 21px; }
+.nav-hamburger span:first-child { top: 18px; }
+.nav-hamburger span:last-child  { top: 25px; }
 
 .nav-hamburger[aria-expanded="true"] span:first-child {
   transform: translateY(3.5px) rotate(45deg);
@@ -533,24 +611,80 @@ export default {
   transform: translateY(-3.5px) rotate(-45deg);
 }
 
-/* -- Mobile menu -- */
+/* -- Phone menu --
+   Covers the page below the bar and scrolls on its own, so every item is reachable on a short
+   screen without the page moving underneath. */
 .nav-mobile {
   display: none;
-  flex-direction: column;
+  position: fixed;
+  top: var(--nav-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface-sunken);
   border-top: 1px solid var(--border);
-  padding: 8px var(--space-3) 12px;
 }
 
 .nav-mobile.open {
+  display: block;
+}
+
+.nav-mobile-inner {
+  padding: var(--space-1) var(--space-5) calc(var(--space-7) + env(safe-area-inset-bottom, 0px));
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.nav-mobile-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "games info" "vault info";
+  column-gap: var(--space-5);
+  row-gap: var(--space-2);
+}
+
+.nav-mobile-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Section names: the footer's mono headings, and the desktop dropdown names. */
+.nav-mobile-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px;
+  padding-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.nav-mobile-user {
+  color: var(--text-muted);
+}
+
+.nav-mobile-user span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-mobile-link {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
-  padding: 11px var(--space-2) 12px;
-  font-size: 1rem;
+  min-height: 44px;
+  padding: 0;
+  font: inherit;
+  font-size: 1.05rem;
   color: var(--text-muted);
   text-decoration: none;
   background: none;
@@ -560,55 +694,102 @@ export default {
   transition: color var(--t);
 }
 
-.nav-mobile-link::after {
-  content: '';
-  position: absolute;
-  left: var(--space-2);
-  right: var(--space-2);
-  bottom: 7px;
-  height: 1px;
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.3s var(--ease);
-}
-
 .nav-mobile-link:hover,
-.nav-mobile-link:focus-visible {
+.nav-mobile-link:focus-visible,
+.nav-mobile-link.active {
   color: var(--text);
+  outline: none;
 }
 
-.nav-mobile-link:hover::after,
-.nav-mobile-link:focus-visible::after {
-  transform: scaleX(1);
+/* The current page keeps an underline under its words, as the desktop links do. */
+.nav-mobile-link.active,
+.nav-mobile-link:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+
+.nav-mobile-external {
+  opacity: 0.6;
 }
 
 .nav-mobile-danger {
+  margin-top: var(--space-2);
   color: var(--danger);
 }
 
-.nav-mobile-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 6px 0;
+.nav-mobile-danger:hover,
+.nav-mobile-danger:focus-visible {
+  color: var(--danger);
+}
+
+.nav-mobile-auth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.nav-mobile-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  transition: background var(--t), border-color var(--t);
+}
+
+.nav-mobile-btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 /* -- Responsive -- */
 @media (max-width: 768px) {
-  .nav-links {
+  .nav-inner {
+    padding: 0 var(--space-5);
+  }
+
+  .nav-links,
+  .nav-auth,
+  .nav-user {
     display: none;
+  }
+
+  .nav-right {
+    margin-left: auto;
   }
 
   .nav-hamburger {
     display: block;
   }
+}
 
-  .nav-auth {
+@media (min-width: 769px) {
+  /* never leave a phone panel open on a wide screen */
+  .nav-mobile.open {
     display: none;
   }
+}
 
-  .nav-username {
-    display: none;
+/* Tablets get the desktop bar; give its links and menu rows room for a finger. */
+@media (pointer: coarse) {
+  .nav-link {
+    min-height: 44px;
+  }
+
+  .nav-dropdown-item {
+    padding-block: 13px 14px;
+  }
+
+  .nav-dropdown-item::after {
+    bottom: 9px;
   }
 }
 </style>

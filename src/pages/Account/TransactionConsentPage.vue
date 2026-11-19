@@ -677,4 +677,47 @@ export default {
     justify-self: center;
   }
 }
+/* -- Phones --
+   The card's border and padding cost a third of a phone's width, and the boxes inside it then
+   made a card in a card. On a phone the page is the card: the content uses the full width, the
+   inner boxes are the only boxes, and the two decisions stack as full-width buttons. */
+@media (max-width: 560px) {
+  .txc-page {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 24px 16px 40px;
+  }
+
+  .txc-card {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .txc-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .txc-btn {
+    flex: none;
+    width: 100%;
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  .txc-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+
+  /* the mono labels stay labels, but readable: 12px */
+  .error-detail-label, .txc-detail-label, .txc-swap-label, .txc-amount-label, .txc-recipient-tag {
+    font-size: 0.75rem;
+  }
+}
 </style>

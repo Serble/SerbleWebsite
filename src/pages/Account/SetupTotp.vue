@@ -423,4 +423,15 @@ export default {
 
 .cancel-link:hover { color: var(--text-muted); }
 
+@media (max-width: 768px), (pointer: coarse) {
+  .cancel-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+}
+
 </style>

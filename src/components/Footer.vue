@@ -215,9 +215,49 @@ function changeLanguage(e) {
   }
 }
 
+/* Phones: keep the two link columns side by side. */
 @media (max-width: 480px) {
   .footer-grid {
-    grid-template-columns: 1fr;
+    column-gap: var(--space-5);
+  }
+
+  .footer-col:has(.lang-select) {
+    grid-column: 1 / -1;
+  }
+
+  .lang-select {
+    max-width: none;
+  }
+}
+
+/* Phones and touch tablets: give each link a row tall enough to tap. The list's gap moves into
+   the rows, so the spacing looks much the same. */
+@media (max-width: 768px), (pointer: coarse) {
+  .footer-heading {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+  }
+
+  .footer-links {
+    gap: 0;
+  }
+
+  .footer-links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    border-bottom: none;
+  }
+
+  .lang-select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .footer-bottom-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 }
 </style>

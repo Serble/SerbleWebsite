@@ -77,4 +77,22 @@ defineProps({
   color: var(--text-dim);
   margin: 0;
 }
+
+/* On a phone the page is the card: drop the frame so the form gets the full width, and start
+   at the top instead of centring in a tall screen. */
+@media (max-width: 560px) {
+  .auth-page {
+    justify-content: flex-start;
+    min-height: 0;
+    padding: var(--space-7) var(--space-4) var(--space-8);
+  }
+
+  .auth-card {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    gap: var(--space-5);
+  }
+}
 </style>

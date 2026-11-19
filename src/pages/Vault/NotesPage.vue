@@ -805,4 +805,26 @@ export default {
     transform: translateX(0) !important;
   }
 }
+
+/* A finger-sized delete button; the negative margin keeps the row height as it was. */
+@media (max-width: 768px), (pointer: coarse) {
+  /* 16px stops iOS zooming in when the editor takes focus */
+  .editor-textarea {
+    font-size: 16px;
+  }
+
+  .sidebar-btn,
+  .save-btn {
+    min-height: 44px;
+  }
+
+  .note-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
+    margin: -8px -6px -8px 0;
+  }
+}
 </style>
