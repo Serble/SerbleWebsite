@@ -8,13 +8,15 @@ import {
   denyOidcAuthorizeSession,
   getPublicAppInfo,
 } from '@/assets/js/serble.js';
+import { SCOPES, isSensitiveScope } from '@/assets/js/scopes.js';
 import OfficialBadge from '@/components/OfficialBadge.vue';
 import LoadingCard from '@/components/LoadingCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import Icon from '@/components/Icon.vue';
 
-// The standard OIDC scopes we can describe in plain language. Anything else the
-// server asks for is listed by its raw name with no description.
+// The standard OIDC scopes, described by `oidc-scope-<id>`. Alongside these an OIDC
+// app can ask for Serble permissions (the ids in SCOPES), which grant real API
+// access and are named and described the same way as on the legacy consent page.
 const DESCRIBED_SCOPES = ['openid', 'profile', 'email', 'groups', 'offline_access'];
 
 export default {
@@ -46,7 +48,12 @@ export default {
       error.value = { code, detail };
     }
 
+    function scopeName(scope) {
+      return SCOPES.includes(scope) ? t(`scope-${scope}`) : scope;
+    }
+
     function describeScope(scope) {
+      if (SCOPES.includes(scope)) return t(`scope-${scope}-desc`);
       return DESCRIBED_SCOPES.includes(scope) ? t(`oidc-scope-${scope}`) : '';
     }
 
@@ -131,10 +138,17 @@ export default {
     const appDescription = computed(() => sessionInfo.value?.appDescription ?? '');
     const scopes = computed(() => Array.isArray(sessionInfo.value?.scopes) ? sessionInfo.value.scopes : []);
 
+    // Same rule as the legacy consent page: a sensitive permission from an app that
+    // isn't official needs an explicit acknowledgement before Approve unlocks.
+    const hasSensitiveScopes = computed(() => scopes.value.some(isSensitiveScope));
+    const showSensitive = computed(() => hasSensitiveScopes.value && !appIsOfficial.value);
+    const acknowledged = ref(false);
+
     return {
       state, sessionInfo, error, errorMessages,
       appName, appDescription, scopes, appIsOfficial,
-      describeScope, decide,
+      scopeName, describeScope, decide,
+      isSensitiveScope, showSensitive, acknowledged,
     };
   }
 };
@@ -189,22 +203,42 @@ export default {
       <div class="oidc-scopes">
         <p class="scopes-heading">{{ $t('oidc-scopes-heading') }}</p>
         <ul v-if="scopes.length" class="scope-list">
-          <li v-for="s in scopes" :key="s" class="scope-item">
+          <li
+            v-for="s in scopes"
+            :key="s"
+            class="scope-item"
+            :class="{ 'scope-item-sensitive': showSensitive && isSensitiveScope(s) }"
+          >
             <div class="scope-text">
-              <span class="scope-name">{{ s }}</span>
-              <span class="scope-desc">{{ describeScope(s) }}</span>
+              <span class="scope-name">
+                {{ scopeName(s) }}
+                <span v-if="showSensitive && isSensitiveScope(s)" class="scope-sensitive-tag">{{ $t('sensitive') }}</span>
+              </span>
+              <span v-if="describeScope(s)" class="scope-desc">{{ describeScope(s) }}</span>
             </div>
           </li>
         </ul>
         <p v-else class="no-scopes">{{ $t('no-permissions-requested') }}</p>
       </div>
 
+      <!-- Sensitive permission acknowledgement (skipped for official apps) -->
+      <label v-if="showSensitive" class="sensitive-ack" :class="{ 'sensitive-ack-checked': acknowledged }">
+        <input type="checkbox" v-model="acknowledged" class="sensitive-ack-input">
+        <span class="sensitive-ack-box" aria-hidden="true">
+          <Icon v-if="acknowledged" name="check" :size="14" />
+        </span>
+        <span class="sensitive-ack-text">
+          <Icon name="warning" :size="18" class="sensitive-ack-icon" />
+          {{ $t('sensitive-scope-warning') }}
+        </span>
+      </label>
+
       <p class="oidc-deny-warning">{{ $t('oidc-deny-hint') }}</p>
 
       <div class="oidc-actions">
         <button
           class="oidc-btn oidc-btn-allow"
-          :disabled="state === 'working'"
+          :disabled="state === 'working' || (showSensitive && !acknowledged)"
           @click="decide(true)"
         >
           <Icon v-if="state !== 'working'" name="check" :size="18" class="me-2" />
@@ -319,6 +353,39 @@ export default {
 .scope-name { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
 .scope-desc { font-size: 0.77rem; color: var(--text-faint); line-height: 1.4; }
 .no-scopes { font-size: 0.85rem; color: var(--text-faint); margin: 0; }
+
+/* -- Sensitive permissions (same treatment as the legacy consent page) -- */
+.sensitive-ack {
+  width: 100%; display: flex; align-items: flex-start; gap: 10px; text-align: left;
+  background: var(--danger-bg); border: 1px solid var(--danger-border);
+  border-radius: 8px; padding: 12px 14px; cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+}
+.sensitive-ack-checked { border-color: var(--danger); }
+.sensitive-ack-input { position: absolute; opacity: 0; width: 0; height: 0; }
+.sensitive-ack-box {
+  flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; border-radius: 5px;
+  border: 1.5px solid var(--danger); background: transparent;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  transition: background var(--t);
+}
+.sensitive-ack-checked .sensitive-ack-box { background: var(--danger); }
+.sensitive-ack-input:focus-visible + .sensitive-ack-box { outline: 2px solid var(--danger); outline-offset: 2px; }
+.sensitive-ack-text {
+  display: flex; align-items: flex-start; gap: 6px; color: var(--danger);
+  font-size: 0.8rem; font-weight: 600; line-height: 1.4;
+}
+.sensitive-ack-icon { flex-shrink: 0; margin-top: calc((1lh - 18px) / 2); }
+.scope-item-sensitive {
+  background: var(--danger-bg); border: 1px solid var(--danger-border);
+  border-radius: 8px; padding: 8px 10px;
+}
+.scope-item-sensitive .scope-name { color: var(--danger); }
+.scope-sensitive-tag {
+  display: inline-block; margin-left: 6px; font-family: var(--font-mono);
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em;
+  color: var(--danger); vertical-align: middle;
+}
 
 .oidc-deny-warning {
   font-family: var(--font-mono); font-size: 0.76rem; font-weight: 500; color: var(--danger);
